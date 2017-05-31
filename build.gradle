@@ -1,7 +1,7 @@
 buildscript {
 	ext {
 		kotlinVersion = '1.1.2-2'
-		springBootVersion = '2.0.0.M1'
+		springBootVersion = '1.5.3.RELEASE'
 		gradleCucumberVersion = '0.9'
 	}
 	repositories {
@@ -63,7 +63,9 @@ repositories {
 dependencies {
 
 	compile('org.springframework.boot:spring-boot-starter')
-	//compile('org.springframework.boot:spring-boot-devtools')
+	compile('org.springframework.boot:spring-boot-devtools')
+
+    compile("org.apache.camel:camel-spring-boot-starter:2.19.0")
 
 	compile 'org.springframework.boot:spring-boot-starter-web'
 	compile("org.jetbrains.kotlin:kotlin-stdlib-jre8:${kotlinVersion}")
