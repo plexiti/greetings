@@ -16,6 +16,8 @@ buildscript {
 		classpath("org.jetbrains.kotlin:kotlin-allopen:${kotlinVersion}")
 		classpath("com.github.samueltbrown:gradle-cucumber-plugin:${gradleCucumberVersion}")
 		classpath('se.transmode.gradle:gradle-docker:1.2')
+        classpath('com.h2database:h2:1.4.191')
+        classpath "gradle.plugin.com.boxfuse.client:flyway-release:4.2.0"
 	}
 }
 
@@ -26,6 +28,12 @@ apply plugin: 'eclipse'
 apply plugin: 'org.springframework.boot'
 apply plugin: 'io.spring.dependency-management'
 apply plugin: 'docker'
+apply plugin: 'org.flywaydb.flyway'
+
+flyway {
+    url = 'jdbc:h2:file:./build/foobar'
+    user = 'sa'
+}
 
 group = 'plexiti'
 version = '0.0.1-SNAPSHOT'
