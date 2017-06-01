@@ -1,97 +1,145 @@
 buildscript {
+
 	ext {
-		kotlinVersion = '1.1.2-2'
-		springBootVersion = '1.5.3.RELEASE'
-		gradleCucumberVersion = '0.9'
+
+		kotlinVersion = "1.1.2-2"
+		springBootVersion = "1.5.3.RELEASE"
+		gradleCucumberVersion = "0.9"
+
 	}
+
 	repositories {
+
 		mavenCentral()
+
 		maven { url "https://repo.spring.io/snapshot" }
 		maven { url "https://repo.spring.io/milestone" }
+
 		maven { url "https://plugins.gradle.org/m2/" }
+
 	}
+
 	dependencies {
+
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}")
+        classpath("org.jetbrains.kotlin:kotlin-allopen:${kotlinVersion}")
+
 		classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
-		classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}")
-		classpath("org.jetbrains.kotlin:kotlin-allopen:${kotlinVersion}")
+        classpath "io.spring.gradle:dependency-management-plugin:0.4.0.RELEASE"
+
 		classpath("com.github.samueltbrown:gradle-cucumber-plugin:${gradleCucumberVersion}")
-		classpath('se.transmode.gradle:gradle-docker:1.2')
-        classpath('com.h2database:h2:1.4.191')
-        classpath "gradle.plugin.com.boxfuse.client:flyway-release:4.2.0"
+
+		classpath("se.transmode.gradle:gradle-docker:1.2")
+
+        classpath("gradle.plugin.com.boxfuse.client:flyway-release:4.2.0")
+        classpath("com.h2database:h2:1.4.191")
+
 	}
+
 }
 
-apply plugin: 'kotlin'
-apply plugin: 'kotlin-spring'
-apply plugin: 'com.github.samueltbrown.cucumber'
-apply plugin: 'eclipse'
-apply plugin: 'org.springframework.boot'
-apply plugin: 'io.spring.dependency-management'
-apply plugin: 'docker'
-apply plugin: 'org.flywaydb.flyway'
+apply plugin: "kotlin"
+apply plugin: "kotlin-spring"
 
-flyway {
-    url = 'jdbc:h2:file:./build/foobar'
-    user = 'sa'
-}
+apply plugin: "com.github.samueltbrown.cucumber"
 
-group = 'plexiti'
-version = '0.0.1-SNAPSHOT'
+apply plugin: "docker"
+
+apply plugin: "org.flywaydb.flyway"
+
+apply plugin: "org.springframework.boot"
+apply plugin: "io.spring.dependency-management"
+
+group = "plexiti"
+version = "0.0.1-SNAPSHOT"
 
 sourceCompatibility = 1.8
+
 compileKotlin {
+
 	kotlinOptions.jvmTarget = "1.8"
+
 }
+
 compileTestKotlin {
+
 	kotlinOptions.jvmTarget = "1.8"
+
 }
 
-docker {
-	maintainer = 'Martin Schimak <martin.schimak@plexiti.com>'
-}
+dependencyManagement {
 
-task buildDocker(type: Docker, dependsOn: build) {
-	push = false
-	dockerfile = file('src/main/docker/Dockerfile')
-	tagVersion='latest'
-	doFirst {
-		copy {
-			from jar
-			into stageDir
-		}
-	}
-}
+    imports {
 
-repositories {
-	mavenCentral()
-	maven { url "https://repo.spring.io/snapshot" }
-	maven { url "https://repo.spring.io/milestone" }
+        mavenBom("org.springframework.data:spring-data-releasetrain:Kay-M3")
+
+    }
+
 }
 
 dependencies {
 
-	compile('org.springframework.boot:spring-boot-starter')
-	compile('org.springframework.boot:spring-boot-devtools')
+	compile("org.springframework.boot:spring-boot-starter")
+	compile("org.springframework.boot:spring-boot-devtools")
+
+    //compile("org.springframework.data:spring-data-jpa")
+    //compile("org.springframework.data:spring-data-rest")
 
     compile("org.apache.camel:camel-spring-boot-starter:2.19.0")
 
-	compile 'org.springframework.boot:spring-boot-starter-web'
+	compile("org.springframework.boot:spring-boot-starter-web")
 	compile("org.jetbrains.kotlin:kotlin-stdlib-jre8:${kotlinVersion}")
 	compile("org.jetbrains.kotlin:kotlin-reflect:${kotlinVersion}")
 
-	testCompile('org.springframework.boot:spring-boot-starter-test')
-	testCompile group: 'org.assertj', name: 'assertj-core', version: '3.8.0'
+	testCompile("org.springframework.boot:spring-boot-starter-test")
+	testCompile("org.assertj:assertj-core:3.8.0")
 
-	cucumberCompile 'info.cukes:cucumber-java:1.2.5'
-	cucumberCompile 'info.cukes:cucumber-junit:1.2.5'
-	cucumberCompile 'info.cukes:cucumber-spring:1.2.5'
+	cucumberCompile("info.cukes:cucumber-java:1.2.5")
+	cucumberCompile("info.cukes:cucumber-junit:1.2.5")
+	cucumberCompile("info.cukes:cucumber-spring:1.2.5")
+
+}
+
+repositories {
+
+    maven { url "https://repo.spring.io/milestone" }
+    maven { url "https://repo.spring.io/libs-milestone" }
+
+    mavenCentral()
 
 }
 
 cucumber {
-	// So that you can generate some pretty (...) reports:
-	formats = ['pretty', 'json:build/cucumber/cucumber.json', 'junit:build/cucumber/cucumber.xml', 'html:build/cucumber/html']
 
-	// So that you can run all features/scenarios except for those annotated with @Ignore:
-	tags = ['~@Ignore']
+	formats = ["pretty", "json:build/cucumber/cucumber.json", "junit:build/cucumber/cucumber.xml", "html:build/cucumber/html"]
+
+	tags = ["~@Ignore"]
+
+}
+
+docker {
+
+    maintainer = "Martin Schimak <martin.schimak@plexiti.com>"
+
+}
+
+task buildDocker(type: Docker, dependsOn: build) {
+
+    push = false
+    dockerfile = file("src/main/docker/Dockerfile")
+    tagVersion="latest"
+    doFirst {
+        copy {
+            from jar
+            into stageDir
+        }
+    }
+
+}
+
+flyway {
+
+    url = "jdbc:h2:file:./build/foobar"
+    user = "sa"
+
 }
