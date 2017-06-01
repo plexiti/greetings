@@ -25,7 +25,6 @@ buildscript {
         classpath("org.jetbrains.kotlin:kotlin-allopen:${kotlinVersion}")
 
 		classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
-        classpath "io.spring.gradle:dependency-management-plugin:0.4.0.RELEASE"
 
 		classpath("com.github.samueltbrown:gradle-cucumber-plugin:${gradleCucumberVersion}")
 
@@ -48,7 +47,6 @@ apply plugin: "docker"
 apply plugin: "org.flywaydb.flyway"
 
 apply plugin: "org.springframework.boot"
-apply plugin: "io.spring.dependency-management"
 
 group = "plexiti"
 version = "0.0.1-SNAPSHOT"
@@ -67,23 +65,16 @@ compileTestKotlin {
 
 }
 
-dependencyManagement {
-
-    imports {
-
-        mavenBom("org.springframework.data:spring-data-releasetrain:Kay-M3")
-
-    }
-
-}
-
 dependencies {
 
 	compile("org.springframework.boot:spring-boot-starter")
 	compile("org.springframework.boot:spring-boot-devtools")
 
-    //compile("org.springframework.data:spring-data-jpa")
-    //compile("org.springframework.data:spring-data-rest")
+    compile("org.springframework.boot:spring-boot-starter-data-jpa")
+    compile("org.springframework.boot:spring-boot-starter-data-rest")
+
+    compile("org.flywaydb:flyway-core:4.2.0")
+    compile("com.h2database:h2:1.4.191")
 
     compile("org.apache.camel:camel-spring-boot-starter:2.19.0")
 
@@ -139,7 +130,7 @@ task buildDocker(type: Docker, dependsOn: build) {
 
 flyway {
 
-    url = "jdbc:h2:file:./build/foobar"
+    url = "jdbc:h2:file:./build/greetings"
     user = "sa"
 
 }
