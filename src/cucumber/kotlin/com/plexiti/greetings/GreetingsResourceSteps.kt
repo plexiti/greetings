@@ -23,7 +23,7 @@ class GreetingsResourceSteps {
     lateinit var restTemplate: TestRestTemplate
 
     var caller: String? = null
-    var response: ResponseEntity<String>? = null
+    var response: ResponseEntity<Greeting>? = null
 
     @Given("I use the caller (.*)")
     fun useCaller(caller: String) {
@@ -32,8 +32,7 @@ class GreetingsResourceSteps {
 
     @When("I request a greeting")
     fun requestGreeting() {
-        this.response = restTemplate.exchange("/greetings/{caller}",
-                HttpMethod.GET, null, String::class.java, caller)
+        this.response = restTemplate.getForEntity("/greetings/{caller}", Greeting::class.java, caller)
     }
 
     @Then("I should get a response with HTTP status code (.*)")
@@ -43,7 +42,7 @@ class GreetingsResourceSteps {
 
     @And("The response should contain the message (.*)")
     fun theResponseShouldContainTheMessage(message: String) {
-        assertThat(response!!.body).isEqualTo(message)
+        assertThat(response!!.body.name).isEqualTo(message)
     }
 
 }

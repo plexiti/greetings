@@ -78,6 +78,8 @@ dependencies {
 
     compile("org.apache.camel:camel-spring-boot-starter:2.19.0")
 
+    compile("com.fasterxml.jackson.module:jackson-module-kotlin:2.8.7")
+
 	compile("org.springframework.boot:spring-boot-starter-web")
 	compile("org.jetbrains.kotlin:kotlin-stdlib-jre8:${kotlinVersion}")
 	compile("org.jetbrains.kotlin:kotlin-reflect:${kotlinVersion}")
