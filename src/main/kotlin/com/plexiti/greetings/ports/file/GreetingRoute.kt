@@ -11,7 +11,6 @@ import java.io.File
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
 @Component
-@Profile("prod", "camel")
 class GreetingRoute : RouteBuilder() {
 
     private val logger = LoggerFactory.getLogger(this::class.java)

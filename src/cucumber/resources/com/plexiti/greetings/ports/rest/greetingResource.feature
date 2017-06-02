@@ -9,6 +9,7 @@ Feature: Get greeting
     When I request a greeting
     Then I should get a response with HTTP status code <status>
     And The response should contain the message <message>
+    And A greeting with the <message> should be stored
 
     Examples:
       | caller | status | message           |

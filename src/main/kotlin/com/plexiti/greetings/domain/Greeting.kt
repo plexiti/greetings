@@ -1,6 +1,7 @@
 package com.plexiti.greetings.domain
 
 import org.springframework.data.repository.CrudRepository
+import org.springframework.stereotype.Repository
 import javax.persistence.*
 
 
@@ -11,7 +12,7 @@ import javax.persistence.*
 @Table(name="GREETING")
 data class Greeting(
     @Column(name="NAME")
-    val name: String
+    val name: String = ""
 ) {
     @Id
     @SequenceGenerator(name="greeting_generator", sequenceName="greeting_sequence", allocationSize = 1)
@@ -19,4 +20,5 @@ data class Greeting(
     val id: Long? = null
 }
 
+@Repository
 interface GreetingRepository : CrudRepository<Greeting, Long>
