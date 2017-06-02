@@ -1,7 +1,8 @@
 package com.plexiti.greetings.ports
 
-import com.plexiti.greetings.domain.Greeting
 import com.plexiti.greetings.domain.GreetingRepository
+import com.plexiti.greetings.ports.rest.GreetingController
+import com.plexiti.greetings.ports.rest.GreetingController.*
 import cucumber.api.java.en.And
 import cucumber.api.java.en.Given
 import cucumber.api.java.en.Then
@@ -32,7 +33,7 @@ class GreetingResourceSteps {
     lateinit var restTemplate: TestRestTemplate
 
     var caller: String? = null
-    var response: ResponseEntity<Greeting>? = null
+    var response: ResponseEntity<GreetingController.GreetingResource>? = null
 
     @Given("I use the caller (.*)")
     fun useCaller(caller: String) {
@@ -41,7 +42,7 @@ class GreetingResourceSteps {
 
     @When("I request a greeting")
     fun requestGreeting() {
-        this.response = restTemplate.getForEntity("/greetings/{caller}", Greeting::class.java, caller)
+        this.response = restTemplate.getForEntity("/greetings/{caller}", GreetingResource::class.java, caller)
     }
 
     @Then("I should get a response with HTTP status code (.*)")

@@ -1,5 +1,7 @@
 package com.plexiti.greetings.domain
 
+import com.plexiti.commons.domain.Aggregate
+import com.plexiti.commons.domain.EntityId
 import org.springframework.data.repository.CrudRepository
 import org.springframework.stereotype.Repository
 import javax.persistence.*
@@ -8,17 +10,15 @@ import javax.persistence.*
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
-@Entity
-@Table(name="GREETING")
-data class Greeting(
+@Entity @Table(name="GREETING")
+class Greeting (
+
     @Column(name="NAME")
     val name: String = ""
-) {
-    @Id
-    @SequenceGenerator(name="greeting_generator", sequenceName="greeting_sequence", allocationSize = 1)
-    @GeneratedValue(generator = "greeting_generator")
-    val id: Long? = null
-}
+
+): Aggregate<GreetingId>(GreetingId())
 
 @Repository
-interface GreetingRepository : CrudRepository<Greeting, Long>
+interface GreetingRepository : CrudRepository<Greeting, GreetingId>
+
+class GreetingId(value: String? = null): EntityId(value)

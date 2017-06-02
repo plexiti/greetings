@@ -20,7 +20,7 @@ class GreetingController {
     lateinit var greetingService: GreetingService
 
     data class GreetingResource(
-        val id: Long?,
+        val id: String?,
         val name: String
     )
 
@@ -31,7 +31,7 @@ class GreetingController {
             return ResponseEntity<Any>(HttpStatus.I_AM_A_TEAPOT)
         }
         val greeting = greetingService.execute(GreetCommand(caller))
-        return ResponseEntity(GreetingResource(greeting.id, greeting.name), HttpStatus.OK)
+        return ResponseEntity(GreetingResource(greeting.id?.value, greeting.name), HttpStatus.OK)
     }
 
 }

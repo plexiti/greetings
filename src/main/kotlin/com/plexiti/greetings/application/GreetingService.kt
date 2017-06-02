@@ -22,6 +22,7 @@ class GreetingService {
     data class GreetCommand(
         val caller: String
     )
+
     fun execute(command: GreetCommand): Greeting {
         val greeting = Greeting(name = String.format("Hello World, %s", command.caller))
         greetingRepository.save(greeting)
