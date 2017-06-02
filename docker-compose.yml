@@ -19,6 +19,8 @@ services:
     networks:
       - front
       - back
+    volumes:
+      - ./.greetings/:/mnt/.greetings
   db:
     image: postgres
     ports:
