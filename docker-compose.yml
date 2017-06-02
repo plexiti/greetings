@@ -1,16 +1,40 @@
 version: '3'
 services:
+  lb:
+    image: dockercloud/haproxy
+    ports:
+      - 80:80
+    links:
+      - app
+    networks:
+      - front
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
   app:
     image: plexiti/greetings
     ports:
-    - "8080:8080"
+      - "8080"
     depends_on:
-    - postgres
-  postgres:
+      - db
+    networks:
+      - front
+      - back
+  db:
     image: postgres
     ports:
-     - "5432:5432"
+      - "5432:5432"
+    networks:
+     - back
     environment:
      - POSTGRES_PASSWORD=greetings
      - POSTGRES_USER=greetings
      - POSTGRES_DB=greetings
+    volumes:
+      - vol:/var/lib/postgresql/data
+networks:
+  front:
+    driver: bridge
+  back:
+    driver: bridge
+volumes:
+  vol:
