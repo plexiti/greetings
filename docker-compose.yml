@@ -1,0 +1,16 @@
+version: '3'
+services:
+  app:
+    image: plexiti/greetings
+    ports:
+    - "8080:8080"
+    depends_on:
+    - postgres
+  postgres:
+    image: postgres
+    ports:
+     - "5432:5432"
+    environment:
+     - POSTGRES_PASSWORD=greetings
+     - POSTGRES_USER=greetings
+     - POSTGRES_DB=greetings

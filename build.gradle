@@ -73,8 +73,9 @@ dependencies {
     compile("org.springframework.boot:spring-boot-starter-data-jpa")
     compile("org.springframework.boot:spring-boot-starter-data-rest")
 
-    compile("org.flywaydb:flyway-core:4.2.0")
-    compile("com.h2database:h2:1.4.191")
+    runtime("org.flywaydb:flyway-core:4.2.0")
+    runtime("org.postgresql:postgresql:42.1.1")
+    runtime("com.h2database:h2:1.4.191")
 
     compile("org.apache.camel:camel-spring-boot-starter:2.19.0")
 
@@ -116,10 +117,10 @@ docker {
 
 }
 
-task buildDocker(type: Docker, dependsOn: build) {
+task buildDocker(type: Docker) {
 
     push = false
-    dockerfile = file("src/main/docker/Dockerfile")
+    dockerfile = file("Dockerfile")
     tagVersion="latest"
     doFirst {
         copy {
@@ -129,6 +130,8 @@ task buildDocker(type: Docker, dependsOn: build) {
     }
 
 }
+
+assemble.finalizedBy(buildDocker)
 
 flyway {
 
