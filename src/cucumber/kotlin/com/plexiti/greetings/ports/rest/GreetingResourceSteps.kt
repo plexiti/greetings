@@ -1,5 +1,6 @@
-package com.plexiti.greetings
+package com.plexiti.greetings.ports.rest
 
+import com.plexiti.greetings.domain.Greeting
 import cucumber.api.java.en.And
 import cucumber.api.java.en.Given
 import cucumber.api.java.en.Then
@@ -8,7 +9,6 @@ import org.assertj.core.api.Assertions.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.client.TestRestTemplate
-import org.springframework.http.HttpMethod
 import org.springframework.http.ResponseEntity
 import org.springframework.test.context.ContextConfiguration
 
@@ -17,7 +17,7 @@ import org.springframework.test.context.ContextConfiguration
  */
 @ContextConfiguration
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class GreetingsResourceSteps {
+class GreetingResourceSteps {
 
     @Autowired
     lateinit var restTemplate: TestRestTemplate
