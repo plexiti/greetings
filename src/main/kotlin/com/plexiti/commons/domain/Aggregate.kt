@@ -50,4 +50,15 @@ abstract class AggregateId(value: String? = null): Serializable {
         return value
     }
 
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is AggregateId) return false
+        if (value != other.value) return false
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return value.hashCode()
+    }
+
 }
