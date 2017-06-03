@@ -1,4 +1,4 @@
-CREATE TABLE events (
+CREATE TABLE grt_events (
     type VARCHAR(128),
     id VARCHAR(36) NOT NULL PRIMARY KEY,
     raised_at TIMESTAMP NOT NULL,
