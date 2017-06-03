@@ -1,0 +1,75 @@
+package com.plexiti.commons.domain
+
+import org.springframework.context.ApplicationContext
+import org.springframework.context.ApplicationContextAware
+import org.springframework.data.repository.CrudRepository
+import org.springframework.stereotype.Component
+import org.springframework.stereotype.Repository
+import java.util.*
+import javax.persistence.*
+
+/**
+ * @author Martin Schimak <martin.schimak@plexiti.com>
+ */
+@Entity @Inheritance
+@Table(name="EVENTS")
+@DiscriminatorColumn(name="type", columnDefinition = "varchar(128)", discriminatorType = DiscriminatorType.STRING)
+open class Event(aggregate:  Aggregate<*>? = null): AbstractMessage<EventId>(EventId()) {
+
+    @Embedded
+    lateinit var aggregate: ReferencedAggregate private set
+
+    init {
+        if (aggregate != null)
+            this.aggregate = ReferencedAggregate(aggregate)
+    } protected
+
+    @Column(name = "RAISED_AT")
+    @Temporal(TemporalType.TIMESTAMP)
+    var raisedAt = Date(); private set
+
+    @Embeddable
+    class ReferencedAggregate(aggregate: Aggregate<*>? = null) {
+
+        @Column(name = "AGG_ID", columnDefinition = "varchar(36)")
+        lateinit var id: String private set
+        @Column(name = "AGG_TYPE", columnDefinition = "varchar(128)")
+        lateinit var type: String private set
+        @Column(name = "AGG_VERSION")
+        var version: Int? = null; private set
+
+        init {
+            if (aggregate != null) {
+                id = aggregate.id!!.value
+                type = aggregate::class.simpleName!!
+                version = if (aggregate.isNew()) 0 else aggregate.version!! + 1
+            }
+        }
+
+    }
+
+}
+
+class EventId(value: String? = null): MessageId(value)
+
+@Repository
+interface EventRepository: CrudRepository<Event, EventId>
+
+object EventRaiser {
+
+    lateinit var eventRepository: EventRepository
+
+    fun publish(event: Event) {
+        eventRepository.save(event)
+    }
+
+}
+
+@Component
+class EventRaiserInitialiser: ApplicationContextAware {
+
+    override fun setApplicationContext(applicationContext: ApplicationContext?) {
+        EventRaiser.eventRepository = applicationContext!!.getBean(EventRepository::class.java)
+    }
+
+}
