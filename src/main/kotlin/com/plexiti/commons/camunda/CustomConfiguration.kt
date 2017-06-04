@@ -1,0 +1,24 @@
+package com.plexiti.commons.camunda
+
+import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl
+import org.camunda.bpm.spring.boot.starter.configuration.Ordering
+import org.camunda.bpm.spring.boot.starter.configuration.impl.AbstractCamundaConfiguration
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.core.annotation.Order
+import org.springframework.stereotype.Component
+
+/**
+ * @author Martin Schimak <martin.schimak@plexiti.com>
+ */
+@Component
+@Order(Ordering.DEFAULT_ORDER + 1)
+class CustomConfiguration : AbstractCamundaConfiguration() {
+
+    @Value("\${org.camunda.bpm.configuration.databaseSchemaUpdate}")
+    lateinit var databaseSchemaUpdate: String
+
+    override fun preInit(processEngineConfiguration: ProcessEngineConfigurationImpl) {
+        processEngineConfiguration.databaseSchemaUpdate = databaseSchemaUpdate
+    }
+
+}
