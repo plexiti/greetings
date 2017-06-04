@@ -25,7 +25,7 @@ class GreetingApplication {
     )
 
     @Handler
-    fun handle(command: GreetCommand): Greeting {
+    fun greetCaller(command: GreetCommand): Greeting {
         val greeting = Greeting(name = String.format("Hello World, %s", command.caller))
         greetingRepository.save(greeting)
         logger.info("Greeting #${greeting.id}: ${greeting.name}")

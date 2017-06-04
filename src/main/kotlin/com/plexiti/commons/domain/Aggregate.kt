@@ -22,10 +22,6 @@ abstract class Aggregate<ID: AggregateId>(id: ID? = null): AbstractEntity<ID>(id
 @MappedSuperclass
 abstract class AbstractEntity<ID: Serializable>(@EmbeddedId val id: ID? = null) {
 
-    fun raise(event: Event) {
-        EventRaiser.publish(event)
-    }
-
     override fun hashCode(): Int {
         return id?.hashCode() ?: 0
     }

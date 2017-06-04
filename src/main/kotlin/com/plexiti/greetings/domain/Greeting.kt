@@ -22,7 +22,7 @@ class Greeting (
     @Entity @DiscriminatorValue("CallerGreetedEvent")
     class CallerGreetedEvent(greeting: Greeting? = null) : Event(greeting)
     init {
-        raise(CallerGreetedEvent(this))
+        CallerGreetedEvent(this)
     }
 
 }
