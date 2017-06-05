@@ -1,7 +1,9 @@
 package com.plexiti.greetings.ports.file
 
+import com.plexiti.commons.application.CommandId
 import com.plexiti.greetings.application.GreetingApplication.*
 import com.plexiti.greetings.application.Route
+import org.apache.camel.Handler
 import org.apache.camel.builder.RouteBuilder
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
@@ -14,18 +16,21 @@ import java.io.File
 class GreetingReader : RouteBuilder() {
 
     @Value("\${com.plexiti.greetings.path}")
-    lateinit var greetingsPath: String
+    private lateinit var path: String;
 
-    val consumerOptions = "noop=true&idempotentKey=\${file:name}-\${file:modified}"
+    val options = "noop=true&idempotentKey=\${file:name}-\${file:modified}"
 
     override fun configure() {
-        if (greetingsPath.isNotEmpty()) {
-            val file = File(greetingsPath)
+        if (path.isNotEmpty()) {
+            val file = File(path)
             if (file.exists()) {
-                from("${file.toURI()}?${consumerOptions}")
-                    .convertBodyTo(String::class.java)
-                    .convertBodyTo(GreetCommand::class.java)
-                    .to(Route.Sync.GreetingApplication)
+                from("${file.toURI()}?${options}")
+                    .bean(object {
+                        @Handler fun handle(caller: String): GreetCommand {
+                            return GreetCommand(id = CommandId(), caller = caller)
+                        }
+                    })
+                .to(Route.Sync.GreetingApplication)
             }
         }
     }
