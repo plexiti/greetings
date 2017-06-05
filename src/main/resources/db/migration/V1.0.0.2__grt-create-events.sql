@@ -4,5 +4,6 @@ CREATE TABLE grt_events (
     raised_at TIMESTAMP NOT NULL,
     agg_id VARCHAR(36) NOT NULL,
     agg_type VARCHAR(128) NOT NULL,
-    agg_version INTEGER NOT NULL
+    agg_version INTEGER NOT NULL,
+    command_id VARCHAR(36) NOT NULL
 );
