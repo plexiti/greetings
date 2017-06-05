@@ -1,8 +1,8 @@
-package com.plexiti.greetings.ports
+package com.plexiti.greetings.adapters
 
 import com.plexiti.greetings.domain.GreetingRepository
-import com.plexiti.greetings.ports.rest.GreetingController
-import com.plexiti.greetings.ports.rest.GreetingController.*
+import com.plexiti.greetings.adapters.rest.GreetingController
+import com.plexiti.greetings.adapters.rest.GreetingController.*
 import cucumber.api.java.en.And
 import cucumber.api.java.en.Given
 import cucumber.api.java.en.Then

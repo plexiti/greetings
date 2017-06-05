@@ -1,4 +1,4 @@
-package com.plexiti.greetings.ports.rest
+package com.plexiti.greetings.adapters.rest
 
 import com.plexiti.commons.application.CommandId
 import com.plexiti.greetings.application.GreetingApplication.GreetCommand

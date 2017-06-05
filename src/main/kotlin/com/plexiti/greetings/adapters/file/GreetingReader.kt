@@ -1,4 +1,4 @@
-package com.plexiti.greetings.ports.file
+package com.plexiti.greetings.adapters.file
 
 import com.plexiti.commons.application.CommandId
 import com.plexiti.greetings.application.GreetingApplication.*
