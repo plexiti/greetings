@@ -3,9 +3,13 @@ package com.plexiti.greetings.domain
 import com.plexiti.commons.domain.Aggregate
 import com.plexiti.commons.domain.AggregateId
 import com.plexiti.commons.domain.Event
+import com.plexiti.commons.domain.Events
 import org.springframework.data.repository.CrudRepository
 import org.springframework.stereotype.Repository
-import javax.persistence.*
+import javax.persistence.Column
+import javax.persistence.DiscriminatorValue
+import javax.persistence.Entity
+import javax.persistence.Table
 
 
 /**
@@ -22,7 +26,7 @@ class Greeting (
     @Entity @DiscriminatorValue("CallerGreetedEvent")
     class CallerGreetedEvent(greeting: Greeting? = null) : Event(greeting)
     init {
-        CallerGreetedEvent(this)
+        Events.raise(CallerGreetedEvent(this))
     }
 
 }

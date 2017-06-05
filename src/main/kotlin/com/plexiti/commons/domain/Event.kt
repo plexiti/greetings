@@ -22,7 +22,6 @@ open class Event(aggregate:  Aggregate<*>? = null): AbstractMessage<EventId>(Eve
     init {
         if (aggregate != null) {
             this.aggregate = ReferencedAggregate(aggregate)
-            EventRaiser.publish(this)
         }
     } protected
 
@@ -57,11 +56,11 @@ class EventId(value: String? = null): MessageId(value)
 @Repository
 interface EventRepository: CrudRepository<Event, EventId>
 
-private object EventRaiser {
+object Events {
 
     lateinit var eventRepository: EventRepository
 
-    fun publish(event: Event) {
+    fun raise(event: Event) {
         eventRepository.save(event)
     }
 
@@ -71,7 +70,7 @@ private object EventRaiser {
 private class EventRaiserInitialiser: ApplicationContextAware {
 
     override fun setApplicationContext(applicationContext: ApplicationContext?) {
-        EventRaiser.eventRepository = applicationContext!!.getBean(EventRepository::class.java)
+        Events.eventRepository = applicationContext!!.getBean(EventRepository::class.java)
     }
 
 }
