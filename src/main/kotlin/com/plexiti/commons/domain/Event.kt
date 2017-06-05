@@ -1,5 +1,7 @@
 package com.plexiti.commons.domain
 
+import com.plexiti.commons.application.Command
+import com.plexiti.commons.application.Commands
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
 import org.springframework.data.repository.CrudRepository
@@ -19,9 +21,13 @@ open class Event(aggregate:  Aggregate<*>? = null): AbstractMessage<EventId>(Eve
     @Embedded
     lateinit var aggregate: ReferencedAggregate private set
 
+    @ManyToOne @JoinColumn(name="COMMAND_ID")
+    lateinit var command: Command; private set
+
     init {
         if (aggregate != null) {
             this.aggregate = ReferencedAggregate(aggregate)
+            this.command = Commands.active()
         }
     } protected
 

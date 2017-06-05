@@ -39,12 +39,18 @@ class CommandId(value: String? = null): MessageId(value)
 @Repository
 interface CommandRepository: CrudRepository<Command, CommandId>
 
-private object Commands {
+object Commands {
 
     lateinit var commandRepository: CommandRepository
+    private var command: ThreadLocal<Command> = ThreadLocal()
 
     fun issue(command: Command) {
         commandRepository.save(command)
+        this.command.set(command)
+    }
+
+    fun active(): Command {
+        return this.command.get()
     }
 
 }
