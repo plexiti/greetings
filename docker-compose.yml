@@ -7,7 +7,7 @@ services:
     links:
       - app
     networks:
-      - front
+      - lb
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
   app:
@@ -16,27 +16,38 @@ services:
       - "8080"
     depends_on:
       - db
+      - mq
     networks:
-      - front
-      - back
+      - lb
+      - mq
+      - db
     volumes:
       - ./.greetings/:/mnt/.greetings
+  mq:
+    image: rabbitmq:management
+    ports:
+      - "5672"
+      - "15672:15672"
+    networks:
+      - mq
   db:
     image: postgres
     ports:
       - "5432:5432"
     networks:
-     - back
+      - db
     environment:
-     - POSTGRES_PASSWORD=greetings
-     - POSTGRES_USER=greetings
-     - POSTGRES_DB=greetings
+      - POSTGRES_PASSWORD=greetings
+      - POSTGRES_USER=greetings
+      - POSTGRES_DB=greetings
     volumes:
       - vol:/var/lib/postgresql/data
 networks:
-  front:
+  lb:
     driver: bridge
-  back:
+  mq:
+    driver: bridge
+  db:
     driver: bridge
 volumes:
   vol:
