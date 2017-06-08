@@ -1,8 +1,8 @@
 package com.plexiti.commons.domain
 
-import com.plexiti.commons.application.Command
 import com.plexiti.commons.application.CommandId
 import com.plexiti.commons.application.Commands
+import org.apache.camel.component.jpa.Consumed
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
 import org.springframework.data.repository.CrudRepository
@@ -17,6 +17,7 @@ import javax.persistence.*
 @Entity @Inheritance
 @Table(name="EVENTS")
 @DiscriminatorColumn(name="type", columnDefinition = "varchar(128)", discriminatorType = DiscriminatorType.STRING)
+@NamedQuery(name = "EventPublisher", query = "select e from Event e where e.publishedAt is null")
 open class Event(aggregate:  Aggregate<*>? = null): AbstractMessage<EventId>(EventId()) {
 
     @Embedded
@@ -35,6 +36,16 @@ open class Event(aggregate:  Aggregate<*>? = null): AbstractMessage<EventId>(Eve
     @Column(name = "RAISED_AT")
     @Temporal(TemporalType.TIMESTAMP)
     var raisedAt = Date(); private set
+
+    @Column(name = "PUBLISHED_AT")
+    @Temporal(TemporalType.TIMESTAMP)
+    var publishedAt: Date? = null
+
+    @Consumed
+    fun setPublished() {
+        if (publishedAt == null)
+            publishedAt = Date()
+    }
 
     @Embeddable
     class ReferencedAggregate(aggregate: Aggregate<*>? = null) {
