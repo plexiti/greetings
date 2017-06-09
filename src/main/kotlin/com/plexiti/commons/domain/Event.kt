@@ -1,5 +1,7 @@
 package com.plexiti.commons.domain
 
+import com.fasterxml.jackson.annotation.JsonIgnore
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.plexiti.commons.application.CommandId
 import com.plexiti.commons.application.Commands
 import org.apache.camel.component.jpa.Consumed
@@ -10,36 +12,51 @@ import org.springframework.stereotype.Component
 import org.springframework.stereotype.Repository
 import java.util.*
 import javax.persistence.*
+import kotlin.collections.HashMap
 
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
-@Entity @Inheritance
+@Entity
 @Table(name="EVENTS")
-@DiscriminatorColumn(name="type", columnDefinition = "varchar(128)", discriminatorType = DiscriminatorType.STRING)
-@NamedQuery(name = "EventPublisher", query = "select e from Event e where e.publishedAt is null")
-open class Event(aggregate:  Aggregate<*>? = null): AbstractMessage<EventId>(EventId()) {
+@NamedQuery(name = "EventPublisher", query = "select e from EventEntity e where e.publishedAt is null")
+class EventEntity(): AbstractMessageEntity<EventId>(EventId()) {
 
     @Embedded
-    lateinit var aggregate: ReferencedAggregate private set
+    lateinit var aggregate: Aggregate
+        private set
 
     @Embedded @AttributeOverride(name="value", column=Column(name="COMMAND_ID"))
-    lateinit var commandId: CommandId; private set
+    var commandId: CommandId? = null
+        private set
 
-    init {
-        if (aggregate != null) {
-            this.aggregate = ReferencedAggregate(aggregate)
-            this.commandId = Commands.active().id!!
-        }
-    } protected
-
+    @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "RAISED_AT")
-    @Temporal(TemporalType.TIMESTAMP)
-    var raisedAt = Date(); private set
+    lateinit var raisedAt: Date
+        private set
 
-    @Column(name = "PUBLISHED_AT")
+    @Column(name="TYPE", columnDefinition = "varchar(128)")
+    lateinit var type: String
+        private set
+
+    @Lob
+    @Column(name="PROPERTIES", columnDefinition = "text")
+    lateinit var properties: String
+        private set
+
     @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "PUBLISHED_AT")
     var publishedAt: Date? = null
+        private set
+
+    internal constructor(event: Event): this() {
+        this.id = event.id
+        this.aggregate = Aggregate(event.aggregate)
+        this.commandId = Commands.active()?.id
+        this.raisedAt = Date()
+        this.type = event::class.java.simpleName
+        this.properties = ObjectMapper().writeValueAsString(event)
+    }
 
     @Consumed
     fun setPublished() {
@@ -47,48 +64,69 @@ open class Event(aggregate:  Aggregate<*>? = null): AbstractMessage<EventId>(Eve
             publishedAt = Date()
     }
 
+    fun isPublished(): Boolean {
+        return publishedAt != null
+    }
+
     @Embeddable
-    class ReferencedAggregate(aggregate: Aggregate<*>? = null) {
+    class Aggregate() {
 
         @Column(name = "AGG_ID", columnDefinition = "varchar(36)")
-        lateinit var id: String private set
+        lateinit var id: String
+            private set
         @Column(name = "AGG_TYPE", columnDefinition = "varchar(128)")
-        lateinit var type: String private set
+        lateinit var type: String
+            private set
         @Column(name = "AGG_VERSION")
-        var version: Int? = null; private set
+        var version: Int = 0
+            private set
 
-        init {
-            if (aggregate != null) {
-                id = aggregate.id!!.value
-                type = aggregate::class.simpleName!!
-                version = if (aggregate.isNew()) 0 else aggregate.version!! + 1
-            }
+        constructor(aggregate: com.plexiti.commons.domain.Aggregate<*>): this() {
+            id = aggregate.id!!.value
+            type = aggregate::class.simpleName!!
+            version = if (aggregate.isNew()) 0 else aggregate.version!! + 1
         }
 
     }
 
 }
 
+abstract class Event(aggregate: Aggregate<*>) {
+
+    internal val aggregate = aggregate
+        @JsonIgnore get
+
+    internal val id = EventId()
+        @JsonIgnore get
+
+}
+
 class EventId(value: String? = null): MessageId(value)
 
 @Repository
-interface EventRepository: CrudRepository<Event, EventId>
-
-object Events {
-
-    lateinit var eventRepository: EventRepository
-
-    fun raise(event: Event) {
-        eventRepository.save(event)
-    }
-
-}
+interface EventEntityRepository: CrudRepository<EventEntity, EventId>
 
 @Component
 private class EventRaiserInitialiser: ApplicationContextAware {
 
     override fun setApplicationContext(applicationContext: ApplicationContext?) {
-        Events.eventRepository = applicationContext!!.getBean(EventRepository::class.java)
+        Events.repository = applicationContext!!.getBean(EventEntityRepository::class.java)
+    }
+
+}
+
+internal object Events {
+
+    internal var repository: EventEntityRepository? = null
+    private val store = HashMap<EventId, Event>()
+
+    fun save(event: Event) {
+        if (store.containsKey(event.id))
+            throw IllegalStateException()
+        if (repository != null)
+            repository!!.save(EventEntity(event))
+        else
+            store.put(event.id, event)
     }
 
 }

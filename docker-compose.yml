@@ -41,7 +41,7 @@ services:
       - POSTGRES_USER=greetings
       - POSTGRES_DB=greetings
     volumes:
-      - vol:/var/lib/postgresql/data
+      - db:/var/lib/postgresql/data
 networks:
   lb:
     driver: bridge
@@ -50,4 +50,4 @@ networks:
   db:
     driver: bridge
 volumes:
-  vol:
+  db:

@@ -1,6 +1,6 @@
 package com.plexiti.greetings.adapters.mq
 
-import com.plexiti.commons.domain.Event
+import com.plexiti.commons.domain.EventEntity
 import org.apache.camel.Handler
 import org.apache.camel.builder.RouteBuilder
 import org.slf4j.LoggerFactory
@@ -36,13 +36,14 @@ class GreetingPublisher : RouteBuilder() {
     val options = "consumer.namedQuery=EventPublisher&consumeDelete=false"
 
     override fun configure() {
-        from("jpa:${Event::class.qualifiedName}?${options}")
+        from("jpa:${EventEntity::class.qualifiedName}?${options}")
             .bean(this)
     }
 
     @Handler
-    fun publish(event: Event) {
-        rabbitTemplate.convertAndSend(topic, event.id!!.value);
+    fun publish(event: EventEntity) {
+        rabbitTemplate.convertAndSend(topic, event.properties);
+        logger.info("Published ${event.properties}")
     }
 
     @Bean

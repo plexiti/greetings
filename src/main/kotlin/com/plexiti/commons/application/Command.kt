@@ -1,6 +1,6 @@
 package com.plexiti.commons.application
 
-import com.plexiti.commons.domain.AbstractMessage
+import com.plexiti.commons.domain.AbstractMessageEntity
 import com.plexiti.commons.domain.MessageId
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
@@ -16,7 +16,7 @@ import javax.persistence.*
 @Entity @Inheritance
 @Table(name="COMMANDS")
 @DiscriminatorColumn(name="type", columnDefinition = "varchar(128)", discriminatorType = DiscriminatorType.STRING)
-open class Command(id: CommandId? = null): AbstractMessage<CommandId>(id) {
+open class Command(id: CommandId? = null): AbstractMessageEntity<CommandId>(id) {
 
     @Column(name = "ISSUED_AT")
     @Temporal(TemporalType.TIMESTAMP)
@@ -42,14 +42,14 @@ interface CommandRepository: CrudRepository<Command, CommandId>
 object Commands {
 
     lateinit var commandRepository: CommandRepository
-    private var command: ThreadLocal<Command> = ThreadLocal()
+    private var command: ThreadLocal<Command?> = ThreadLocal()
 
     fun issue(command: Command) {
         commandRepository.save(command)
         this.command.set(command)
     }
 
-    fun active(): Command {
+    fun active(): Command? {
         return this.command.get()
     }
 

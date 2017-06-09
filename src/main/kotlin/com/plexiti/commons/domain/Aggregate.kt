@@ -17,10 +17,14 @@ abstract class Aggregate<ID: AggregateId>(id: ID? = null): AbstractEntity<ID>(id
         return version == null
     }
 
+    fun raise(event: Event) {
+        Events.save(event)
+    }
+
 }
 
 @MappedSuperclass
-abstract class AbstractEntity<ID: Serializable>(@EmbeddedId val id: ID? = null) {
+abstract class AbstractEntity<ID: Serializable>(@EmbeddedId var id: ID? = null) {
 
     override fun hashCode(): Int {
         return id?.hashCode() ?: 0

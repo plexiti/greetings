@@ -1,13 +1,9 @@
 package com.plexiti.greetings.domain
 
-import com.plexiti.commons.domain.Aggregate
-import com.plexiti.commons.domain.AggregateId
-import com.plexiti.commons.domain.Event
-import com.plexiti.commons.domain.Events
+import com.plexiti.commons.domain.*
 import org.springframework.data.repository.CrudRepository
 import org.springframework.stereotype.Repository
 import javax.persistence.Column
-import javax.persistence.DiscriminatorValue
 import javax.persistence.Entity
 import javax.persistence.Table
 
@@ -15,7 +11,8 @@ import javax.persistence.Table
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
-@Entity @Table(name="GREETINGS")
+@Entity
+@Table(name="GREETINGS")
 class Greeting (
 
     @Column(name="NAME")
@@ -23,10 +20,12 @@ class Greeting (
 
 ): Aggregate<GreetingId>(GreetingId()) {
 
-    @Entity @DiscriminatorValue("CallerGreetedEvent")
-    class CallerGreetedEvent(greeting: Greeting? = null) : Event(greeting)
+    class GreetingCreated(greeting: Greeting): Event(greeting) {
+        val name = greeting.name
+    }
+
     init {
-        Events.raise(CallerGreetedEvent(this))
+        raise(GreetingCreated(this))
     }
 
 }
