@@ -70,7 +70,7 @@ class GreetingResourceSteps {
     @Then("A greeting with the (.*) should be stored")
     fun theGreetingShouldBeStoredInTheDatabase(message: String) {
         val all = greetingRepository.findAll()
-        val actual = all.filter { it.name.equals(message) }
+        val actual = all.filter { it.greeting.equals(message) }
         assertThat(actual).hasSize(1);
     }
 

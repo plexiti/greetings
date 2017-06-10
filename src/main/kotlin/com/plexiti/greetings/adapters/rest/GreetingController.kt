@@ -23,7 +23,7 @@ class GreetingController {
     lateinit var router: ProducerTemplate
 
     data class GreetingResource(val id: String, val name: String) {
-        constructor(greeting: Greeting): this(greeting.id?.value!!, greeting.name)
+        constructor(greeting: Greeting): this(greeting.id?.value!!, greeting.greeting)
     }
 
     @RequestMapping("/greetings/{caller}")

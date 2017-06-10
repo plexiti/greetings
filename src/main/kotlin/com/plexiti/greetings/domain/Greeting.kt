@@ -17,11 +17,11 @@ import javax.persistence.Table
 class Greeting: Aggregate<GreetingId>() {
 
     @Column(name="NAME")
-    lateinit var name: String private set
+    lateinit var greeting: String private set
 
     class GreetingCreated(greeting: Greeting): Event(greeting) {
         override val definition = 0
-        val name = greeting.name
+        val greeting = greeting.greeting
     }
 
     companion object {
@@ -29,7 +29,7 @@ class Greeting: Aggregate<GreetingId>() {
         fun create(name: String): Greeting {
             val new = Greeting()
             new.id = GreetingId(UUID.randomUUID().toString())
-            new.name = name
+            new.greeting = name
             Event.raise(GreetingCreated(new))
             return new
         }

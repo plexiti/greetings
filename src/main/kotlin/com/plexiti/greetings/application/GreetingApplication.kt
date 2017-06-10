@@ -30,7 +30,7 @@ class GreetingApplication {
     fun greetCaller(greet: GreetCommand): Greeting {
         val greeting = Greeting.create(String.format("Hello World, %s", greet.caller))
         greetingRepository.save(greeting)
-        logger.info("Greeting #${greeting.id}: ${greeting.name}")
+        logger.info("Greeting #${greeting.id}: ${greeting.greeting}")
         return greeting
     }
 
