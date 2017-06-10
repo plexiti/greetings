@@ -1,6 +1,5 @@
 package com.plexiti.commons.domain
 
-import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.plexiti.commons.application.Command
 import com.plexiti.commons.application.CommandId
@@ -23,7 +22,7 @@ import kotlin.collections.HashMap
 class EventEntity(): AbstractMessageEntity<EventId>() {
 
     @Embedded
-    lateinit var aggregate: Aggregate
+    lateinit var aggregate: Event.Aggregate
         private set
 
     @Embedded @AttributeOverride(name="value", column=Column(name="COMMAND_ID"))
@@ -40,8 +39,8 @@ class EventEntity(): AbstractMessageEntity<EventId>() {
         private set
 
     @Lob
-    @Column(name="PROPERTIES", columnDefinition = "text")
-    lateinit var properties: String
+    @Column(name="JSON", columnDefinition = "text")
+    lateinit var json: String
         private set
 
     @Temporal(TemporalType.TIMESTAMP)
@@ -51,11 +50,11 @@ class EventEntity(): AbstractMessageEntity<EventId>() {
 
     internal constructor(event: Event): this() {
         this.id = event.id
-        this.aggregate = Aggregate(event.aggregate)
-        this.commandId = Command.active()?.id
-        this.raisedAt = Date()
-        this.type = event::class.java.simpleName
-        this.properties = ObjectMapper().writeValueAsString(event)
+        this.type = event.type
+        this.aggregate = event.aggregate
+        this.commandId = event.commandId
+        this.raisedAt = event.raisedAt
+        this.json = ObjectMapper().writeValueAsString(event)
     }
 
     @Consumed
@@ -66,6 +65,32 @@ class EventEntity(): AbstractMessageEntity<EventId>() {
 
     fun isPublished(): Boolean {
         return publishedAt != null
+    }
+
+}
+
+abstract class Event(aggregate: com.plexiti.commons.domain.Aggregate<*>) {
+
+    val id = EventId(UUID.randomUUID().toString())
+    val type = this::class.java.simpleName
+    val raisedAt = Date()
+    val commandId = Command.active()?.id
+    val aggregate = Aggregate(aggregate)
+
+    companion object {
+
+        internal var repository: EventEntityRepository? = null
+        private val store = HashMap<EventId, Event>()
+
+        fun raise(event: Event) {
+            if (store.containsKey(event.id))
+                throw IllegalStateException()
+            if (repository != null)
+                repository!!.save(EventEntity(event))
+            else
+                store.put(event.id, event)
+        }
+
     }
 
     @Embeddable
@@ -82,35 +107,9 @@ class EventEntity(): AbstractMessageEntity<EventId>() {
             private set
 
         constructor(aggregate: com.plexiti.commons.domain.Aggregate<*>): this() {
-            id = aggregate.id!!.value
+            id = aggregate.id.value
             type = aggregate::class.simpleName!!
             version = if (aggregate.isNew()) 0 else aggregate.version!! + 1
-        }
-
-    }
-
-}
-
-abstract class Event(aggregate: Aggregate<*>) {
-
-    internal val aggregate = aggregate
-        @JsonIgnore get
-
-    internal val id = EventId(UUID.randomUUID().toString())
-        @JsonIgnore get
-
-    companion object {
-
-        internal var repository: EventEntityRepository? = null
-        private val store = HashMap<EventId, Event>()
-
-        fun raise(event: Event) {
-            if (store.containsKey(event.id))
-                throw IllegalStateException()
-            if (repository != null)
-                repository!!.save(EventEntity(event))
-            else
-                store.put(event.id, event)
         }
 
     }

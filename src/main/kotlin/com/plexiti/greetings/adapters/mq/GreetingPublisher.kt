@@ -42,8 +42,8 @@ class GreetingPublisher : RouteBuilder() {
 
     @Handler
     fun publish(event: EventEntity) {
-        rabbitTemplate.convertAndSend(topic, event.properties);
-        logger.info("Published ${event.properties}")
+        rabbitTemplate.convertAndSend(topic, event.json);
+        logger.info("Published ${event.json}")
     }
 
     @Bean
