@@ -11,12 +11,13 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.amqp.rabbit.core.RabbitTemplate
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.annotation.Profile
 
 
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
-@Component @Configuration
+@Component @Configuration @Profile("prod")
 class EventPublisher : RouteBuilder() {
 
     private val logger = LoggerFactory.getLogger(this::class.java)

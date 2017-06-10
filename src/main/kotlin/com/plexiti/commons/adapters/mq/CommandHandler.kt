@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component
 import org.springframework.amqp.rabbit.annotation.RabbitHandler
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Profile
 
 
 /**
@@ -13,6 +14,7 @@ import org.springframework.context.annotation.Bean
  */
 @Component
 @Configuration
+@Profile("prod")
 class CommandHandler {
 
     @Value("\${com.plexiti.app.context}")

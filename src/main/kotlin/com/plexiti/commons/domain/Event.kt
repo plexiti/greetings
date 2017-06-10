@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.plexiti.commons.adapters.db.InMemoryEntityCrudRepository
 import com.plexiti.commons.application.Command
 import com.plexiti.commons.application.CommandId
-import org.apache.camel.component.jpa.Consumed
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
 import org.springframework.data.repository.CrudRepository
@@ -34,50 +33,22 @@ class EventEntity(): AbstractMessageEntity<EventId>() {
     lateinit var raisedAt: Date
         private set
 
-    @Column(name="TYPE", columnDefinition = "varchar(128)")
-    lateinit var type: String
-        private set
-
-    @Column(name="DEFINITION")
-    var definition: Int = 0
-
-    @Lob
-    @Column(name="JSON", columnDefinition = "text")
-    lateinit var json: String
-        private set
-
-    @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "PUBLISHED_AT")
-    var publishedAt: Date? = null
-        private set
-
     internal constructor(event: Event): this() {
         this.id = EventId(event.id)
         this.type = event.type
         this.definition = event.definition
         this.raisedAt = event.raisedAt
         this.aggregate = event.aggregate
-        this.commandId = Command.active()?.id
+        this.commandId = if (Command.active() != null) CommandId(Command.active()!!.id) else null
         this.json = ObjectMapper().writeValueAsString(event)
-    }
-
-    @Consumed
-    fun setPublished() {
-        if (publishedAt == null)
-            publishedAt = Date()
-    }
-
-    fun isPublished(): Boolean {
-        return publishedAt != null
     }
 
 }
 
-abstract class Event(aggregate: com.plexiti.commons.domain.Aggregate<*>) {
+abstract class Event(aggregate: com.plexiti.commons.domain.Aggregate<*>): Message {
 
-    val id = UUID.randomUUID().toString()
-    val type = this::class.java.simpleName
-    open abstract val definition: Int
+    override val id = UUID.randomUUID().toString()
+    override val type = this::class.java.simpleName
     val raisedAt = Date()
     val aggregate = Aggregate(aggregate)
 
@@ -86,8 +57,9 @@ abstract class Event(aggregate: com.plexiti.commons.domain.Aggregate<*>) {
         var repository: CrudRepository<EventEntity, EventId> = InMemoryEntityCrudRepository<EventEntity, EventId>()
             internal set
 
-        fun raise(event: Event) {
+        fun <E: Event> raise(event: E): E {
             repository.save(EventEntity(event))
+            return event
         }
 
     }
