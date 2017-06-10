@@ -1,4 +1,4 @@
-package com.plexiti.greetings.adapters.mq
+package com.plexiti.commons.adapters.mq
 
 import com.plexiti.commons.domain.EventEntity
 import org.apache.camel.Handler
@@ -17,7 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
 @Component @Configuration
-class GreetingPublisher : RouteBuilder() {
+class EventPublisher : RouteBuilder() {
 
     private val logger = LoggerFactory.getLogger(this::class.java)
 

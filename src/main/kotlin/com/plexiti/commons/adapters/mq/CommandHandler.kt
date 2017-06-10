@@ -1,10 +1,8 @@
-package com.plexiti.greetings.adapters.mq
+package com.plexiti.commons.adapters.mq
 
 import org.springframework.amqp.core.Queue
 import org.springframework.context.annotation.Configuration
 import org.springframework.stereotype.Component
-import java.util.concurrent.CountDownLatch
-import org.springframework.amqp.core.TopicExchange
 import org.springframework.amqp.rabbit.annotation.RabbitHandler
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
@@ -15,7 +13,7 @@ import org.springframework.context.annotation.Bean
  */
 @Component
 @Configuration
-class GreetingHandler {
+class CommandHandler {
 
     @Value("\${com.plexiti.app.context}")
     private lateinit var context: String;
