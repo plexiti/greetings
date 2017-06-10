@@ -9,14 +9,14 @@ import org.springframework.context.annotation.ComponentScan
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories
 
 @SpringBootApplication
-@ComponentScan(scan)
-@EntityScan(scan)
-@EnableJpaRepositories(scan)
-@ProcessApplication(app)
+@ComponentScan(group)
+@EntityScan(group)
+@EnableJpaRepositories(group)
+@ProcessApplication(name)
 class Greetings: SpringBootProcessApplication()
 
-const val app = "greetings";
-const val scan = "com.plexiti";
+const val name = "greetings";
+const val group = "com.plexiti";
 
 fun main(args: Array<String>) {
     SpringApplication.run(Greetings::class.java, *args)

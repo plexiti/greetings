@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.plexiti.commons.adapters.db.InMemoryEntityCrudRepository
 import com.plexiti.commons.application.Command
 import com.plexiti.commons.application.CommandId
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
 import org.springframework.data.repository.CrudRepository
@@ -34,6 +35,8 @@ class EventEntity(): AbstractMessageEntity<EventId>() {
         private set
 
     internal constructor(event: Event): this() {
+        this.message = event.message
+        this.origin = event.origin
         this.id = EventId(event.id)
         this.type = event.type
         this.definition = event.definition
@@ -47,17 +50,22 @@ class EventEntity(): AbstractMessageEntity<EventId>() {
 
 abstract class Event(aggregate: com.plexiti.commons.domain.Aggregate<*>): Message {
 
+    override var message = MessageType.Event
     override val id = UUID.randomUUID().toString()
+    override var origin: String? = null
     override val type = this::class.java.simpleName
     val raisedAt = Date()
     val aggregate = Aggregate(aggregate)
 
     companion object {
 
+        var context: String? = null
+
         var repository: CrudRepository<EventEntity, EventId> = InMemoryEntityCrudRepository<EventEntity, EventId>()
             internal set
 
         fun <E: Event> raise(event: E): E {
+            event.origin = context
             repository.save(EventEntity(event))
             return event
         }
@@ -95,7 +103,11 @@ interface EventEntityRepository: CrudRepository<EventEntity, EventId>
 @Component
 private class EventRaiserInitialiser: ApplicationContextAware {
 
+    @Value("\${com.plexiti.app.context}")
+    private lateinit var context: String
+
     override fun setApplicationContext(applicationContext: ApplicationContext?) {
+        Event.context = context
         Event.repository = applicationContext!!.getBean(EventEntityRepository::class.java)
     }
 

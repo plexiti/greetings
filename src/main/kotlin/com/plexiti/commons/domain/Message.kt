@@ -11,6 +11,15 @@ import javax.persistence.*
 @MappedSuperclass
 abstract class AbstractMessageEntity<ID: MessageId>: AbstractEntity<ID>(), Message {
 
+    @Enumerated(EnumType.STRING)
+    @Column(name="MESSAGE", columnDefinition = "varchar(16)")
+    override lateinit var message: MessageType
+        protected set
+
+    @Column(name="ORIGIN", columnDefinition = "varchar(64)")
+    override var origin: String? = null
+        protected set
+
     @Column(name="TYPE", columnDefinition = "varchar(128)")
     override lateinit var type: String
         protected set
@@ -45,8 +54,14 @@ open class MessageId(value: String): AggregateId(value)
 
 interface Message {
 
+    val message: MessageType
     val id: Serializable
+    val origin: String?
     val type: String
     val definition: Int
 
+}
+
+enum class MessageType {
+    Event, Command, Document
 }
