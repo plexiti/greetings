@@ -1,3 +1,6 @@
 include 'app'
+include 'cam'
+
 rootProject.name='greetings-root'
 project(":app").name='greetings'
+project(':cam').name = 'greetings-camunda'
