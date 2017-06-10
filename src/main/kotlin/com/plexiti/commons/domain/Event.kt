@@ -1,6 +1,7 @@
 package com.plexiti.commons.domain
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.plexiti.commons.adapters.db.InMemoryEntityCrudRepository
 import com.plexiti.commons.application.Command
 import com.plexiti.commons.application.CommandId
 import org.apache.camel.component.jpa.Consumed
@@ -11,7 +12,6 @@ import org.springframework.stereotype.Component
 import org.springframework.stereotype.Repository
 import java.util.*
 import javax.persistence.*
-import kotlin.collections.HashMap
 
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
@@ -83,16 +83,11 @@ abstract class Event(aggregate: com.plexiti.commons.domain.Aggregate<*>) {
 
     companion object {
 
-        internal var repository: EventEntityRepository? = null
-        private val store = HashMap<String, Event>()
+        var repository: CrudRepository<EventEntity, EventId> = InMemoryEntityCrudRepository<EventEntity, EventId>()
+            internal set
 
         fun raise(event: Event) {
-            if (store.containsKey(event.id))
-                throw IllegalStateException()
-            if (repository != null)
-                repository!!.save(EventEntity(event))
-            else
-                store.put(event.id, event)
+            repository.save(EventEntity(event))
         }
 
     }

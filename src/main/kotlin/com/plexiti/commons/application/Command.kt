@@ -1,5 +1,6 @@
 package com.plexiti.commons.application
 
+import com.plexiti.commons.adapters.db.InMemoryEntityCrudRepository
 import com.plexiti.commons.domain.AbstractMessageEntity
 import com.plexiti.commons.domain.MessageId
 import org.springframework.context.ApplicationContext
@@ -27,7 +28,7 @@ open class Command: AbstractMessageEntity<CommandId>() {
 
     companion object {
 
-        lateinit var commandRepository: CommandRepository
+        var commandRepository: CrudRepository<Command, CommandId> = InMemoryEntityCrudRepository<Command, CommandId>()
         private var command: ThreadLocal<Command?> = ThreadLocal()
 
         fun <D: Command> issue(command: D): D {
