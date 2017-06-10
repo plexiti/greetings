@@ -42,6 +42,23 @@ services:
       - POSTGRES_DB=greetings
     volumes:
       - db:/var/lib/postgresql/data
+  cam:
+    image: camunda/camunda-bpm-platform:latest
+    ports:
+      - "8080:8080"
+    networks:
+      - db
+      - mq
+    depends_on:
+      - app
+      - db
+      - mq
+    environment:
+      - DB_DRIVER=postgresql
+      - DB_URL=jdbc:postgresql://db/greetings
+      - DB_USERNAME=greetings
+      - DB_PASSWORD=greetings
+      - SKIP_DB_CONFIG=true
 networks:
   lb:
     driver: bridge
