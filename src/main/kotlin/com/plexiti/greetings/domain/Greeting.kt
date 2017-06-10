@@ -20,6 +20,7 @@ class Greeting: Aggregate<GreetingId>() {
     lateinit var name: String private set
 
     class GreetingCreated(greeting: Greeting): Event(greeting) {
+        override val definition = 0
         val name = greeting.name
     }
 

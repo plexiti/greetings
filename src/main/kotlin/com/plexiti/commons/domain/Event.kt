@@ -38,6 +38,9 @@ class EventEntity(): AbstractMessageEntity<EventId>() {
     lateinit var type: String
         private set
 
+    @Column(name="DEFINITION")
+    var definition: Int = 0
+
     @Lob
     @Column(name="JSON", columnDefinition = "text")
     lateinit var json: String
@@ -49,11 +52,12 @@ class EventEntity(): AbstractMessageEntity<EventId>() {
         private set
 
     internal constructor(event: Event): this() {
-        this.id = event.id
+        this.id = EventId(event.id)
         this.type = event.type
-        this.aggregate = event.aggregate
-        this.commandId = event.commandId
+        this.definition = event.definition
         this.raisedAt = event.raisedAt
+        this.aggregate = event.aggregate
+        this.commandId = Command.active()?.id
         this.json = ObjectMapper().writeValueAsString(event)
     }
 
@@ -71,16 +75,16 @@ class EventEntity(): AbstractMessageEntity<EventId>() {
 
 abstract class Event(aggregate: com.plexiti.commons.domain.Aggregate<*>) {
 
-    val id = EventId(UUID.randomUUID().toString())
+    val id = UUID.randomUUID().toString()
     val type = this::class.java.simpleName
+    open abstract val definition: Int
     val raisedAt = Date()
-    val commandId = Command.active()?.id
     val aggregate = Aggregate(aggregate)
 
     companion object {
 
         internal var repository: EventEntityRepository? = null
-        private val store = HashMap<EventId, Event>()
+        private val store = HashMap<String, Event>()
 
         fun raise(event: Event) {
             if (store.containsKey(event.id))
