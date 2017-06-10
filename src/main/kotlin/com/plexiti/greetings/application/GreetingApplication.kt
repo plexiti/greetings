@@ -27,6 +27,7 @@ class GreetingApplication {
     class GreetCommand (): Command() {
         lateinit var caller: String
         override val definition = 0
+        override val target = "abc"
         constructor(caller: String): this() {
             this.caller = caller
         }

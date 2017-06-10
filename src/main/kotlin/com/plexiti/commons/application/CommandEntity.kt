@@ -28,6 +28,10 @@ open class CommandEntity() : AbstractMessageEntity<CommandId>() {
     var issuedBy: String? = null
         private set
 
+    @Column(name="TARGET", columnDefinition = "varchar(64)")
+    lateinit var target: String
+        protected set
+
     internal constructor(command: Command): this() {
         this.message = command.message
         this.origin = command.origin
@@ -36,6 +40,7 @@ open class CommandEntity() : AbstractMessageEntity<CommandId>() {
         this.definition = command.definition
         this.issuedAt = command.issuedAt
         this.issuedBy = command.issuedBy
+        this.target = command.target
         this.json = ObjectMapper().writeValueAsString(command)
     }
 
@@ -49,6 +54,7 @@ abstract class Command(issuedBy: String? = null): Message {
     override val type = this::class.java.simpleName
     val issuedAt = Date()
     var issuedBy = issuedBy
+    open val target = context
 
     companion object {
 
