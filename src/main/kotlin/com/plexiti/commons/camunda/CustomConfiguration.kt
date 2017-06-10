@@ -1,5 +1,6 @@
 package com.plexiti.commons.camunda
 
+import org.camunda.bpm.engine.ProcessEngineConfiguration
 import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl
 import org.camunda.bpm.spring.boot.starter.configuration.Ordering
 import org.camunda.bpm.spring.boot.starter.configuration.impl.AbstractCamundaConfiguration
@@ -18,7 +19,9 @@ class CustomConfiguration : AbstractCamundaConfiguration() {
     lateinit var databaseSchemaUpdate: String
 
     override fun preInit(processEngineConfiguration: ProcessEngineConfigurationImpl) {
-        processEngineConfiguration.databaseSchemaUpdate = databaseSchemaUpdate
+        processEngineConfiguration.setDatabaseSchemaUpdate(databaseSchemaUpdate)
+        processEngineConfiguration.setJobExecutorActivate(false)
+        processEngineConfiguration.setHistory(ProcessEngineConfiguration.HISTORY_FULL)
     }
 
 }

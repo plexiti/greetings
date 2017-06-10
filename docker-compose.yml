@@ -17,6 +17,7 @@ services:
     depends_on:
       - db
       - mq
+      - cam
     networks:
       - lb
       - mq
@@ -50,15 +51,16 @@ services:
       - db
       - mq
     depends_on:
-      - app
       - db
       - mq
     environment:
-      - DB_DRIVER=postgresql
+      - DB_DRIVER=org.postgresql.Driver
       - DB_URL=jdbc:postgresql://db/greetings
       - DB_USERNAME=greetings
       - DB_PASSWORD=greetings
-      - SKIP_DB_CONFIG=true
+      - TZ=Europe/Berlin
+    volumes:
+      - ./.camunda:/camunda/webapps/camunda-invoice
 networks:
   lb:
     driver: bridge
