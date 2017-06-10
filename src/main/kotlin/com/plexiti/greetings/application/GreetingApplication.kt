@@ -1,7 +1,6 @@
 package com.plexiti.greetings.application;
 
 import com.plexiti.commons.application.Command
-import com.plexiti.commons.application.CommandId
 import com.plexiti.greetings.domain.Greeting
 import com.plexiti.greetings.domain.GreetingRepository
 import org.apache.camel.Handler
@@ -25,11 +24,11 @@ class GreetingApplication {
     lateinit var greetingRepository: GreetingRepository
 
     @Entity @DiscriminatorValue("GreetCommand")
-    class GreetCommand (id: CommandId? = null, @Transient var caller: String? = null): Command(id)
+    class GreetCommand (@Transient var caller: String = ""): Command()
 
     @Handler
     fun greetCaller(greet: GreetCommand): Greeting {
-        val greeting = Greeting(name = String.format("Hello World, %s", greet.caller))
+        val greeting = Greeting.create(String.format("Hello World, %s", greet.caller))
         greetingRepository.save(greeting)
         logger.info("Greeting #${greeting.id}: ${greeting.name}")
         return greeting

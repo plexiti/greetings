@@ -1,6 +1,6 @@
 package com.plexiti.greetings.adapters.rest
 
-import com.plexiti.commons.application.CommandId
+import com.plexiti.commons.application.Command
 import com.plexiti.greetings.application.GreetingApplication.GreetCommand
 import com.plexiti.greetings.application.Route
 import com.plexiti.greetings.domain.Greeting
@@ -32,7 +32,7 @@ class GreetingController {
         if ("0xCAFEBABE".equals(caller, ignoreCase = true)) {
             return ResponseEntity<Any>(HttpStatus.I_AM_A_TEAPOT)
         }
-        val command = GreetCommand(id = CommandId(), caller = caller)
+        val command = Command.issue(GreetCommand(caller))
         val greeting = router.requestBody(Route.Sync.GreetingApplication, command) as Greeting
         return ResponseEntity(GreetingResource(greeting), HttpStatus.OK)
     }

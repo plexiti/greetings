@@ -2,8 +2,8 @@ package com.plexiti.commons.domain
 
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.plexiti.commons.application.Command
 import com.plexiti.commons.application.CommandId
-import com.plexiti.commons.application.Commands
 import org.apache.camel.component.jpa.Consumed
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
@@ -20,7 +20,7 @@ import kotlin.collections.HashMap
 @Entity
 @Table(name="EVENTS")
 @NamedQuery(name = "EventPublisher", query = "select e from EventEntity e where e.publishedAt is null")
-class EventEntity(): AbstractMessageEntity<EventId>(EventId()) {
+class EventEntity(): AbstractMessageEntity<EventId>() {
 
     @Embedded
     lateinit var aggregate: Aggregate
@@ -52,7 +52,7 @@ class EventEntity(): AbstractMessageEntity<EventId>(EventId()) {
     internal constructor(event: Event): this() {
         this.id = event.id
         this.aggregate = Aggregate(event.aggregate)
-        this.commandId = Commands.active()?.id
+        this.commandId = Command.active()?.id
         this.raisedAt = Date()
         this.type = event::class.java.simpleName
         this.properties = ObjectMapper().writeValueAsString(event)
@@ -96,12 +96,28 @@ abstract class Event(aggregate: Aggregate<*>) {
     internal val aggregate = aggregate
         @JsonIgnore get
 
-    internal val id = EventId()
+    internal val id = EventId(UUID.randomUUID().toString())
         @JsonIgnore get
+
+    companion object {
+
+        internal var repository: EventEntityRepository? = null
+        private val store = HashMap<EventId, Event>()
+
+        fun raise(event: Event) {
+            if (store.containsKey(event.id))
+                throw IllegalStateException()
+            if (repository != null)
+                repository!!.save(EventEntity(event))
+            else
+                store.put(event.id, event)
+        }
+
+    }
 
 }
 
-class EventId(value: String? = null): MessageId(value)
+class EventId(value: String = ""): MessageId(value)
 
 @Repository
 interface EventEntityRepository: CrudRepository<EventEntity, EventId>
@@ -110,23 +126,7 @@ interface EventEntityRepository: CrudRepository<EventEntity, EventId>
 private class EventRaiserInitialiser: ApplicationContextAware {
 
     override fun setApplicationContext(applicationContext: ApplicationContext?) {
-        Events.repository = applicationContext!!.getBean(EventEntityRepository::class.java)
-    }
-
-}
-
-internal object Events {
-
-    internal var repository: EventEntityRepository? = null
-    private val store = HashMap<EventId, Event>()
-
-    fun save(event: Event) {
-        if (store.containsKey(event.id))
-            throw IllegalStateException()
-        if (repository != null)
-            repository!!.save(EventEntity(event))
-        else
-            store.put(event.id, event)
+        Event.repository = applicationContext!!.getBean(EventEntityRepository::class.java)
     }
 
 }

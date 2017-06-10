@@ -1,6 +1,6 @@
 package com.plexiti.greetings.adapters.file
 
-import com.plexiti.commons.application.CommandId
+import com.plexiti.commons.application.Command
 import com.plexiti.greetings.application.GreetingApplication.*
 import com.plexiti.greetings.application.Route
 import org.apache.camel.Handler
@@ -27,7 +27,7 @@ class GreetingReader : RouteBuilder() {
                 from("${file.toURI()}?${options}")
                     .bean(object {
                         @Handler fun handle(caller: String): GreetCommand {
-                            return GreetCommand(id = CommandId(), caller = caller)
+                            return Command.issue(GreetCommand(caller))
                         }
                     })
                 .to(Route.Sync.GreetingApplication)

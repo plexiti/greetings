@@ -16,50 +16,45 @@ import javax.persistence.*
 @Entity @Inheritance
 @Table(name="COMMANDS")
 @DiscriminatorColumn(name="type", columnDefinition = "varchar(128)", discriminatorType = DiscriminatorType.STRING)
-open class Command(id: CommandId? = null): AbstractMessageEntity<CommandId>(id) {
+open class Command: AbstractMessageEntity<CommandId>() {
 
     @Column(name = "ISSUED_AT")
     @Temporal(TemporalType.TIMESTAMP)
-    lateinit var issuedAt: Date; private set
+    val issuedAt = Date()
 
     @Column(name = "ISSUED_BY")
     lateinit var issuedBy: String; private set
 
-    init {
-        if (id != null) {
-            issuedAt = Date()
-            Commands.issue(this)
+    companion object {
+
+        lateinit var commandRepository: CommandRepository
+        private var command: ThreadLocal<Command?> = ThreadLocal()
+
+        fun <D: Command> issue(command: D): D {
+            command.id = CommandId(UUID.randomUUID().toString())
+            commandRepository.save(command)
+            this.command.set(command)
+            return command
         }
+
+        fun active(): Command? {
+            return this.command.get()
+        }
+
     }
 
 }
 
-class CommandId(value: String? = null): MessageId(value)
+class CommandId(value: String = ""): MessageId(value)
 
 @Repository
 interface CommandRepository: CrudRepository<Command, CommandId>
-
-object Commands {
-
-    lateinit var commandRepository: CommandRepository
-    private var command: ThreadLocal<Command?> = ThreadLocal()
-
-    fun issue(command: Command) {
-        commandRepository.save(command)
-        this.command.set(command)
-    }
-
-    fun active(): Command? {
-        return this.command.get()
-    }
-
-}
 
 @Component
 private class CommandIssuerInitialiser : ApplicationContextAware {
 
     override fun setApplicationContext(applicationContext: ApplicationContext?) {
-        Commands.commandRepository = applicationContext!!.getBean(CommandRepository::class.java)
+        Command.commandRepository = applicationContext!!.getBean(CommandRepository::class.java)
     }
 
 }

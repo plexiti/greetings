@@ -9,7 +9,7 @@ import javax.persistence.*
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
 @MappedSuperclass
-abstract class Aggregate<ID: AggregateId>(id: ID? = null): AbstractEntity<ID>(id) {
+abstract class Aggregate<ID: AggregateId>: AbstractEntity<ID>() {
 
     @Version val version: Int? = null;
 
@@ -17,17 +17,15 @@ abstract class Aggregate<ID: AggregateId>(id: ID? = null): AbstractEntity<ID>(id
         return version == null
     }
 
-    fun raise(event: Event) {
-        Events.save(event)
-    }
-
 }
 
 @MappedSuperclass
-abstract class AbstractEntity<ID: Serializable>(@EmbeddedId var id: ID? = null) {
+abstract class AbstractEntity<ID: Serializable> {
+
+    @EmbeddedId lateinit var id: ID
 
     override fun hashCode(): Int {
-        return id?.hashCode() ?: 0
+        return id.hashCode() ?: 0
     }
 
     override fun equals(other: Any?): Boolean {
@@ -41,10 +39,10 @@ abstract class AbstractEntity<ID: Serializable>(@EmbeddedId var id: ID? = null) 
 
 @Embeddable
 @MappedSuperclass
-abstract class AggregateId(value: String? = null): Serializable {
+abstract class AggregateId(value: String): Serializable {
 
     @Column(name = "ID", length = 36)
-    var value = value ?: UUID.randomUUID().toString()
+    var value = value
 
     override fun toString(): String {
         return value
