@@ -17,7 +17,9 @@ import org.springframework.context.annotation.Profile
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
-@Component @Configuration @Profile("prod")
+@Component
+@Configuration
+@Profile("prod")
 class EventPublisher : RouteBuilder() {
 
     private val logger = LoggerFactory.getLogger(this::class.java)
@@ -43,7 +45,7 @@ class EventPublisher : RouteBuilder() {
 
     @Handler
     fun publish(event: EventEntity) {
-        rabbitTemplate.convertAndSend(topic, event.json);
+        rabbitTemplate.convertAndSend(topic, "greetings", event.json);
         logger.info("Published ${event.json}")
     }
 
