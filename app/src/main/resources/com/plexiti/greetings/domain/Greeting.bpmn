@@ -2,12 +2,12 @@
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.8.0">
   <bpmn:process id="Greeting" isExecutable="true">
     <bpmn:sequenceFlow id="SequenceFlow_0b1r62p" sourceRef="StartEvent_1" targetRef="Task_0ax56ye" />
-    <bpmn:serviceTask id="Task_0ax56ye" name="Greet caller" camunda:type="external" camunda:topic="GreetCallerCommand">
+    <bpmn:serviceTask id="Task_0ax56ye" name="Greet caller" camunda:type="external" camunda:topic="GreetCaller">
       <bpmn:incoming>SequenceFlow_0b1r62p</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_07lg1ak</bpmn:outgoing>
     </bpmn:serviceTask>
     <bpmn:sequenceFlow id="SequenceFlow_07lg1ak" sourceRef="Task_0ax56ye" targetRef="ExclusiveGateway_1287gp6" />
-    <bpmn:sendTask id="Task_1ns2cbp" name="Inform about new caller" camunda:type="external" camunda:topic="InformAboutNewCallerCommand">
+    <bpmn:sendTask id="Task_1ns2cbp" name="Inform about new caller" camunda:type="external" camunda:topic="InformAboutNewCaller">
       <bpmn:incoming>SequenceFlow_0t2sazc</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_0i64uki</bpmn:outgoing>
     </bpmn:sendTask>
@@ -23,7 +23,7 @@
     <bpmn:sequenceFlow id="SequenceFlow_1u7bc6h" name="No" sourceRef="ExclusiveGateway_1287gp6" targetRef="EndEvent_08nldf6">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${not newCaller}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:startEvent id="StartEvent_1" name="Greeting requested">
+    <bpmn:startEvent id="StartEvent_1" name="Greeting requested" camunda:initiator="greetings">
       <bpmn:outgoing>SequenceFlow_0b1r62p</bpmn:outgoing>
       <bpmn:messageEventDefinition messageRef="Message_1fe34o5" />
     </bpmn:startEvent>
@@ -36,9 +36,9 @@
       <bpmn:messageEventDefinition messageRef="Message_1qm84bp" />
     </bpmn:endEvent>
   </bpmn:process>
-  <bpmn:message id="Message_1fe34o5" name="GreetingRequestedEvent" />
-  <bpmn:message id="Message_0wvxflj" name="KnownCallerGreetedEvent" />
-  <bpmn:message id="Message_1qm84bp" name="KnownCallerGreetedEvent" />
+  <bpmn:message id="Message_1fe34o5" name="GreetingCreated" />
+  <bpmn:message id="Message_0wvxflj" name="KnownCallerGreeted" />
+  <bpmn:message id="Message_1qm84bp" name="NewCallerGreeted" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Greeting">
       <bpmndi:BPMNEdge id="SequenceFlow_0b1r62p_di" bpmnElement="SequenceFlow_0b1r62p">
