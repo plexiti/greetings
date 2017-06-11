@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Profile
 import org.springframework.amqp.core.BindingBuilder
 import org.springframework.amqp.core.Queue
 import org.springframework.amqp.rabbit.annotation.RabbitListener
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.messaging.handler.annotation.Payload
 
 
@@ -23,14 +24,17 @@ class EventHandler {
 
     private val logger = LoggerFactory.getLogger(this::class.java)
 
-    @RabbitListener(queues = arrayOf("greetings-queue"))
+    @Value("\${com.plexiti.app.context}")
+    private lateinit var context: String;
+
+    @RabbitListener(queues = arrayOf("\${com.plexiti.app.context}-queue"))
     fun handle(@Payload message: String) {
         logger.info("Received $message")
     }
 
     @Bean
     fun binding(queue: Queue, exchange: TopicExchange): Binding {
-        return BindingBuilder.bind(queue).to(exchange).with("greetings")
+        return BindingBuilder.bind(queue).to(exchange).with(context)
     }
 
 }
