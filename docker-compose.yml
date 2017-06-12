@@ -23,7 +23,7 @@ services:
       - mq
       - db
     volumes:
-      - ./.greetings/:/mnt/.greetings
+      - ./app/.greetings/:/mnt/.greetings
   mq:
     image: rabbitmq:management
     ports:
