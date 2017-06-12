@@ -7,7 +7,7 @@ import java.io.Serializable
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
-class InMemoryEntityCrudRepository<T: AbstractEntity<ID>, ID: Serializable>: CrudRepository<T, ID> {
+open class InMemoryEntityCrudRepository<T: AbstractEntity<ID>, ID: Serializable>: CrudRepository<T, ID> {
 
     val map = HashMap<ID, T>()
 

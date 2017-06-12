@@ -4,6 +4,7 @@ CREATE TABLE grt_commands (
     target VARCHAR(64) NOT NULL,
     id VARCHAR(36) NOT NULL PRIMARY KEY,
     type VARCHAR(128),
+    internal_type VARCHAR(256) NOT NULL,
     definition INTEGER NOT NULL,
     issued_at TIMESTAMP NOT NULL,
     issued_by VARCHAR(256),

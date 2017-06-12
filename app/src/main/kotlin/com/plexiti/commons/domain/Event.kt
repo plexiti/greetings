@@ -1,5 +1,6 @@
 package com.plexiti.commons.domain
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.plexiti.commons.adapters.db.InMemoryEntityCrudRepository
 import com.plexiti.commons.application.Command
@@ -12,17 +13,16 @@ import org.springframework.stereotype.Component
 import org.springframework.stereotype.Repository
 import java.util.*
 import javax.persistence.*
-
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
 @Entity
 @Table(name="EVENTS")
 @NamedQuery(name = "EventPublisher", query = "select e from EventEntity e where e.publishedAt is null")
-class EventEntity(): AbstractMessageEntity<EventId>() {
+class EventEntity(): AbstractMessageEntity<Event, EventId>() {
 
     @Embedded
-    lateinit var aggregate: Event.Aggregate
+    lateinit var aggregate: Event.EventAggregate
         private set
 
     @Embedded @AttributeOverride(name="value", column=Column(name="COMMAND_ID"))
@@ -39,29 +39,45 @@ class EventEntity(): AbstractMessageEntity<EventId>() {
         this.origin = event.origin
         this.id = EventId(event.id)
         this.type = event.type
+        this.internalType = event.internalType
         this.definition = event.definition
         this.raisedAt = event.raisedAt
-        this.aggregate = event.aggregate
+        this.aggregate = event.aggregate!!
         this.commandId = if (Command.active() != null) CommandId(Command.active()!!.id) else null
         this.json = ObjectMapper().writeValueAsString(event)
     }
 
+    fun toEvent(): Event {
+        val event = ObjectMapper().readValue(json, internalType)
+        event.internalType = internalType
+        event.aggregate!!.internalType = aggregate.internalType
+        return event
+    }
+
 }
 
-abstract class Event(aggregate: com.plexiti.commons.domain.Aggregate<*>): Message {
+abstract class Event(): Message {
 
     override var message = MessageType.Event
-    override val id = UUID.randomUUID().toString()
+    override lateinit var id: String; protected set
     override var origin: String? = null
-    override val type = this::class.java.simpleName
-    val raisedAt = Date()
-    val aggregate = Aggregate(aggregate)
+    override val type = this.javaClass.simpleName
+    @JsonIgnore internal var internalType = this.javaClass
+        @JsonIgnore get
+    lateinit var raisedAt: Date
+    var aggregate: EventAggregate? = null
+
+    constructor(aggregate: Aggregate<*>?): this() {
+        this.aggregate = if (aggregate != null) EventAggregate(aggregate) else null
+        this.id = UUID.randomUUID().toString()
+        this.raisedAt = Date()
+    }
 
     companion object {
 
-        var context: String? = null
+        internal var context: String? = null
 
-        var repository: CrudRepository<EventEntity, EventId> = InMemoryEntityCrudRepository<EventEntity, EventId>()
+        internal var repository: EventEntityRepository = InMemoryEventRepository()
             internal set
 
         fun <E: Event> raise(event: E): E {
@@ -70,24 +86,39 @@ abstract class Event(aggregate: com.plexiti.commons.domain.Aggregate<*>): Messag
             return event
         }
 
+        fun findByAggregate(id: AggregateId): List<Event> {
+            return repository.findByAggregate_Id(id.value).map { it.toEvent() }
+        }
+
+        fun findByAggregate(aggregate: Aggregate<*>): List<Event> {
+            return findByAggregate(aggregate.id)
+        }
+
     }
 
     @Embeddable
-    class Aggregate() {
+    class EventAggregate() {
 
         @Column(name = "AGG_ID", columnDefinition = "varchar(36)")
         lateinit var id: String
             private set
+
         @Column(name = "AGG_TYPE", columnDefinition = "varchar(128)")
         lateinit var type: String
             private set
+
+        @Column(name = "AGG_INTERNAL_TYPE", columnDefinition = "varchar(256)")
+        @JsonIgnore internal lateinit var internalType: Class<Aggregate<*>>
+            @JsonIgnore get
+
         @Column(name = "AGG_VERSION")
         var version: Int = 0
             private set
 
-        constructor(aggregate: com.plexiti.commons.domain.Aggregate<*>): this() {
+        constructor(aggregate: Aggregate<*>): this() {
             id = aggregate.id.value
             type = aggregate::class.simpleName!!
+            internalType = aggregate.javaClass
             version = if (aggregate.isNew()) 0 else aggregate.version!! + 1
         }
 
@@ -98,7 +129,19 @@ abstract class Event(aggregate: com.plexiti.commons.domain.Aggregate<*>): Messag
 class EventId(value: String = ""): MessageId(value)
 
 @Repository
-interface EventEntityRepository: CrudRepository<EventEntity, EventId>
+interface EventEntityRepository: CrudRepository<EventEntity, EventId> {
+
+    fun findByAggregate_Id(id: String): List<EventEntity>
+
+}
+
+class InMemoryEventRepository: InMemoryEntityCrudRepository<EventEntity, EventId>(), EventEntityRepository {
+
+    override fun findByAggregate_Id(id: String): List<EventEntity> {
+        return findAll().filter { id == it.aggregate.id }
+    }
+
+}
 
 @Component
 private class EventRaiserInitialiser: ApplicationContextAware {

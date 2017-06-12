@@ -7,13 +7,13 @@ import org.junit.Test
 class GreetingTest {
 
 	@Test
-	fun testGreeting() {
-        val greeting = Greeting.create("Martin");
-        val uuid = greeting.id.value
-        assertThat(uuid).isNotNull()
-        assertThat(uuid.length).isEqualTo(36)
-        assertThat(Event.repository.count() == 1L)
-        assertThat(Event.repository.findAll().iterator().next().type == Greeting.GreetingCreated::class.simpleName)
+	fun testGreetingCreated() {
+
+        val greetingAggregate = Greeting.create("Martin");
+
+        val greetingCreatedEvent = Event.findByAggregate(greetingAggregate)[0]
+        assertThat(greetingCreatedEvent).returns("GreetingCreated", { it.type })
+
 	}
 
 }

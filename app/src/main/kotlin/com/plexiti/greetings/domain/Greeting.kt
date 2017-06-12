@@ -19,9 +19,9 @@ class Greeting: Aggregate<GreetingId>() {
     @Column(name="NAME")
     lateinit var greeting: String private set
 
-    class GreetingCreated(greeting: Greeting): Event(greeting) {
+    class GreetingCreated(greeting: Greeting? = null): Event(greeting) {
         override val definition = 0
-        val greeting = greeting.greeting
+        val greeting = greeting?.greeting
     }
 
     companion object {

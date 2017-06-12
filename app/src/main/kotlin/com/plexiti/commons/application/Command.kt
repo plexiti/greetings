@@ -17,7 +17,7 @@ import javax.persistence.*
  */
 @Entity
 @Table(name="COMMANDS")
-open class CommandEntity() : AbstractMessageEntity<CommandId>() {
+open class CommandEntity() : AbstractMessageEntity<Command, CommandId>() {
 
     @Column(name = "ISSUED_AT")
     @Temporal(TemporalType.TIMESTAMP)
@@ -37,6 +37,7 @@ open class CommandEntity() : AbstractMessageEntity<CommandId>() {
         this.origin = command.origin
         this.id = CommandId(command.id)
         this.type = command.type
+        this.internalType = command.javaClass
         this.definition = command.definition
         this.issuedAt = command.issuedAt
         this.issuedBy = command.issuedBy
@@ -60,7 +61,7 @@ abstract class Command(issuedBy: String? = null): Message {
 
         lateinit var context: String
 
-        var repository: CrudRepository<CommandEntity, CommandId> = InMemoryEntityCrudRepository<CommandEntity, CommandId>()
+        var repository: CrudRepository<CommandEntity, CommandId> = InMemoryCommandRepository()
             internal set
         private var active: ThreadLocal<Command?> = ThreadLocal()
 
@@ -83,6 +84,8 @@ class CommandId(value: String = ""): MessageId(value)
 
 @Repository
 interface CommandRepository: CrudRepository<CommandEntity, CommandId>
+
+class InMemoryCommandRepository: InMemoryEntityCrudRepository<CommandEntity, CommandId>(), CommandRepository
 
 @Component
 private class CommandIssuerInitialiser : ApplicationContextAware {

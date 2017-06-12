@@ -9,7 +9,7 @@ import javax.persistence.*
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
 @MappedSuperclass
-abstract class AbstractMessageEntity<ID: MessageId>: AbstractEntity<ID>(), Message {
+abstract class AbstractMessageEntity<TYPE: Message, ID: MessageId>: AbstractEntity<ID>(), Message {
 
     @Enumerated(EnumType.STRING)
     @Column(name="MESSAGE", columnDefinition = "varchar(16)")
@@ -23,6 +23,9 @@ abstract class AbstractMessageEntity<ID: MessageId>: AbstractEntity<ID>(), Messa
     @Column(name="TYPE", columnDefinition = "varchar(128)")
     override lateinit var type: String
         protected set
+
+    @Column(name="INTERNAL_TYPE", columnDefinition = "varchar(256)")
+    internal lateinit var internalType: Class<TYPE>
 
     @Column(name="DEFINITION")
     override var definition: Int = 0
