@@ -1,6 +1,7 @@
 package com.plexiti.commons.domain
 
 import com.fasterxml.jackson.annotation.JsonIgnore
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.plexiti.commons.adapters.db.InMemoryEntityCrudRepository
 import com.plexiti.commons.application.Command
@@ -39,33 +40,41 @@ class EventEntity(): AbstractMessageEntity<Event, EventId>() {
         this.origin = event.origin
         this.id = EventId(event.id)
         this.type = event.type
-        this.internalType = event.internalType
         this.definition = event.definition
         this.raisedAt = event.raisedAt
         this.aggregate = event.aggregate!!
         this.commandId = if (Command.active() != null) CommandId(Command.active()!!.id) else null
-        this.json = ObjectMapper().writeValueAsString(event)
+        this.json = event.json
     }
 
     fun toEvent(): Event {
-        val event = ObjectMapper().readValue(json, internalType)
-        event.internalType = internalType
-        event.aggregate!!.internalType = aggregate.internalType
-        return event
+        return Event.toEvent(json)
+    }
+
+    fun <E: Event> toEvent(type: Class<E>): E {
+        return Event.toEvent(json, type)
     }
 
 }
 
-abstract class Event(): Message {
+@JsonIgnoreProperties(ignoreUnknown = true)
+open class Event(): Message {
 
     override var message = MessageType.Event
     override lateinit var id: String; protected set
     override var origin: String? = null
     override val type = this.javaClass.simpleName
-    @JsonIgnore internal var internalType = this.javaClass
-        @JsonIgnore get
+    override val definition = 0
     lateinit var raisedAt: Date
     var aggregate: EventAggregate? = null
+
+    @JsonIgnore var json: String = ""
+        @JsonIgnore get() {
+            if (field == "")
+                field = toJson(this)
+            return field
+        }
+        @JsonIgnore internal set
 
     constructor(aggregate: Aggregate<*>?): this() {
         this.aggregate = if (aggregate != null) EventAggregate(aggregate) else null
@@ -86,8 +95,26 @@ abstract class Event(): Message {
             return event
         }
 
+        internal fun toEvent(json: String): Event {
+            val event = toEvent(json, Event::class.java)
+            event.json = json
+            return event
+        }
+
+        internal fun <E: Event> toEvent(json: String, type: Class<E>): E {
+            val event = ObjectMapper().readValue(json, type)
+            event.json = json
+            return event
+        }
+
+        internal fun toJson(event: Event): String {
+            return ObjectMapper().writeValueAsString(event)
+        }
+
         fun findByAggregate(id: AggregateId): List<Event> {
-            return repository.findByAggregate_Id(id.value).map { it.toEvent() }
+            return repository.findByAggregate_Id(id.value).map {
+                it.toEvent()
+            }
         }
 
         fun findByAggregate(aggregate: Aggregate<*>): List<Event> {
@@ -107,10 +134,6 @@ abstract class Event(): Message {
         lateinit var type: String
             private set
 
-        @Column(name = "AGG_INTERNAL_TYPE", columnDefinition = "varchar(256)")
-        @JsonIgnore internal lateinit var internalType: Class<Aggregate<*>>
-            @JsonIgnore get
-
         @Column(name = "AGG_VERSION")
         var version: Int = 0
             private set
@@ -118,7 +141,6 @@ abstract class Event(): Message {
         constructor(aggregate: Aggregate<*>): this() {
             id = aggregate.id.value
             type = aggregate::class.simpleName!!
-            internalType = aggregate.javaClass
             version = if (aggregate.isNew()) 0 else aggregate.version!! + 1
         }
 

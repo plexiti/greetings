@@ -24,9 +24,6 @@ abstract class AbstractMessageEntity<TYPE: Message, ID: MessageId>: AbstractEnti
     override lateinit var type: String
         protected set
 
-    @Column(name="INTERNAL_TYPE", columnDefinition = "varchar(256)")
-    internal lateinit var internalType: Class<TYPE>
-
     @Column(name="DEFINITION")
     override var definition: Int = 0
 

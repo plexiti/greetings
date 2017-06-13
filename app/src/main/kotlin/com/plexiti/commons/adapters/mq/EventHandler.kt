@@ -1,5 +1,6 @@
 package com.plexiti.commons.adapters.mq
 
+import com.plexiti.commons.domain.Event
 import org.slf4j.LoggerFactory
 import org.springframework.amqp.core.Binding
 import org.springframework.context.annotation.Configuration
@@ -29,7 +30,7 @@ class EventHandler {
 
     @RabbitListener(queues = arrayOf("\${com.plexiti.app.context}-queue"))
     fun handle(@Payload message: String) {
-        logger.info("Received $message")
+        logger.info("Received ${Event.toEvent(message).type}")
     }
 
     @Bean

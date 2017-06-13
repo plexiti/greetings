@@ -37,7 +37,6 @@ open class CommandEntity() : AbstractMessageEntity<Command, CommandId>() {
         this.origin = command.origin
         this.id = CommandId(command.id)
         this.type = command.type
-        this.internalType = command.javaClass
         this.definition = command.definition
         this.issuedAt = command.issuedAt
         this.issuedBy = command.issuedBy
