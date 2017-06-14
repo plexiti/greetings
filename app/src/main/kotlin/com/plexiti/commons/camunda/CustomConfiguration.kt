@@ -2,8 +2,10 @@ package com.plexiti.commons.camunda
 
 import org.camunda.bpm.engine.ProcessEngineConfiguration
 import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl
+import org.camunda.bpm.engine.impl.persistence.StrongUuidGenerator
 import org.camunda.bpm.spring.boot.starter.configuration.Ordering
 import org.camunda.bpm.spring.boot.starter.configuration.impl.AbstractCamundaConfiguration
+import org.camunda.spin.plugin.impl.SpinProcessEnginePlugin
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Component
@@ -22,6 +24,8 @@ class CustomConfiguration : AbstractCamundaConfiguration() {
         processEngineConfiguration.setDatabaseSchemaUpdate(databaseSchemaUpdate)
         processEngineConfiguration.setJobExecutorActivate(false)
         processEngineConfiguration.setHistory(ProcessEngineConfiguration.HISTORY_FULL)
+        processEngineConfiguration.processEnginePlugins = listOf(SpinProcessEnginePlugin())
+        processEngineConfiguration.idGenerator = StrongUuidGenerator()
     }
 
 }

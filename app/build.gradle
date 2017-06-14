@@ -65,6 +65,11 @@ compileTestKotlin {
 
 }
 
+dependencyManagement {
+    imports {
+        mavenBom 'org.camunda.bpm:camunda-bom:7.7.0'
+    }
+}
 
 dependencies {
 
@@ -84,6 +89,12 @@ dependencies {
     compile("com.fasterxml.jackson.module:jackson-module-kotlin:2.8.7")
 
     compile("org.camunda.bpm.extension.springboot:camunda-bpm-spring-boot-starter:2.1.2")
+
+    compile("org.camunda.bpm.extension.springboot:camunda-bpm-spring-boot-starter:2.1.2")
+
+    compile("org.camunda.spin:camunda-spin-core")
+    compile("org.camunda.spin:camunda-spin-dataformat-all")
+    compile("org.camunda.bpm:camunda-engine-plugin-spin")
 
     compile("org.springframework.boot:spring-boot-starter-amqp")
 
