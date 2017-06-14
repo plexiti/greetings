@@ -2,15 +2,7 @@
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.8.0">
   <bpmn:process id="Greeting" isExecutable="true">
     <bpmn:sequenceFlow id="SequenceFlow_0b1r62p" sourceRef="StartEvent_1" targetRef="Task_0ax56ye" />
-    <bpmn:serviceTask id="Task_0ax56ye" name="Greet caller" camunda:type="external" camunda:topic="GreetCaller">
-      <bpmn:incoming>SequenceFlow_0b1r62p</bpmn:incoming>
-      <bpmn:outgoing>SequenceFlow_07lg1ak</bpmn:outgoing>
-    </bpmn:serviceTask>
     <bpmn:sequenceFlow id="SequenceFlow_07lg1ak" sourceRef="Task_0ax56ye" targetRef="ExclusiveGateway_1287gp6" />
-    <bpmn:sendTask id="Task_1ns2cbp" name="Inform about new caller" camunda:type="external" camunda:topic="InformAboutNewCaller">
-      <bpmn:incoming>SequenceFlow_0t2sazc</bpmn:incoming>
-      <bpmn:outgoing>SequenceFlow_0i64uki</bpmn:outgoing>
-    </bpmn:sendTask>
     <bpmn:sequenceFlow id="SequenceFlow_0i64uki" sourceRef="Task_1ns2cbp" targetRef="EndEvent_1gos6bm" />
     <bpmn:exclusiveGateway id="ExclusiveGateway_1287gp6" name="New caller?">
       <bpmn:incoming>SequenceFlow_07lg1ak</bpmn:incoming>
@@ -18,23 +10,31 @@
       <bpmn:outgoing>SequenceFlow_1u7bc6h</bpmn:outgoing>
     </bpmn:exclusiveGateway>
     <bpmn:sequenceFlow id="SequenceFlow_0t2sazc" name="Yes" sourceRef="ExclusiveGateway_1287gp6" targetRef="Task_1ns2cbp">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${newCaller}</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[${GreetingCreated.prop("greeting").stringValue().contains("Martin")}]]></bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="SequenceFlow_1u7bc6h" name="No" sourceRef="ExclusiveGateway_1287gp6" targetRef="EndEvent_08nldf6">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${not newCaller}</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[${!GreetingCreated.prop("greeting").stringValue().contains("Martin")}]]></bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:startEvent id="StartEvent_1" name="Greeting requested" camunda:initiator="greetings">
+    <bpmn:startEvent id="StartEvent_1" name="Greeting created" camunda:asyncAfter="true">
       <bpmn:outgoing>SequenceFlow_0b1r62p</bpmn:outgoing>
       <bpmn:messageEventDefinition messageRef="Message_1fe34o5" />
     </bpmn:startEvent>
     <bpmn:endEvent id="EndEvent_08nldf6" name="Known caller greeted">
       <bpmn:incoming>SequenceFlow_1u7bc6h</bpmn:incoming>
-      <bpmn:messageEventDefinition messageRef="Message_0wvxflj" />
+      <bpmn:messageEventDefinition camunda:type="external" camunda:topic="CallerKnown" />
     </bpmn:endEvent>
     <bpmn:endEvent id="EndEvent_1gos6bm" name="New caller greeted for the first time">
       <bpmn:incoming>SequenceFlow_0i64uki</bpmn:incoming>
-      <bpmn:messageEventDefinition messageRef="Message_1qm84bp" />
+      <bpmn:messageEventDefinition camunda:type="external" camunda:topic="CallerNew" />
     </bpmn:endEvent>
+    <bpmn:userTask id="Task_1ns2cbp" name="Inform about new caller">
+      <bpmn:incoming>SequenceFlow_0t2sazc</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_0i64uki</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:manualTask id="Task_0ax56ye" name="Determine whether we know the caller ">
+      <bpmn:incoming>SequenceFlow_0b1r62p</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_07lg1ak</bpmn:outgoing>
+    </bpmn:manualTask>
   </bpmn:process>
   <bpmn:message id="Message_1fe34o5" name="GreetingCreated" />
   <bpmn:message id="Message_0wvxflj" name="KnownCallerGreeted" />
@@ -45,27 +45,21 @@
         <di:waypoint xsi:type="dc:Point" x="218" y="120" />
         <di:waypoint xsi:type="dc:Point" x="260" y="120" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="239" y="98.5" width="0" height="13" />
+          <dc:Bounds x="194" y="98.5" width="90" height="13" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="ServiceTask_1ppkro4_di" bpmnElement="Task_0ax56ye">
-        <dc:Bounds x="260" y="80" width="100" height="80" />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="SequenceFlow_07lg1ak_di" bpmnElement="SequenceFlow_07lg1ak">
         <di:waypoint xsi:type="dc:Point" x="360" y="120" />
         <di:waypoint xsi:type="dc:Point" x="401" y="120" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="380.5" y="98.5" width="0" height="13" />
+          <dc:Bounds x="335.5" y="98.5" width="90" height="13" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="SendTask_07eb19i_di" bpmnElement="Task_1ns2cbp">
-        <dc:Bounds x="495" y="80" width="100" height="80" />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="SequenceFlow_0i64uki_di" bpmnElement="SequenceFlow_0i64uki">
         <di:waypoint xsi:type="dc:Point" x="595" y="120" />
         <di:waypoint xsi:type="dc:Point" x="632" y="120" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="613.5" y="98.5" width="0" height="13" />
+          <dc:Bounds x="568.5" y="98.5" width="90" height="13" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="ExclusiveGateway_1287gp6_di" bpmnElement="ExclusiveGateway_1287gp6" isMarkerVisible="true">
@@ -91,20 +85,26 @@
       <bpmndi:BPMNShape id="StartEvent_1wtfxuf_di" bpmnElement="StartEvent_1">
         <dc:Bounds x="182" y="102" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="176" y="138" width="49" height="25" />
+          <dc:Bounds x="160" y="138" width="82" height="13" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="EndEvent_0npil8g_di" bpmnElement="EndEvent_08nldf6">
+      <bpmndi:BPMNShape id="EndEvent_0ljak0s_di" bpmnElement="EndEvent_08nldf6">
         <dc:Bounds x="408" y="184" width="36" height="36" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="394" y="223" width="64" height="25" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="EndEvent_1ggpj3h_di" bpmnElement="EndEvent_1gos6bm">
+      <bpmndi:BPMNShape id="EndEvent_11eajbx_di" bpmnElement="EndEvent_1gos6bm">
         <dc:Bounds x="632" y="102" width="36" height="36" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="613" y="141" width="72" height="38" />
         </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="UserTask_18fjnu0_di" bpmnElement="Task_1ns2cbp">
+        <dc:Bounds x="495" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ManualTask_1tmy4dz_di" bpmnElement="Task_0ax56ye">
+        <dc:Bounds x="260" y="80" width="100" height="80" />
       </bpmndi:BPMNShape>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
