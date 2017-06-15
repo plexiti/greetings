@@ -2,6 +2,7 @@ package com.plexiti.greetings.adapters.file
 
 import com.plexiti.commons.application.Command
 import com.plexiti.greetings.application.GreetingApplication.*
+import com.plexiti.greetings.domain.Greeting
 import org.apache.camel.Handler
 import org.apache.camel.builder.RouteBuilder
 import org.springframework.beans.factory.annotation.Value
@@ -24,12 +25,11 @@ class GreetingReader : RouteBuilder() {
             val file = File(path)
             if (file.exists()) {
                 from("${file.toURI()}?${options}")
-                    .bean(object {
-                        @Handler fun handle(caller: String): Answer {
-                            return Command.issue(Answer(caller))
-                        }
-                    })
-                .to("direct:answer")
+                .bean(object {
+                    @Handler fun handle(caller: String): Greeting {
+                        return Command.issue(Answer(caller))
+                    }
+                })
             }
         }
     }

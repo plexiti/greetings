@@ -17,7 +17,7 @@ class GreetingApplication: CommandExecutor() {
     @Autowired
     lateinit var greetingService: GreetingService
 
-    class Answer(): Command() {
+    class Answer(): Command<Greeting>() {
 
         lateinit var caller: String
 
@@ -31,7 +31,7 @@ class GreetingApplication: CommandExecutor() {
         return greetingService.answer(command.caller)
     }
 
-    class Identify(): Command() {
+    class Identify(): Command<Unit>() {
 
         lateinit var greeting: String
 

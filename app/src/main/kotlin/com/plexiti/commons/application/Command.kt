@@ -5,8 +5,10 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.plexiti.commons.adapters.db.InMemoryEntityCrudRepository
 import com.plexiti.commons.domain.*
+import org.apache.camel.ProducerTemplate
 import org.apache.camel.builder.RouteBuilder
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
@@ -23,7 +25,7 @@ import kotlin.reflect.full.declaredMemberFunctions
  */
 @Entity
 @Table(name="COMMANDS")
-open class CommandEntity() : AbstractMessageEntity<Command, CommandId>() {
+open class CommandEntity() : AbstractMessageEntity<Command<*>, CommandId>() {
 
     @Column(name = "ISSUED_AT")
     @Temporal(TemporalType.TIMESTAMP)
@@ -38,7 +40,7 @@ open class CommandEntity() : AbstractMessageEntity<Command, CommandId>() {
     lateinit var target: String
         protected set
 
-    internal constructor(command: Command): this() {
+    internal constructor(command: Command<*>): this() {
         this.message = command.message
         this.origin = command.origin
         this.id = CommandId(command.id)
@@ -50,18 +52,18 @@ open class CommandEntity() : AbstractMessageEntity<Command, CommandId>() {
         this.json = command.json
     }
 
-    fun toCommand(): Command {
+    fun toCommand(): Command<*> {
         return Command.toCommand(json)
     }
 
-    fun <C: Command> toCommand(type: Class<C>): C {
+    fun <C: Command<*>> toCommand(type: Class<C>): C {
         return Command.toCommand(json, type)
     }
 
 }
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-open class Command(issuedBy: String? = null): Message {
+open class Command<R: Any?>(issuedBy: String? = null): Message {
 
     override var message = MessageType.Command
     override val id = UUID.randomUUID().toString()
@@ -90,33 +92,39 @@ open class Command(issuedBy: String? = null): Message {
 
         var repository: CrudRepository<CommandEntity, CommandId> = InMemoryCommandRepository()
             internal set
-        private var active: ThreadLocal<Command?> = ThreadLocal()
 
-        fun <C: Command> issue(command: C): C {
+        var router: ProducerTemplate? = null
+            internal set
+
+        private var active: ThreadLocal<Command<*>?> = ThreadLocal()
+
+        fun <R, C: Command<R>> issue(command: C): R {
             command.origin = context
             repository.save(CommandEntity(command))
             active.set(command)
-            logger.info("Command issued ${command.json}")
-            return command
+            logger.info("Issued ${command.json}")
+            val result = router?.requestBody("direct:${command.type}", command)
+            logger.info("Executed ${command.json}")
+            return result as R
         }
 
-        internal fun toCommand(json: String): Command {
+        internal fun toCommand(json: String): Command<*> {
             val command = toCommand(json, Command::class.java)
             command.json = json
             return command
         }
 
-        internal fun <C: Command> toCommand(json: String, type: Class<C>): C {
+        internal fun <C: Command<*>> toCommand(json: String, type: Class<C>): C {
             val command = ObjectMapper().readValue(json, type)
             command.json = json
             return command
         }
 
-        internal fun toJson(command: Command): String {
+        internal fun toJson(command: Command<*>): String {
             return ObjectMapper().writeValueAsString(command)
         }
 
-        fun active(): Command? {
+        fun active(): Command<*>? {
             return this.active.get()
         }
 
@@ -141,6 +149,7 @@ private class CommandIssuerInitialiser : ApplicationContextAware {
     override fun setApplicationContext(applicationContext: ApplicationContext?) {
         Command.context = context
         Command.repository = applicationContext!!.getBean(CommandRepository::class.java)
+        Command.router = applicationContext.getBean(ProducerTemplate::class.java)
     }
 
 }

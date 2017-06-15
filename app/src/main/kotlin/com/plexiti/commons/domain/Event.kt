@@ -99,7 +99,7 @@ open class Event(): Message {
         fun <E: Event> raise(event: E): E {
             event.origin = context
             repository.save(EventEntity(event))
-            logger.info("Event raised ${event.json}")
+            logger.info("Raised ${event.json}")
             return event
         }
 

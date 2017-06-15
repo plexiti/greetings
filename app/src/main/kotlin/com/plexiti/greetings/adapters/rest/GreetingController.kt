@@ -31,8 +31,7 @@ class GreetingController {
         if ("0xCAFEBABE".equals(caller, ignoreCase = true)) {
             return ResponseEntity<Any>(HttpStatus.I_AM_A_TEAPOT)
         }
-        val command = Command.issue(Answer(caller))
-        val greeting = router.requestBody("direct:answer", command) as Greeting
+        val greeting = Command.issue(Answer(caller))
         return ResponseEntity(GreetingResource(greeting), HttpStatus.OK)
     }
 
