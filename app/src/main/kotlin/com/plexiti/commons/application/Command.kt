@@ -8,7 +8,6 @@ import com.plexiti.commons.domain.*
 import org.apache.camel.ProducerTemplate
 import org.apache.camel.builder.RouteBuilder
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
@@ -98,6 +97,9 @@ open class Command<R: Any?>(issuedBy: String? = null): Message {
 
         private var active: ThreadLocal<Command<*>?> = ThreadLocal()
 
+        /*
+         * TODO Write an async version and use it for async clients
+         */
         fun <R, C: Command<R>> issue(command: C): R {
             command.origin = context
             repository.save(CommandEntity(command))

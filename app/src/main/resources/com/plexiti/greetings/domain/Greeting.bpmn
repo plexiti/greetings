@@ -31,7 +31,7 @@
       <bpmn:incoming>SequenceFlow_0t2sazc</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_0i64uki</bpmn:outgoing>
     </bpmn:userTask>
-    <bpmn:serviceTask id="Task_0ax56ye" name="Determine whether we know the caller " camunda:delegateExpression="${commandIssuer}">
+    <bpmn:serviceTask id="Task_0ax56ye" name="Determine whether we know the caller " camunda:delegateExpression="${identifyCallerIssuer}">
       <bpmn:incoming>SequenceFlow_0b1r62p</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_07lg1ak</bpmn:outgoing>
     </bpmn:serviceTask>

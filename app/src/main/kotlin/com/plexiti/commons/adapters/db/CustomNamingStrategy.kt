@@ -1,4 +1,4 @@
-package com.plexiti.commons.hibernate
+package com.plexiti.commons.adapters.db
 
 import org.hibernate.boot.model.naming.Identifier
 import org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl

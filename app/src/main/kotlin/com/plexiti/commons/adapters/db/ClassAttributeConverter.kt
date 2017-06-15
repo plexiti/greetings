@@ -1,6 +1,5 @@
-package com.plexiti.commons.hibernate
+package com.plexiti.commons.adapters.db
 
-import javax.persistence.AttributeConverter
 import javax.persistence.Converter
 
 
@@ -8,7 +7,7 @@ import javax.persistence.Converter
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
 @Converter
-class ClassAttributeConverter: AttributeConverter<Class<*>, String> {
+class ClassAttributeConverter: javax.persistence.AttributeConverter<Class<*>, String> {
 
     override fun convertToDatabaseColumn(cls: Class<*>): String {
         return cls.name

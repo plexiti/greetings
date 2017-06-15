@@ -27,7 +27,7 @@ class GreetingReader : RouteBuilder() {
                 from("${file.toURI()}?${options}")
                 .bean(object {
                     @Handler fun handle(caller: String): Greeting {
-                        return Command.issue(Answer(caller))
+                        return Command.issue(AnswerCaller(caller))
                     }
                 })
             }

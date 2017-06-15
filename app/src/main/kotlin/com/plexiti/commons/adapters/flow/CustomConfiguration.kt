@@ -1,4 +1,4 @@
-package com.plexiti.commons.camunda
+package com.plexiti.commons.adapters.flow
 
 import org.camunda.bpm.engine.ProcessEngineConfiguration
 import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl
