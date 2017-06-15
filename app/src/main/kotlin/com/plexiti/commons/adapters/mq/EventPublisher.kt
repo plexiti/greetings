@@ -46,7 +46,7 @@ class EventPublisher : RouteBuilder() {
     @Handler
     fun publish(event: EventEntity) {
         rabbitTemplate.convertAndSend(topic, context, event.json);
-        logger.info("Published ${event.json}")
+        logger.info("Event published ${event.json}")
     }
 
     @Bean

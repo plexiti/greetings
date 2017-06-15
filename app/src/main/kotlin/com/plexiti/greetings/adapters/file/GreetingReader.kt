@@ -26,11 +26,11 @@ class GreetingReader : RouteBuilder() {
             if (file.exists()) {
                 from("${file.toURI()}?${options}")
                     .bean(object {
-                        @Handler fun handle(caller: String): GreetCommand {
-                            return Command.issue(GreetCommand(caller))
+                        @Handler fun handle(caller: String): Answer {
+                            return Command.issue(Answer(caller))
                         }
                     })
-                .to(Route.Sync.GreetingApplication)
+                .to(Route.Sync.answer)
             }
         }
     }

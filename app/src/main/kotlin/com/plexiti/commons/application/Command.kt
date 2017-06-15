@@ -3,10 +3,12 @@ package com.plexiti.commons.application
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.plexiti.commons.adapters.db.InMemoryEntityCrudRepository
 import com.plexiti.commons.domain.*
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
 import org.springframework.data.repository.CrudRepository
+import org.springframework.data.repository.NoRepositoryBean
 import org.springframework.stereotype.Component
 import org.springframework.stereotype.Repository
 import java.util.*
@@ -51,12 +53,16 @@ abstract class Command(issuedBy: String? = null): Message {
     override var message = MessageType.Command
     override val id = UUID.randomUUID().toString()
     override var origin: String? = null
-    override val type = this::class.java.simpleName
+    override val type =
+        this::class.java.simpleName.substring(0,1).toLowerCase() +
+        this::class.java.simpleName.substring(1)
     val issuedAt = Date()
     var issuedBy = issuedBy
     open val target = context
 
     companion object {
+
+        private val logger = LoggerFactory.getLogger(this::class.java)
 
         lateinit var context: String
 
@@ -84,6 +90,7 @@ class CommandId(value: String = ""): MessageId(value)
 @Repository
 interface CommandRepository: CrudRepository<CommandEntity, CommandId>
 
+@NoRepositoryBean
 class InMemoryCommandRepository: InMemoryEntityCrudRepository<CommandEntity, CommandId>(), CommandRepository
 
 @Component

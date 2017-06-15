@@ -1,8 +1,8 @@
 package com.plexiti.commons.adapters.mq
 
 import com.plexiti.commons.domain.Event
-import org.camunda.bpm.engine.MismatchingMessageCorrelationException
 import org.camunda.bpm.engine.ProcessEngine
+import org.camunda.bpm.engine.impl.event.EventType
 import org.camunda.spin.json.SpinJsonNode.JSON
 import org.slf4j.LoggerFactory
 import org.springframework.amqp.core.Binding
@@ -40,14 +40,31 @@ class EventHandler {
 
         val event = Event.toEvent(json)
 
-        try {
+        // try to complete a command
+
+        val commandExecution = flowControl.runtimeService
+            .createExecutionQuery()
+            .variableValueEquals("commandId", event.commandId)
+            .singleResult();
+
+        if (commandExecution != null) {
+            flowControl.runtimeService
+                .signal(commandExecution.id, mapOf(event.type to JSON(json)))
+        }
+
+        // try to correlate to a start message
+
+        val eventSubscriptions = flowControl.runtimeService
+            .createEventSubscriptionQuery()
+            .eventType(EventType.MESSAGE.name())
+            .eventName(event.type)
+            .count();
+
+        if (eventSubscriptions > 0) {
             flowControl.runtimeService
                 .createMessageCorrelation(event.type)
                 .setVariable(event.type, JSON(json))
                 .correlateStartMessage();
-            logger.debug("Event WAS correlated: ${json}")
-        } catch (m: MismatchingMessageCorrelationException) {
-            logger.debug("Event NOT correlated: ${json}")
         }
 
     }

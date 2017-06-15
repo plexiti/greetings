@@ -1,16 +1,14 @@
 package com.plexiti.greetings.application;
 
 import com.plexiti.commons.application.Command
-import com.plexiti.commons.application.CommandEntity
 import com.plexiti.greetings.domain.Greeting
 import com.plexiti.greetings.domain.GreetingRepository
-import org.apache.camel.Handler
+import com.plexiti.greetings.domain.GreetingService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import javax.persistence.DiscriminatorValue
-import javax.persistence.Entity
 
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
@@ -19,26 +17,41 @@ import javax.persistence.Entity
 @Transactional
 class GreetingApplication {
 
-    private val logger = LoggerFactory.getLogger(this::class.java)
+    @Value("\${com.plexiti.app.context}")
+    private lateinit var context: String;
 
     @Autowired
     lateinit var greetingRepository: GreetingRepository
 
-    class GreetCommand (): Command() {
+    @Autowired
+    lateinit var greetingService: GreetingService
+
+    class Answer(): Command() {
+
         lateinit var caller: String
         override val definition = 0
-        override val target = "abc"
+        override val target = context
         constructor(caller: String): this() {
             this.caller = caller
         }
+
     }
 
-    @Handler
-    fun greetCaller(greet: GreetCommand): Greeting {
-        val greeting = Greeting.create(String.format("Hello World, %s", greet.caller))
-        greetingRepository.save(greeting)
-        logger.info("Greeting #${greeting.id}: ${greeting.greeting}")
-        return greeting
+    fun answer(command: Answer): Greeting {
+        return greetingService.answer(command.caller)
+    }
+
+    class Identify(): Command() {
+        lateinit var greeting: String
+        override val definition = 0
+        override val target = context
+        constructor(greeting: String): this() {
+            this.greeting = greeting
+        }
+    }
+
+    fun identify(command: Identify) {
+        greetingRepository.findByGreeting(command.greeting)!!.contact()
     }
 
 }

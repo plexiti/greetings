@@ -6,10 +6,12 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.plexiti.commons.adapters.db.InMemoryEntityCrudRepository
 import com.plexiti.commons.application.Command
 import com.plexiti.commons.application.CommandId
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
 import org.springframework.data.repository.CrudRepository
+import org.springframework.data.repository.NoRepositoryBean
 import org.springframework.stereotype.Component
 import org.springframework.stereotype.Repository
 import java.util.*
@@ -43,7 +45,7 @@ class EventEntity(): AbstractMessageEntity<Event, EventId>() {
         this.definition = event.definition
         this.raisedAt = event.raisedAt
         this.aggregate = event.aggregate!!
-        this.commandId = if (Command.active() != null) CommandId(Command.active()!!.id) else null
+        this.commandId =  if (event.commandId != null) CommandId(event.commandId) else null
         this.json = event.json
     }
 
@@ -63,10 +65,13 @@ open class Event(): Message {
     override var message = MessageType.Event
     override lateinit var id: String; protected set
     override var origin: String? = null
-    override val type = this.javaClass.simpleName
+    override val type =
+        this::class.java.simpleName.substring(0,1).toLowerCase() +
+        this::class.java.simpleName.substring(1)
     override val definition = 0
     lateinit var raisedAt: Date
     var aggregate: EventAggregate? = null
+    val commandId = if (Command.active() != null) Command.active()!!.id else null
 
     @JsonIgnore var json: String = ""
         @JsonIgnore get() {
@@ -84,6 +89,8 @@ open class Event(): Message {
 
     companion object {
 
+        private val logger = LoggerFactory.getLogger(this::class.java)
+
         internal var context: String? = null
 
         internal var repository: EventEntityRepository = InMemoryEventRepository()
@@ -92,6 +99,7 @@ open class Event(): Message {
         fun <E: Event> raise(event: E): E {
             event.origin = context
             repository.save(EventEntity(event))
+            logger.info("Event raised ${event.json}")
             return event
         }
 
@@ -157,6 +165,7 @@ interface EventEntityRepository: CrudRepository<EventEntity, EventId> {
 
 }
 
+@NoRepositoryBean
 class InMemoryEventRepository: InMemoryEntityCrudRepository<EventEntity, EventId>(), EventEntityRepository {
 
     override fun findByAggregate_Id(id: String): List<EventEntity> {

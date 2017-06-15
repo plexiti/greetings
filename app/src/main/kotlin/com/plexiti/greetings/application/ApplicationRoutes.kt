@@ -8,7 +8,8 @@ import org.springframework.stereotype.Component
  */
 object Route {
     object Sync {
-        val GreetingApplication = "direct:greeting"
+        val answer = "direct:answer"
+        val identify = "direct:identify"
     }
 }
 
@@ -16,7 +17,8 @@ object Route {
 class ApplicationRouteBuilder : RouteBuilder() {
 
     override fun configure() {
-        from(Route.Sync.GreetingApplication).bean(GreetingApplication::class.java)
+        from(Route.Sync.answer).bean(GreetingApplication::class.java, "answer")
+        from(Route.Sync.identify).bean(GreetingApplication::class.java, "identify")
     }
 
 }

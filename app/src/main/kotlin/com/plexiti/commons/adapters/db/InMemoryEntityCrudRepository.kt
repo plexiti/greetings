@@ -2,11 +2,13 @@ package com.plexiti.commons.adapters.db
 
 import com.plexiti.commons.domain.AbstractEntity
 import org.springframework.data.repository.CrudRepository
+import org.springframework.data.repository.NoRepositoryBean
 import java.io.Serializable
 
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
+@NoRepositoryBean
 open class InMemoryEntityCrudRepository<T: AbstractEntity<ID>, ID: Serializable>: CrudRepository<T, ID> {
 
     val map = HashMap<ID, T>()
