@@ -2,7 +2,6 @@ package com.plexiti.greetings.adapters.file
 
 import com.plexiti.commons.application.Command
 import com.plexiti.greetings.application.GreetingApplication.*
-import com.plexiti.greetings.application.Route
 import org.apache.camel.Handler
 import org.apache.camel.builder.RouteBuilder
 import org.springframework.beans.factory.annotation.Value
@@ -30,7 +29,7 @@ class GreetingReader : RouteBuilder() {
                             return Command.issue(Answer(caller))
                         }
                     })
-                .to(Route.Sync.answer)
+                .to("direct:answer")
             }
         }
     }

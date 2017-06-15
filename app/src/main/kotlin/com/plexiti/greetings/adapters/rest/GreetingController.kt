@@ -2,7 +2,6 @@ package com.plexiti.greetings.adapters.rest
 
 import com.plexiti.commons.application.Command
 import com.plexiti.greetings.application.GreetingApplication.Answer
-import com.plexiti.greetings.application.Route
 import com.plexiti.greetings.domain.Greeting
 import org.apache.camel.ProducerTemplate
 import org.springframework.beans.factory.annotation.Autowired
@@ -33,7 +32,7 @@ class GreetingController {
             return ResponseEntity<Any>(HttpStatus.I_AM_A_TEAPOT)
         }
         val command = Command.issue(Answer(caller))
-        val greeting = router.requestBody(Route.Sync.answer, command) as Greeting
+        val greeting = router.requestBody("direct:answer", command) as Greeting
         return ResponseEntity(GreetingResource(greeting), HttpStatus.OK)
     }
 

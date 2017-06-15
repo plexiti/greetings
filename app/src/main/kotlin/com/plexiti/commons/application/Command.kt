@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.plexiti.commons.adapters.db.InMemoryEntityCrudRepository
 import com.plexiti.commons.domain.*
+import org.apache.camel.builder.RouteBuilder
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.ApplicationContext
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Component
 import org.springframework.stereotype.Repository
 import java.util.*
 import javax.persistence.*
+import kotlin.reflect.full.declaredMemberFunctions
 
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
@@ -139,6 +141,18 @@ private class CommandIssuerInitialiser : ApplicationContextAware {
     override fun setApplicationContext(applicationContext: ApplicationContext?) {
         Command.context = context
         Command.repository = applicationContext!!.getBean(CommandRepository::class.java)
+    }
+
+}
+
+open class CommandExecutor : RouteBuilder() {
+
+    override fun configure() {
+
+        this::class.declaredMemberFunctions.forEach {
+            from("direct:${it.name}").bean(this::class.java, it.name)
+        }
+
     }
 
 }
