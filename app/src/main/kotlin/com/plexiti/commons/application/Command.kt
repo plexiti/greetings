@@ -40,10 +40,10 @@ open class CommandEntity() : AbstractMessageEntity<Command<*>, CommandId>() {
         protected set
 
     internal constructor(command: Command<*>): this() {
-        this.message = command.message
+        this.type = command.type
         this.origin = command.origin
         this.id = CommandId(command.id)
-        this.type = command.type
+        this.name = command.name
         this.definition = command.definition
         this.issuedAt = command.issuedAt
         this.issuedBy = command.issuedBy
@@ -64,12 +64,12 @@ open class CommandEntity() : AbstractMessageEntity<Command<*>, CommandId>() {
 @JsonIgnoreProperties(ignoreUnknown = true)
 open class Command<R: Any?>(issuedBy: String? = null): Message {
 
-    override var message = MessageType.Command
-    override val id = UUID.randomUUID().toString()
-    override var origin: String? = null
-    override val type =
+    override var type = MessageType.Command
+    override val name =
         this::class.java.simpleName.substring(0,1).toLowerCase() +
-        this::class.java.simpleName.substring(1)
+            this::class.java.simpleName.substring(1)
+    override var origin: String? = null
+    override val id = UUID.randomUUID().toString()
     override val definition = 0
     val issuedAt = Date()
     var issuedBy = issuedBy
@@ -105,7 +105,7 @@ open class Command<R: Any?>(issuedBy: String? = null): Message {
             repository.save(CommandEntity(command))
             active.set(command)
             logger.info("Issued ${command.json}")
-            val result = router?.requestBody("direct:${command.type}", command)
+            val result = router?.requestBody("direct:${command.name}", command)
             logger.info("Executed ${command.json}")
             return result as R
         }

@@ -4,7 +4,6 @@ import com.plexiti.commons.domain.Event
 import org.camunda.bpm.engine.ProcessEngine
 import org.camunda.bpm.engine.impl.event.EventType
 import org.camunda.spin.json.SpinJsonNode.JSON
-import org.slf4j.LoggerFactory
 import org.springframework.amqp.core.Binding
 import org.springframework.amqp.core.BindingBuilder
 import org.springframework.amqp.core.Queue
@@ -47,7 +46,7 @@ class EventHandler {
 
         if (commandExecution != null) {
             flowControl.runtimeService
-                .signal(commandExecution.id, mapOf(event.type to JSON(json)))
+                .signal(commandExecution.id, mapOf(event.name to JSON(json)))
         }
 
         // try to correlate to a start message
@@ -55,13 +54,13 @@ class EventHandler {
         val eventSubscriptions = flowControl.runtimeService
             .createEventSubscriptionQuery()
             .eventType(EventType.MESSAGE.name())
-            .eventName(event.type)
+            .eventName(event.name)
             .count();
 
         if (eventSubscriptions > 0) {
             flowControl.runtimeService
-                .createMessageCorrelation(event.type)
-                .setVariable(event.type, JSON(json))
+                .createMessageCorrelation(event.name)
+                .setVariable(event.name, JSON(json))
                 .correlateStartMessage();
         }
 

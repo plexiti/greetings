@@ -2,7 +2,6 @@ package com.plexiti.greetings.domain
 
 import com.plexiti.commons.domain.Event
 import org.assertj.core.api.Assertions.*
-import org.assertj.core.api.Condition
 import org.junit.Test
 
 class GreetingTest {
@@ -13,7 +12,7 @@ class GreetingTest {
         val greeting = Greeting.create("Martin");
 
         val greetingCreatedEvent = Event.findByAggregate(greeting)[0]
-        assertThat(greetingCreatedEvent).returns("greetingCreated", { it.type })
+        assertThat(greetingCreatedEvent).returns("greetingCreated", { it.name })
 
 	}
 

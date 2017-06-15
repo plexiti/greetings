@@ -1,9 +1,9 @@
 CREATE TABLE grt_commands (
-    message VARCHAR(16) NOT NULL,
+    type VARCHAR(16) NOT NULL,
+    name VARCHAR(128),
     origin VARCHAR(64) NOT NULL,
     target VARCHAR(64) NOT NULL,
     id VARCHAR(36) NOT NULL PRIMARY KEY,
-    type VARCHAR(128),
     definition INTEGER NOT NULL,
     issued_at TIMESTAMP NOT NULL,
     issued_by VARCHAR(256),

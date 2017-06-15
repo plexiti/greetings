@@ -38,10 +38,10 @@ class EventEntity(): AbstractMessageEntity<Event, EventId>() {
         private set
 
     internal constructor(event: Event): this() {
-        this.message = event.message
+        this.type = event.type
         this.origin = event.origin
         this.id = EventId(event.id)
-        this.type = event.type
+        this.name = event.name
         this.definition = event.definition
         this.raisedAt = event.raisedAt
         this.aggregate = event.aggregate!!
@@ -62,12 +62,12 @@ class EventEntity(): AbstractMessageEntity<Event, EventId>() {
 @JsonIgnoreProperties(ignoreUnknown = true)
 open class Event(): Message {
 
-    override var message = MessageType.Event
-    override lateinit var id: String; protected set
-    override var origin: String? = null
-    override val type =
+    override var type = MessageType.Event
+    override val name =
         this::class.java.simpleName.substring(0,1).toLowerCase() +
-        this::class.java.simpleName.substring(1)
+            this::class.java.simpleName.substring(1)
+    override var origin: String? = null
+    override lateinit var id: String; protected set
     override val definition = 0
     lateinit var raisedAt: Date
     var aggregate: EventAggregate? = null

@@ -29,6 +29,8 @@ class CustomFlowConfiguration : AbstractCamundaConfiguration() {
         processEngineConfiguration.databaseSchemaUpdate = databaseSchemaUpdate
         processEngineConfiguration.isJobExecutorActivate = true
         processEngineConfiguration.isJobExecutorDeploymentAware = true
+        processEngineConfiguration.isJobExecutorPreferTimerJobs = true
+        processEngineConfiguration.jobExecutor.maxWait = 500
         processEngineConfiguration.history = ProcessEngineConfiguration.HISTORY_FULL
         processEngineConfiguration.processEnginePlugins = listOf(SpinProcessEnginePlugin())
         processEngineConfiguration.idGenerator = StrongUuidGenerator()

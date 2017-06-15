@@ -12,16 +12,16 @@ import javax.persistence.*
 abstract class AbstractMessageEntity<TYPE: Message, ID: MessageId>: AbstractEntity<ID>(), Message {
 
     @Enumerated(EnumType.STRING)
-    @Column(name="MESSAGE", columnDefinition = "varchar(16)")
-    override lateinit var message: MessageType
+    @Column(name="TYPE", columnDefinition = "varchar(16)")
+    override lateinit var type: MessageType
+        protected set
+
+    @Column(name="NAME", columnDefinition = "varchar(128)")
+    override lateinit var name: String
         protected set
 
     @Column(name="ORIGIN", columnDefinition = "varchar(64)")
     override var origin: String? = null
-        protected set
-
-    @Column(name="TYPE", columnDefinition = "varchar(128)")
-    override lateinit var type: String
         protected set
 
     @Column(name="DEFINITION")
@@ -54,10 +54,10 @@ open class MessageId(value: String): AggregateId(value)
 
 interface Message {
 
-    val message: MessageType
+    val type: MessageType
     val id: Serializable
     val origin: String?
-    val type: String
+    val name: String
     val definition: Int
 
 }
