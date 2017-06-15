@@ -1,5 +1,7 @@
 package com.plexiti.commons.application
 
+import com.fasterxml.jackson.annotation.JsonIgnore
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.plexiti.commons.adapters.db.InMemoryEntityCrudRepository
 import com.plexiti.commons.domain.*
@@ -43,12 +45,21 @@ open class CommandEntity() : AbstractMessageEntity<Command, CommandId>() {
         this.issuedAt = command.issuedAt
         this.issuedBy = command.issuedBy
         this.target = command.target
-        this.json = ObjectMapper().writeValueAsString(command)
+        this.json = command.json
+    }
+
+    fun toCommand(): Command {
+        return Command.toCommand(json)
+    }
+
+    fun <C: Command> toCommand(type: Class<C>): C {
+        return Command.toCommand(json, type)
     }
 
 }
 
-abstract class Command(issuedBy: String? = null): Message {
+@JsonIgnoreProperties(ignoreUnknown = true)
+open class Command(issuedBy: String? = null): Message {
 
     override var message = MessageType.Command
     override val id = UUID.randomUUID().toString()
@@ -56,9 +67,18 @@ abstract class Command(issuedBy: String? = null): Message {
     override val type =
         this::class.java.simpleName.substring(0,1).toLowerCase() +
         this::class.java.simpleName.substring(1)
+    override val definition = 0
     val issuedAt = Date()
     var issuedBy = issuedBy
     open val target = context
+
+    @JsonIgnore var json: String = ""
+        @JsonIgnore get() {
+            if (field == "")
+                field = Command.toJson(this)
+            return field
+        }
+        @JsonIgnore internal set
 
     companion object {
 
@@ -74,7 +94,24 @@ abstract class Command(issuedBy: String? = null): Message {
             command.origin = context
             repository.save(CommandEntity(command))
             active.set(command)
+            logger.info("Command issued ${command.json}")
             return command
+        }
+
+        internal fun toCommand(json: String): Command {
+            val command = toCommand(json, Command::class.java)
+            command.json = json
+            return command
+        }
+
+        internal fun <C: Command> toCommand(json: String, type: Class<C>): C {
+            val command = ObjectMapper().readValue(json, type)
+            command.json = json
+            return command
+        }
+
+        internal fun toJson(command: Command): String {
+            return ObjectMapper().writeValueAsString(command)
         }
 
         fun active(): Command? {

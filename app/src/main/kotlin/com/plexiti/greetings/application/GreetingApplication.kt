@@ -13,15 +13,8 @@ import org.springframework.transaction.annotation.Transactional
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
-@Service
-@Transactional
+@Service @Transactional
 class GreetingApplication {
-
-    @Value("\${com.plexiti.app.context}")
-    private lateinit var context: String;
-
-    @Autowired
-    lateinit var greetingRepository: GreetingRepository
 
     @Autowired
     lateinit var greetingService: GreetingService
@@ -29,8 +22,7 @@ class GreetingApplication {
     class Answer(): Command() {
 
         lateinit var caller: String
-        override val definition = 0
-        override val target = context
+
         constructor(caller: String): this() {
             this.caller = caller
         }
@@ -42,16 +34,17 @@ class GreetingApplication {
     }
 
     class Identify(): Command() {
+
         lateinit var greeting: String
-        override val definition = 0
-        override val target = context
+
         constructor(greeting: String): this() {
             this.greeting = greeting
         }
+
     }
 
     fun identify(command: Identify) {
-        greetingRepository.findByGreeting(command.greeting)!!.contact()
+        greetingService.greetingRepository.findByGreeting(command.greeting)!!.contact()
     }
 
 }
