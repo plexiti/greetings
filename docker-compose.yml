@@ -5,12 +5,12 @@ services:
     ports:
       - 80:80
     links:
-      - app
+      - gr
     networks:
       - lb
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-  app:
+  gr:
     image: plexiti/greetings
     ports:
       - "8080"
