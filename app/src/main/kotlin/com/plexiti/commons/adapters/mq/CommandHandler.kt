@@ -26,8 +26,8 @@ class CommandHandler {
     }
 
     @Bean
-    fun queue(): Queue {
-        return Queue("${context}-queue", true)
+    fun commandsQueue(): Queue {
+        return Queue("${context}-commands-queue", true)
     }
 
 }

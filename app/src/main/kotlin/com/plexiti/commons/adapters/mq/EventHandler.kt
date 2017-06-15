@@ -32,7 +32,7 @@ class EventHandler {
     @Autowired
     lateinit var flowControl: ProcessEngine
 
-    @RabbitListener(queues = arrayOf("\${com.plexiti.app.context}-queue"))
+    @RabbitListener(queues = arrayOf("\${com.plexiti.app.context}-events-queue"))
     fun handle(@Payload json: String) {
 
         val event = Event.toEvent(json)
@@ -67,8 +67,13 @@ class EventHandler {
     }
 
     @Bean
-    fun binding(queue: Queue, exchange: TopicExchange): Binding {
-        return BindingBuilder.bind(queue).to(exchange).with(context)
+    fun eventsQueue(): Queue {
+        return Queue("${context}-events-queue", true)
+    }
+
+    @Bean
+    fun binding(eventsQueue: Queue, eventsTopic: TopicExchange): Binding {
+        return BindingBuilder.bind(eventsQueue).to(eventsTopic).with(context)
     }
 
 }

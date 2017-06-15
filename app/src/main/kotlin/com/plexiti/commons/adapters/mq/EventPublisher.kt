@@ -28,7 +28,7 @@ class EventPublisher : RouteBuilder() {
         @Value("\${com.plexiti.app.context}")
         set(value) {
             field = value
-            topic = "${value}-events"
+            topic = "${value}-events-topic"
         }
 
     private lateinit var topic: String
@@ -50,7 +50,7 @@ class EventPublisher : RouteBuilder() {
     }
 
     @Bean
-    fun exchange(): TopicExchange {
+    fun eventsTopic(): TopicExchange {
         return TopicExchange(topic, true, false)
     }
 
