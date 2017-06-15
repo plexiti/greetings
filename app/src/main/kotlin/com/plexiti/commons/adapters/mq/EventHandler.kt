@@ -27,8 +27,6 @@ import org.springframework.stereotype.Component
 @Profile("prod")
 class EventHandler {
 
-    private val logger = LoggerFactory.getLogger(this::class.java)
-
     @Value("\${com.plexiti.app.context}")
     private lateinit var context: String;
 

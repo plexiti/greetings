@@ -15,26 +15,25 @@
     <bpmn:sequenceFlow id="SequenceFlow_1u7bc6h" name="Yes" sourceRef="ExclusiveGateway_1287gp6" targetRef="EndEvent_08nldf6">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[${callerIdentified.prop("known").boolValue()}]]></bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:startEvent id="StartEvent_1" name="Call answered automatically" camunda:asyncAfter="true">
+    <bpmn:startEvent id="StartEvent_1" name="Call answered automatically">
       <bpmn:outgoing>SequenceFlow_0b1r62p</bpmn:outgoing>
       <bpmn:messageEventDefinition messageRef="Message_1fe34o5" />
     </bpmn:startEvent>
-    <bpmn:endEvent id="EndEvent_08nldf6" name="Known caller greeted">
-      <bpmn:incoming>SequenceFlow_1u7bc6h</bpmn:incoming>
-      <bpmn:messageEventDefinition camunda:type="external" camunda:topic="CallerKnown" />
-    </bpmn:endEvent>
-    <bpmn:endEvent id="EndEvent_1gos6bm" name="New caller contacted">
+    <bpmn:endEvent id="EndEvent_1gos6bm" name="Caller contacted personally">
       <bpmn:incoming>SequenceFlow_0i64uki</bpmn:incoming>
-      <bpmn:messageEventDefinition camunda:type="external" camunda:topic="CallerNew" />
+      <bpmn:messageEventDefinition camunda:delegateExpression="${callerContactedPersonallyEvent}" />
     </bpmn:endEvent>
-    <bpmn:userTask id="Task_1ns2cbp" name="Contact new caller personally">
+    <bpmn:userTask id="Task_1ns2cbp" name="Contact new caller personally" camunda:asyncAfter="true">
       <bpmn:incoming>SequenceFlow_0t2sazc</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_0i64uki</bpmn:outgoing>
     </bpmn:userTask>
-    <bpmn:serviceTask id="Task_0ax56ye" name="Determine whether we know the caller " camunda:delegateExpression="${identifyCallerIssuer}">
+    <bpmn:serviceTask id="Task_0ax56ye" name="Determine whether we know the caller " camunda:delegateExpression="${identifyCallerCommand}">
       <bpmn:incoming>SequenceFlow_0b1r62p</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_07lg1ak</bpmn:outgoing>
     </bpmn:serviceTask>
+    <bpmn:endEvent id="EndEvent_08nldf6" name="Known caller identified">
+      <bpmn:incoming>SequenceFlow_1u7bc6h</bpmn:incoming>
+    </bpmn:endEvent>
   </bpmn:process>
   <bpmn:message id="Message_1fe34o5" name="callAnsweredAutomatically" />
   <bpmn:message id="Message_0wvxflj" name="KnownCallerGreeted" />
@@ -88,16 +87,10 @@
           <dc:Bounds x="166" y="138" width="70" height="25" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="EndEvent_0ljak0s_di" bpmnElement="EndEvent_08nldf6">
-        <dc:Bounds x="408" y="184" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="394" y="223" width="64" height="25" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="EndEvent_11eajbx_di" bpmnElement="EndEvent_1gos6bm">
         <dc:Bounds x="632" y="102" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="624" y="141" width="52" height="25" />
+          <dc:Bounds x="610" y="141" width="80" height="25" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="UserTask_18fjnu0_di" bpmnElement="Task_1ns2cbp">
@@ -105,6 +98,12 @@
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="ServiceTask_11ldick_di" bpmnElement="Task_0ax56ye">
         <dc:Bounds x="260" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_0yhyu2d_di" bpmnElement="EndEvent_08nldf6">
+        <dc:Bounds x="408" y="184" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="394" y="223" width="64" height="25" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

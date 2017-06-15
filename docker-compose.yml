@@ -17,7 +17,7 @@ services:
     depends_on:
       - db
       - mq
-      - cam
+      - fl
     networks:
       - lb
       - mq
@@ -43,7 +43,7 @@ services:
       - POSTGRES_DB=greetings
     volumes:
       - db:/var/lib/postgresql/data
-  cam:
+  fl:
     image: camunda/camunda-bpm-platform:latest
     ports:
       - "8080:8080"
@@ -60,7 +60,8 @@ services:
       - DB_PASSWORD=greetings
       - TZ=Europe/Berlin
     volumes:
-      - ./.camunda:/camunda/webapps/camunda-invoice
+      - ./.camunda/webapps/camunda-invoice:/camunda/webapps/camunda-invoice
+      - ./.camunda/conf:/camunda/conf
 networks:
   lb:
     driver: bridge
