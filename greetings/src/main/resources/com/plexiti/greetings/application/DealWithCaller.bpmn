@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.8.0">
-  <bpmn:process id="Greeting" isExecutable="true">
+  <bpmn:process id="DealWithCaller" isExecutable="true">
     <bpmn:sequenceFlow id="SequenceFlow_0b1r62p" sourceRef="StartEvent_1" targetRef="Task_0ax56ye" />
     <bpmn:sequenceFlow id="SequenceFlow_07lg1ak" sourceRef="Task_0ax56ye" targetRef="ExclusiveGateway_1287gp6" />
     <bpmn:sequenceFlow id="SequenceFlow_0i64uki" sourceRef="Task_1ns2cbp" targetRef="EndEvent_1gos6bm" />
@@ -39,7 +39,7 @@
   <bpmn:message id="Message_0wvxflj" name="KnownCallerGreeted" />
   <bpmn:message id="Message_1qm84bp" name="NewCallerGreeted" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
-    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Greeting">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="DealWithCaller">
       <bpmndi:BPMNEdge id="SequenceFlow_0b1r62p_di" bpmnElement="SequenceFlow_0b1r62p">
         <di:waypoint xsi:type="dc:Point" x="218" y="120" />
         <di:waypoint xsi:type="dc:Point" x="260" y="120" />

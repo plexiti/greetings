@@ -4,7 +4,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.plexiti.commons.adapters.db.InMemoryEntityCrudRepository
-import com.plexiti.commons.domain.*
+import com.plexiti.commons.domain.AbstractMessageEntity
+import com.plexiti.commons.domain.Message
+import com.plexiti.commons.domain.MessageId
+import com.plexiti.commons.domain.MessageType
 import org.apache.camel.ProducerTemplate
 import org.apache.camel.builder.RouteBuilder
 import org.slf4j.LoggerFactory
@@ -95,7 +98,7 @@ open class Command<R: Any?>(issuedBy: String? = null): Message {
         var router: ProducerTemplate? = null
             internal set
 
-        private var active: ThreadLocal<Command<*>?> = ThreadLocal()
+        private var active: ThreadLocal<Command<Any?>?> = ThreadLocal()
 
         /*
          * TODO Write an async version and use it for async clients
@@ -103,17 +106,17 @@ open class Command<R: Any?>(issuedBy: String? = null): Message {
         fun <R, C: Command<R>> issue(command: C): R {
             command.origin = context
             repository.save(CommandEntity(command))
-            active.set(command)
+            active.set(command as Command<Any?>)
             logger.info("Issued ${command.json}")
             val result = router?.requestBody("direct:${command.name}", command)
             logger.info("Executed ${command.json}")
             return result as R
         }
 
-        internal fun toCommand(json: String): Command<*> {
+        internal fun toCommand(json: String): Command<Any?> {
             val command = toCommand(json, Command::class.java)
             command.json = json
-            return command
+            return command as Command<Any?>
         }
 
         internal fun <C: Command<*>> toCommand(json: String, type: Class<C>): C {
@@ -126,7 +129,7 @@ open class Command<R: Any?>(issuedBy: String? = null): Message {
             return ObjectMapper().writeValueAsString(command)
         }
 
-        fun active(): Command<*>? {
+        fun active(): Command<Any?>? {
             return this.active.get()
         }
 

@@ -1,9 +1,8 @@
 package com.plexiti.commons.adapters.mq
 
+import com.plexiti.commons.adapters.flow.FlowCommandCompleter
+import com.plexiti.commons.adapters.flow.FlowStartMessageHandler
 import com.plexiti.commons.domain.Event
-import org.camunda.bpm.engine.ProcessEngine
-import org.camunda.bpm.engine.impl.event.EventType
-import org.camunda.spin.json.SpinJsonNode.JSON
 import org.springframework.amqp.core.Binding
 import org.springframework.amqp.core.BindingBuilder
 import org.springframework.amqp.core.Queue
@@ -30,39 +29,18 @@ class EventHandler {
     private lateinit var context: String;
 
     @Autowired
-    lateinit var flowControl: ProcessEngine
+    lateinit var flowCommandCompleter: FlowCommandCompleter
+
+    @Autowired
+    lateinit var flowStartMessageHandler: FlowStartMessageHandler
 
     @RabbitListener(queues = arrayOf("\${com.plexiti.app.context}-events-queue"))
     fun handle(@Payload json: String) {
 
         val event = Event.toEvent(json)
+        flowCommandCompleter.handle(event)
+        flowStartMessageHandler.handle(event)
 
-        // try to complete a command
-
-        val commandExecution = flowControl.runtimeService
-            .createExecutionQuery()
-            .variableValueEquals("commandId", event.commandId)
-            .singleResult();
-
-        if (commandExecution != null) {
-            flowControl.runtimeService
-                .signal(commandExecution.id, mapOf(event.name to JSON(json)))
-        }
-
-        // try to correlate to a start message
-
-        val eventSubscriptions = flowControl.runtimeService
-            .createEventSubscriptionQuery()
-            .eventType(EventType.MESSAGE.name())
-            .eventName(event.name)
-            .count();
-
-        if (eventSubscriptions > 0) {
-            flowControl.runtimeService
-                .createMessageCorrelation(event.name)
-                .setVariable(event.name, JSON(json))
-                .correlateStartMessage();
-        }
 
     }
 
