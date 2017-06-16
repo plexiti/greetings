@@ -65,7 +65,7 @@ open class CommandEntity() : AbstractMessageEntity<Command<*>, CommandId>() {
 open class Command<R: Any?>(triggeredBy: String? = null): Message {
 
     override var type = MessageType.Command
-    override val name =
+    override var name =
         this::class.java.simpleName.substring(0,1).toLowerCase() +
             this::class.java.simpleName.substring(1)
     override var origin: String? = null

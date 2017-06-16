@@ -2,7 +2,6 @@ package com.plexiti.commons.application;
 
 import com.plexiti.commons.domain.Event
 import org.camunda.bpm.engine.ProcessEngine
-import org.camunda.bpm.engine.impl.event.EventType
 import org.camunda.spin.json.SpinJsonNode
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -32,12 +31,13 @@ class FlowApplicationService: CommandExecutor() {
 
         override fun isTriggeredBy(event: Event): Boolean {
 
-            val startEventNames = flow.runtimeService
-                .createEventSubscriptionQuery()
-                .eventType(EventType.MESSAGE.name())
-                .list().map { it.eventName };
+            val definition = flow.repositoryService
+                .createProcessDefinitionQuery()
+                .messageEventSubscriptionName(event.name)
+                .singleResult();
 
-            return startEventNames.contains(event.name)
+            return definition != null
+
         }
 
     }
