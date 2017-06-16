@@ -18,13 +18,13 @@ abstract class FlowEvent<out E: Event>: JavaDelegate {
         execution.setVariable(event.name, JSON(event.json))
     }
 
-    internal fun <C: Command<*>> command(type: Class<C>, execution: DelegateExecution): C {
+    protected fun <C: Command<*>> command(type: Class<C>, execution: DelegateExecution): C {
         val name = type.newInstance().name
         val json = execution.getVariable(name) as SpinJsonNode
         return Command.toCommand(json.toString(), type)
     }
 
-    internal fun <E: Event> event(type: Class<E>, execution: DelegateExecution): E {
+    protected fun <E: Event> event(type: Class<E>, execution: DelegateExecution): E {
         val name = type.newInstance().name
         val json = execution.getVariable(name) as SpinJsonNode
         return Event.toEvent(json.toString(), type)

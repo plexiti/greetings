@@ -25,13 +25,13 @@ abstract class FlowCommand<out C: Command<*>>: AbstractBpmnActivityBehavior() {
         leave(execution)
     }
 
-    internal fun <C: Command<*>> command(type: Class<C>, execution: DelegateExecution): C {
+    protected fun <C: Command<*>> command(type: Class<C>, execution: DelegateExecution): C {
         val name = type.newInstance().name
         val json = execution.getVariable(name) as SpinJsonNode
         return Command.toCommand(json.toString(), type)
     }
 
-    internal fun <E: Event> event(type: Class<E>, execution: ActivityExecution): E {
+    protected fun <E: Event> event(type: Class<E>, execution: ActivityExecution): E {
         val name = type.newInstance().name
         val json = execution.getVariable(name) as SpinJsonNode
         return Event.toEvent(json.toString(), type)
