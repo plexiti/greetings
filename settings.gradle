@@ -1,6 +1,4 @@
-include 'app'
-include 'cam'
+include 'commons'
+include 'greetings'
 
 rootProject.name='greetings-root'
-project(":app").name='greetings'
-project(':cam').name = 'greetings-camunda'
