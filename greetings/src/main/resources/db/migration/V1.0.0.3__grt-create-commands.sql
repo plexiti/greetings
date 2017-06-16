@@ -6,7 +6,7 @@ CREATE TABLE grt_commands (
     id VARCHAR(36) NOT NULL PRIMARY KEY,
     definition INTEGER NOT NULL,
     issued_at TIMESTAMP NOT NULL,
-    issued_by VARCHAR(256),
+    triggered_by VARCHAR(36),
     json TEXT NOT NULL,
     published_at TIMESTAMP
 );

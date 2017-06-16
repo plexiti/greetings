@@ -4,10 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.plexiti.commons.adapters.db.InMemoryEntityCrudRepository
-import com.plexiti.commons.domain.AbstractMessageEntity
-import com.plexiti.commons.domain.Message
-import com.plexiti.commons.domain.MessageId
-import com.plexiti.commons.domain.MessageType
+import com.plexiti.commons.domain.*
+import org.apache.camel.Handler
 import org.apache.camel.ProducerTemplate
 import org.apache.camel.builder.RouteBuilder
 import org.slf4j.LoggerFactory
@@ -20,7 +18,6 @@ import org.springframework.stereotype.Component
 import org.springframework.stereotype.Repository
 import java.util.*
 import javax.persistence.*
-import kotlin.reflect.full.declaredMemberFunctions
 
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
@@ -34,8 +31,8 @@ open class CommandEntity() : AbstractMessageEntity<Command<*>, CommandId>() {
     lateinit var issuedAt: Date
         private set
 
-    @Column(name = "ISSUED_BY")
-    var issuedBy: String? = null
+    @Column(name = "TRIGGERED_BY")
+    var triggeredBy: String? = null
         private set
 
     @Column(name="TARGET", columnDefinition = "varchar(64)")
@@ -49,7 +46,7 @@ open class CommandEntity() : AbstractMessageEntity<Command<*>, CommandId>() {
         this.name = command.name
         this.definition = command.definition
         this.issuedAt = command.issuedAt
-        this.issuedBy = command.issuedBy
+        this.triggeredBy = command.triggeredBy
         this.target = command.target
         this.json = command.json
     }
@@ -65,7 +62,7 @@ open class CommandEntity() : AbstractMessageEntity<Command<*>, CommandId>() {
 }
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-open class Command<R: Any?>(issuedBy: String? = null): Message {
+open class Command<R: Any?>(triggeredBy: String? = null): Message {
 
     override var type = MessageType.Command
     override val name =
@@ -75,7 +72,7 @@ open class Command<R: Any?>(issuedBy: String? = null): Message {
     override val id = UUID.randomUUID().toString()
     override val definition = 0
     val issuedAt = Date()
-    var issuedBy = issuedBy
+    var triggeredBy = triggeredBy
     open val target = context
 
     @JsonIgnore var json: String = ""
@@ -85,6 +82,10 @@ open class Command<R: Any?>(issuedBy: String? = null): Message {
             return field
         }
         @JsonIgnore internal set
+
+    open fun isTriggeredBy(event: Event): Boolean {
+        return false
+    }
 
     companion object {
 
@@ -100,9 +101,6 @@ open class Command<R: Any?>(issuedBy: String? = null): Message {
 
         private var active: ThreadLocal<Command<Any?>?> = ThreadLocal()
 
-        /*
-         * TODO Write an async version and use it for async clients
-         */
         fun <R, C: Command<R>> issue(command: C): R {
             command.origin = context
             repository.save(CommandEntity(command))
@@ -133,6 +131,24 @@ open class Command<R: Any?>(issuedBy: String? = null): Message {
             return this.active.get()
         }
 
+        val commandTypes = mutableSetOf<Class<Command<Any?>>>()
+
+        internal fun register(type: Class<Command<Any?>>) {
+            commandTypes.add(type)
+        }
+
+        internal fun triggerBy(event: Event): List<Command<Any?>> {
+            val commands = mutableListOf<Command<Any?>>()
+            commandTypes.forEach {
+                val command = it.newInstance()
+                if (command.isTriggeredBy(event)) {
+                    command.triggeredBy = event.id
+                    commands.add(command)
+                }
+            }
+            return commands
+        }
+
     }
 
 }
@@ -161,10 +177,23 @@ private class CommandIssuerInitialiser : ApplicationContextAware {
 
 open class CommandExecutor : RouteBuilder() {
 
+    private val logger = LoggerFactory.getLogger(this::class.java)
+
     override fun configure() {
 
-        this::class.declaredMemberFunctions.forEach {
-            from("direct:${it.name}").bean(this::class.java, it.name)
+        this::class.java.declaredMethods.forEach {
+            val command = if (it.parameterTypes.isNotEmpty()
+                && Command::class.java.isAssignableFrom(it.parameterTypes[0]))
+                it.parameterTypes[0] else null
+            if (command != null) {
+                from("direct:${it.name}").bean(object {
+                    @Handler
+                    fun handle(c: Command<Any?>): Command<Any?> {
+                        return Command.toCommand(c.json, command as Class<Command<Any?>>)
+                    }
+                }).bean(this::class.java, it.name)
+                Command.register(command as Class<Command<Any?>>)
+            }
         }
 
     }

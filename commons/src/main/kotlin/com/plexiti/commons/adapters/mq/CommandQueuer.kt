@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component
 @Component
 @Configuration
 @Profile("prod")
-class CommandSender : RouteBuilder() {
+class CommandQueuer : RouteBuilder() {
 
     private val logger = LoggerFactory.getLogger(this::class.java)
 
@@ -41,7 +41,7 @@ class CommandSender : RouteBuilder() {
     @Handler
     fun send(command: Command<Any?>) {
         rabbitTemplate.convertAndSend(queue, command.json);
-        logger.info("Sent ${command.json}")
+        logger.info("Triggered ${command.json}")
     }
 
 }

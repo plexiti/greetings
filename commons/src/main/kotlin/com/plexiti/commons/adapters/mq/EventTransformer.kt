@@ -1,8 +1,8 @@
 package com.plexiti.commons.adapters.mq
 
-import com.plexiti.commons.adapters.flow.FlowCommandCompleter
-import com.plexiti.commons.adapters.flow.FlowStartMessageHandler
+import com.plexiti.commons.application.Command
 import com.plexiti.commons.domain.Event
+import org.apache.camel.ProducerTemplate
 import org.springframework.amqp.core.Binding
 import org.springframework.amqp.core.BindingBuilder
 import org.springframework.amqp.core.Queue
@@ -23,25 +23,21 @@ import org.springframework.stereotype.Component
 @Component
 @Configuration
 @Profile("prod")
-class EventHandler {
+class EventTransformer {
 
     @Value("\${com.plexiti.app.context}")
     private lateinit var context: String;
 
     @Autowired
-    lateinit var flowCommandCompleter: FlowCommandCompleter
-
-    @Autowired
-    lateinit var flowStartMessageHandler: FlowStartMessageHandler
+    private lateinit var route: ProducerTemplate
 
     @RabbitListener(queues = arrayOf("\${com.plexiti.app.context}-events-queue"))
     fun handle(@Payload json: String) {
-
         val event = Event.toEvent(json)
-        flowCommandCompleter.handle(event)
-        flowStartMessageHandler.handle(event)
-
-
+        val commands = Command.triggerBy(event)
+        commands.forEach {
+            route.sendBody("direct:command", it)
+        }
     }
 
     @Bean

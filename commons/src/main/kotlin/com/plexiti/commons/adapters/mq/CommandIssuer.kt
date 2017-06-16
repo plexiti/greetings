@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component
 @Component
 @Configuration
 @Profile("prod")
-class CommandReceiver {
+class CommandIssuer {
 
     @Value("\${com.plexiti.app.context}")
     private lateinit var context: String;

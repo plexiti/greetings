@@ -129,6 +129,10 @@ open class Event(): Message {
             return findByAggregate(aggregate.id)
         }
 
+        fun findOne(id: String): Event? {
+            return repository.findOne(EventId(id))?.toEvent()
+        }
+
     }
 
     @Embeddable
