@@ -24,7 +24,7 @@ class CommandExecutor {
 
     @RabbitListener(queues = arrayOf("\${com.plexiti.app.context}-commands-queue"))
     fun handle(@Payload json: String) {
-        Command.execute(Command.toCommand(json))
+        Command.toCommand(json).execute()
     }
 
     @Bean

@@ -27,7 +27,7 @@ class GreetingReader : RouteBuilder() {
                 from("${file.toURI()}?${options}")
                 .bean(object {
                     @Handler fun handle(caller: String): Greeting {
-                        return Command.sync(AnswerCaller(caller)) as Greeting
+                        return AnswerCaller(caller).sync() as Greeting
                     }
                 })
             }

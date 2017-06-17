@@ -38,7 +38,7 @@ class EventTransformer {
         val event = Event.toEvent(json)
         Command.correlateBy(event)?.correlate(event)
         Command.triggerBy(event).forEach {
-            Command.async(it)
+            it.async()
         }
     }
 

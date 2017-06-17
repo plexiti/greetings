@@ -109,6 +109,24 @@ open class Command(triggeredBy: String? = null): Message {
         return false
     }
 
+    open fun async() {
+        val entity = CommandEntity(this)
+        entity.async = true
+        repository.save(entity)
+    }
+
+    open fun sync(): Any? {
+        repository.save(CommandEntity(this))
+        return execute()
+    }
+
+    open internal fun execute(): Any? {
+        logger.info("Started ${json}")
+        active.set(this)
+        val result = router?.requestBody("direct:${name}", this)
+        return result
+    }
+
     open fun isCorrelatedWith(event: Event): String? {
         return event.commandId
     }
@@ -133,24 +151,6 @@ open class Command(triggeredBy: String? = null): Message {
             internal set
 
         private var active: ThreadLocal<Command?> = ThreadLocal()
-
-        fun async(command: Command) {
-            val entity = CommandEntity(command)
-            entity.async = true
-            repository.save(entity)
-        }
-
-        fun sync(command: Command): Any? {
-            repository.save(CommandEntity(command))
-            return execute(command)
-        }
-
-        fun execute(command: Command): Any? {
-            logger.info("Started ${command.json}")
-            active.set(command)
-            val result = router?.requestBody("direct:${command.name}", command)
-            return result
-        }
 
         internal fun toCommand(json: String): Command{
             val command = toCommand(json, Command::class.java)
