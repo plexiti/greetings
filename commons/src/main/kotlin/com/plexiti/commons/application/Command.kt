@@ -8,7 +8,6 @@ import com.plexiti.commons.domain.*
 import org.apache.camel.Handler
 import org.apache.camel.ProducerTemplate
 import org.apache.camel.builder.RouteBuilder
-import org.apache.camel.component.jpa.Consumed
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.ApplicationContext
@@ -108,15 +107,14 @@ open class Command(triggeredBy: String? = null): Message {
         this::class.java.simpleName.substring(0,1).toLowerCase() +
             this::class.java.simpleName.substring(1)
     override var origin: String = context
+    open val target = context
     override val id = UUID.randomUUID().toString()
     override val definition = 0
     val issuedAt = Date()
+
     var triggeredBy = triggeredBy
     var correlationId = id
-    var completedBy: String? = null
-    var completedAt: Date? = null
     var flowId: String? = null
-    open val target = context
 
     @JsonIgnore var json: String = ""
         @JsonIgnore get() {
@@ -154,13 +152,10 @@ open class Command(triggeredBy: String? = null): Message {
 
     open internal fun correlate(event: Event) {
         val commandEntity = repository.findOne(CommandId(id))
-        completedBy = event.id
-        commandEntity.completedBy = completedBy
+        commandEntity.completedBy = event.id
         if (flowId == null) {
-            completedAt = Date()
-            commandEntity.completedAt = completedAt
+            commandEntity.completedAt = Date()
         }
-        commandEntity.json = json
         logger.info("Executed ${json}")
     }
 

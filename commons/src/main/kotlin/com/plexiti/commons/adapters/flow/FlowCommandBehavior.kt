@@ -19,7 +19,7 @@ abstract class FlowCommandBehavior : AbstractBpmnActivityBehavior() {
     final override fun execute(execution: ActivityExecution) {
         val command = command(execution);
         command.flowId = execution.id
-        logger.info("Flow queues ${command.json}")
+        logger.info("Flow queuing ${command.json}")
         command.async()
         execution.setVariable(command.name, JSON(command.json))
     }

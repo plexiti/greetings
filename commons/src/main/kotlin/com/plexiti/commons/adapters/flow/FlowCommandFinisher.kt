@@ -46,7 +46,7 @@ class FlowCommandFinisher : RouteBuilder() {
             val event = Event.findOne(command.completedBy!!)!!
             flow.runtimeService.signal(execution.id, mapOf(event.name to SpinJsonNode.JSON(event.json)))
 
-            logger.info("Flow executed ${command.json}")
+            logger.info("Flow forwarded ${command.json}")
 
         }
 
