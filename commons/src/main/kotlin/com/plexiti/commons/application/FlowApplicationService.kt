@@ -54,9 +54,12 @@ class FlowApplicationService: CommandExecutor() {
 
         override fun isTriggeredBy(event: Event): Boolean {
 
-            return flow.runtimeService
+            val command = Command.findOne(event.commandId!!)!!
+
+            return command.flowId != null &&
+                flow.runtimeService
                 .createExecutionQuery()
-                .variableValueEquals("commandId", event.commandId)
+                .executionId(command.flowId)
                 .singleResult() != null;
 
         }
@@ -66,10 +69,11 @@ class FlowApplicationService: CommandExecutor() {
     fun completeActivity(command: CompleteActivity) {
 
         val event = Event.findOne(command.triggeredBy!!)!!
+        val command = Command.findOne(event.commandId!!)!!
 
         val execution = flow.runtimeService
             .createExecutionQuery()
-            .variableValueEquals("commandId", event.commandId)
+            .executionId(command.flowId)
             .singleResult();
 
         if (execution != null) {

@@ -31,8 +31,12 @@ class CommandEntity() : AbstractMessageEntity<Command, CommandId>() {
     lateinit var issuedAt: Date
         private set
 
-    @Column(name = "TRIGGERED_BY")
+    @Column(name = "TRIGGERED_BY", length=36)
     var triggeredBy: String? = null
+        private set
+
+    @Column(name = "FLOW_ID", length=36)
+    var flowId: String? = null
         private set
 
     @Column(name="TARGET", columnDefinition = "varchar(64)")
@@ -48,6 +52,7 @@ class CommandEntity() : AbstractMessageEntity<Command, CommandId>() {
         this.issuedAt = command.issuedAt
         this.triggeredBy = command.triggeredBy
         this.target = command.target
+        this.flowId = flowId
         this.json = command.json
     }
 
@@ -73,6 +78,7 @@ open class Command(triggeredBy: String? = null): Message {
     override val definition = 0
     val issuedAt = Date()
     var triggeredBy = triggeredBy
+    var flowId: String? = null
     open val target = context
 
     @JsonIgnore var json: String = ""
@@ -155,6 +161,10 @@ open class Command(triggeredBy: String? = null): Message {
                 }
             }
             return commands
+        }
+
+        fun findOne(id: String): Command? {
+            return Command.repository.findOne(CommandId(id))?.toCommand()
         }
 
     }

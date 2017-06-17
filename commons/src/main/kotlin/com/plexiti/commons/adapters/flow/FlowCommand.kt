@@ -15,17 +15,16 @@ abstract class FlowCommand: AbstractBpmnActivityBehavior() {
 
     final override fun execute(execution: ActivityExecution) {
         val command = command(execution);
-        execution.setVariableLocal("commandId", command.id)
+        command.flowId = execution.id
         Command.async(command)
         execution.setVariable(command.name, JSON(command.json))
     }
 
     final override fun signal(execution: ActivityExecution, signalName: String?, signalData: Any?) {
-        execution.removeVariableLocal("commandId")
         leave(execution)
     }
 
-    protected fun <C: Command> command(type: Class<C>, execution: DelegateExecution): C {
+    protected fun <C: Command> command(type: Class<C>, execution: ActivityExecution): C {
         val name = type.newInstance().name
         val json = execution.getVariable(name) as SpinJsonNode
         return Command.toCommand(json.toString(), type)
