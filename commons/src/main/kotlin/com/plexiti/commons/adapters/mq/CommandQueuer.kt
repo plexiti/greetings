@@ -1,6 +1,5 @@
 package com.plexiti.commons.adapters.mq
 
-import com.plexiti.commons.application.Command
 import com.plexiti.commons.application.CommandEntity
 import org.apache.camel.Handler
 import org.apache.camel.builder.RouteBuilder
@@ -43,7 +42,7 @@ class CommandQueuer : RouteBuilder() {
     }
 
     @Handler
-    fun send(command: Command) {
+    fun send(command: CommandEntity) {
         rabbitTemplate.convertAndSend(queue, command.json);
         logger.info("Queued ${command.json}")
     }

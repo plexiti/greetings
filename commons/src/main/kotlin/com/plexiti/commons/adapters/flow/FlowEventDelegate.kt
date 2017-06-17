@@ -10,7 +10,7 @@ import org.camunda.spin.json.SpinJsonNode
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
-abstract class FlowEvent<out E: Event>: JavaDelegate {
+abstract class FlowEventDelegate<out E: Event>: JavaDelegate {
 
     override fun execute(execution: DelegateExecution) {
         val event = event(execution);

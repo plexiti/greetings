@@ -8,6 +8,7 @@ import com.plexiti.commons.domain.*
 import org.apache.camel.Handler
 import org.apache.camel.ProducerTemplate
 import org.apache.camel.builder.RouteBuilder
+import org.apache.camel.component.jpa.Consumed
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.ApplicationContext
@@ -24,7 +25,14 @@ import javax.persistence.*
  */
 @Entity
 @Table(name="COMMANDS")
-@NamedQuery(name = "CommandQueuer", query = "select c from CommandEntity c where c.async = TRUE and c.publishedAt is null")
+@NamedQueries(
+    NamedQuery(name = "CommandQueuer", query = "select c from CommandEntity c " +
+        "where c.async = true and c.publishedAt is null"),
+    NamedQuery(name = "CommandFinisher", query = "select c from CommandEntity c " +
+        "where c.flowId is not null " +
+        "and c.completedBy is not null " +
+        "and c.completedAt is null")
+)
 class CommandEntity() : AbstractMessageEntity<Command, CommandId>() {
 
     @Column(name = "ISSUED_AT")
@@ -48,13 +56,17 @@ class CommandEntity() : AbstractMessageEntity<Command, CommandId>() {
     var completedBy: String? = null
         internal set
 
-    @Column(name="TARGET", columnDefinition = "varchar(64)")
-    lateinit var target: String
-        protected set
+    @Column(name = "COMPLETED_AT")
+    var completedAt: Date? = null
+        internal set
 
     @Column(name="ASYNC")
     var async = false
         internal set
+
+    @Column(name="TARGET", columnDefinition = "varchar(64)")
+    lateinit var target: String
+        protected set
 
     internal constructor(command: Command): this() {
         this.type = command.type
@@ -78,6 +90,14 @@ class CommandEntity() : AbstractMessageEntity<Command, CommandId>() {
         return Command.toCommand(json, type)
     }
 
+    override fun setConsumed() {
+        if (publishedAt == null) {
+            publishedAt = Date()
+        } else if (completedAt == null) {
+            completedAt = Date()
+        }
+    }
+
 }
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -94,6 +114,7 @@ open class Command(triggeredBy: String? = null): Message {
     var triggeredBy = triggeredBy
     var correlationId = id
     var completedBy: String? = null
+    var completedAt: Date? = null
     var flowId: String? = null
     open val target = context
 
@@ -132,9 +153,14 @@ open class Command(triggeredBy: String? = null): Message {
     }
 
     open internal fun correlate(event: Event) {
-        completedBy = event.id
         val commandEntity = repository.findOne(CommandId(id))
+        completedBy = event.id
         commandEntity.completedBy = completedBy
+        if (flowId == null) {
+            completedAt = Date()
+            commandEntity.completedAt = completedAt
+        }
+        commandEntity.json = json
         logger.info("Executed ${json}")
     }
 

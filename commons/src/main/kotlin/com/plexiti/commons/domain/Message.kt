@@ -30,18 +30,15 @@ abstract class AbstractMessageEntity<TYPE: Message, ID: MessageId>: AbstractEnti
     @Lob
     @Column(name="JSON", columnDefinition = "text")
     lateinit var json: String
-        protected set
+        internal set
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "PUBLISHED_AT")
     var publishedAt: Date? = null
-        private set
+        protected set
 
     @Consumed
-    fun setPublished() {
-        if (publishedAt == null)
-            publishedAt = Date()
-    }
+    abstract fun setConsumed();
 
     fun isPublished(): Boolean {
         return publishedAt != null

@@ -7,15 +7,19 @@ import org.camunda.spin.json.SpinJsonNode.JSON
 import org.camunda.bpm.engine.impl.bpmn.behavior.AbstractBpmnActivityBehavior
 import org.camunda.bpm.engine.impl.pvm.delegate.ActivityExecution
 import org.camunda.spin.json.SpinJsonNode
+import org.slf4j.LoggerFactory
 
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
-abstract class FlowCommand: AbstractBpmnActivityBehavior() {
+abstract class FlowCommandBehavior : AbstractBpmnActivityBehavior() {
+
+    private val logger = LoggerFactory.getLogger(this::class.java)
 
     final override fun execute(execution: ActivityExecution) {
         val command = command(execution);
         command.flowId = execution.id
+        logger.info("Flow queues ${command.json}")
         command.async()
         execution.setVariable(command.name, JSON(command.json))
     }

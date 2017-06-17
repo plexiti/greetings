@@ -11,6 +11,7 @@ CREATE TABLE grt_commands (
     correlation_id VARCHAR(128),
     async BOOLEAN NOT NULL,
     completed_by VARCHAR(36),
+    completed_at TIMESTAMP,
     json TEXT NOT NULL,
     published_at TIMESTAMP
 );

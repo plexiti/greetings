@@ -54,39 +54,6 @@ class Flow: RouteBuilder() {
 
     }
 
-    class Complete(): FlowCommand() {
-
-        override fun isTriggeredBy(event: Event): Boolean {
-
-            val command = Command.findOne(event.commandId!!)!!
-
-            return command.flowId != null &&
-                flow.runtimeService
-                    .createExecutionQuery()
-                    .executionId(command.flowId)
-                    .singleResult() != null;
-
-        }
-
-    }
-
-    fun complete(command: Complete) {
-
-        val event = Event.findOne(command.triggeredBy!!)!!
-        val command = Command.findOne(event.commandId!!)!!
-
-        val execution = flow.runtimeService
-            .createExecutionQuery()
-            .executionId(command.flowId)
-            .singleResult();
-
-        if (execution != null) {
-            flow.runtimeService
-                .signal(execution.id, mapOf(event.name to SpinJsonNode.JSON(event.json)))
-        }
-
-    }
-
     override fun configure() {
 
         flow.repositoryService.createProcessDefinitionQuery().latestVersion().list().forEach {
@@ -98,13 +65,6 @@ class Flow: RouteBuilder() {
             }).bean(this::class.java, "start")
             Command.register(Start::class.java as Class<Command>)
         }
-        from("direct:complete").bean(object {
-            @Handler
-            fun handle(c: Command): Complete {
-                return Command.toCommand(c.json, Complete::class.java)
-            }
-        }).bean(this::class.java, "complete")
-        Command.register(Complete::class.java as Class<Command>)
 
     }
 

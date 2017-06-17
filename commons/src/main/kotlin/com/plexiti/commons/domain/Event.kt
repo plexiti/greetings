@@ -57,6 +57,12 @@ class EventEntity(): AbstractMessageEntity<Event, EventId>() {
         return Event.toEvent(json, type)
     }
 
+    override fun setConsumed() {
+        if (publishedAt == null) {
+            publishedAt = Date()
+        }
+    }
+
 }
 
 @JsonIgnoreProperties(ignoreUnknown = true)

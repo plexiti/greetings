@@ -1,6 +1,6 @@
 package com.plexiti.greetings.adapters.flow
 
-import com.plexiti.commons.adapters.flow.FlowEvent
+import com.plexiti.commons.adapters.flow.FlowEventDelegate
 import com.plexiti.greetings.domain.Greeting
 import com.plexiti.greetings.domain.Greeting.CallerContactedPersonally
 import com.plexiti.greetings.domain.GreetingId
@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
 @Component
-class CallerContactedPersonallyEvent: FlowEvent<CallerContactedPersonally>() {
+class CallerContactedPersonallyEvent: FlowEventDelegate<CallerContactedPersonally>() {
 
     @Autowired
     lateinit var greetingRepository: GreetingRepository
