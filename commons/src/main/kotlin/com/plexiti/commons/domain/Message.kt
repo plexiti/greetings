@@ -63,5 +63,5 @@ interface Message {
 }
 
 enum class MessageType {
-    Event, Command, Document
+    Event, Command, Document, Flow
 }
