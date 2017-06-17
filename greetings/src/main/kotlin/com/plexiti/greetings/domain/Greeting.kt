@@ -1,6 +1,8 @@
 package com.plexiti.greetings.domain
 
-import com.plexiti.commons.domain.*
+import com.plexiti.commons.domain.Aggregate
+import com.plexiti.commons.domain.AggregateId
+import com.plexiti.commons.domain.Event
 import com.plexiti.commons.domain.Event.Companion.raise
 import com.plexiti.greetings.domain.Greeting.CallAnsweredAutomatically
 import org.springframework.beans.factory.annotation.Autowired
@@ -20,6 +22,10 @@ import javax.persistence.Table
 @Table(name="GREETINGS")
 class Greeting: Aggregate<GreetingId>() {
 
+    @Column(name="CALLER")
+    lateinit var caller: String
+        private set
+
     @Column(name="GREETING")
     lateinit var greeting: String
         private set
@@ -29,28 +35,38 @@ class Greeting: Aggregate<GreetingId>() {
         private set
 
     class GreetingCreated(greeting: Greeting? = null): Event(greeting) {
+        val caller = greeting?.caller
         val greeting = greeting?.greeting
     }
 
     class CallAnsweredAutomatically(greeting: Greeting? = null): Event(greeting) {
+
+        val caller = greeting?.caller
         val greeting = greeting?.greeting
+
+        override fun correlationId(): String? {
+            return caller
+        }
+
     }
 
     class CallerContactedPersonally(greeting: Greeting? = null): Event(greeting) {
-        val greeting = greeting?.greeting
+        val caller = greeting?.caller
     }
 
     class CallerIdentified(greeting: Greeting? = null): Event(greeting) {
+        val caller = greeting?.caller
         val contacts = greeting?.contacts ?: 0
         val known = contacts > 1
     }
 
     companion object {
 
-        fun create(greeting: String): Greeting {
+        fun create(caller: String, greeting: String = String.format("Hello World, %s", caller)): Greeting {
             val new = Greeting()
             new.id = GreetingId(UUID.randomUUID().toString())
             new.greeting = greeting
+            new.caller = caller
             raise(GreetingCreated(new))
             return new
         }
@@ -81,7 +97,7 @@ class GreetingService {
 
     fun answer(caller: String): Greeting {
         val answer = String.format("Hello World, %s", caller)
-        val greeting = greetingRepository.findByGreeting(answer) ?: Greeting.create(answer)
+        val greeting = greetingRepository.findByGreeting(answer) ?: Greeting.create(caller, answer)
         greetingRepository.save(greeting)
         raise(CallAnsweredAutomatically(greeting))
         return greeting
