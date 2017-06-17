@@ -17,14 +17,14 @@ import org.springframework.stereotype.Component
 @Component
 @Configuration
 @Profile("prod")
-class CommandIssuer {
+class CommandExecutor {
 
     @Value("\${com.plexiti.app.context}")
     private lateinit var context: String;
 
     @RabbitListener(queues = arrayOf("\${com.plexiti.app.context}-commands-queue"))
     fun handle(@Payload json: String) {
-        Command.issue(Command.toCommand(json))
+        Command.execute(Command.toCommand(json))
     }
 
     @Bean

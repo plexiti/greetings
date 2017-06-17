@@ -21,7 +21,7 @@ abstract class AbstractMessageEntity<TYPE: Message, ID: MessageId>: AbstractEnti
         protected set
 
     @Column(name="ORIGIN", columnDefinition = "varchar(64)")
-    override var origin: String? = null
+    override lateinit var origin: String
         protected set
 
     @Column(name="DEFINITION")
@@ -56,7 +56,7 @@ interface Message {
 
     val type: MessageType
     val id: Serializable
-    val origin: String?
+    val origin: String
     val name: String
     val definition: Int
 

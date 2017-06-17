@@ -39,9 +39,9 @@ class CommandQueuer : RouteBuilder() {
     }
 
     @Handler
-    fun send(command: Command<Any?>) {
+    fun send(command: Command) {
         rabbitTemplate.convertAndSend(queue, command.json);
-        logger.info("Triggered ${command.json}")
+        logger.info("Queued ${command.json}")
     }
 
 }

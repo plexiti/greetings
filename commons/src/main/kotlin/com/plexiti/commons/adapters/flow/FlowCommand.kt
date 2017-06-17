@@ -11,12 +11,12 @@ import org.camunda.spin.json.SpinJsonNode
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
-abstract class FlowCommand<out C: Command<*>>: AbstractBpmnActivityBehavior() {
+abstract class FlowCommand: AbstractBpmnActivityBehavior() {
 
     final override fun execute(execution: ActivityExecution) {
         val command = command(execution);
         execution.setVariableLocal("commandId", command.id)
-        Command.issue(command as Command<Unit>)
+        Command.async(command)
         execution.setVariable(command.name, JSON(command.json))
     }
 
@@ -25,7 +25,7 @@ abstract class FlowCommand<out C: Command<*>>: AbstractBpmnActivityBehavior() {
         leave(execution)
     }
 
-    protected fun <C: Command<*>> command(type: Class<C>, execution: DelegateExecution): C {
+    protected fun <C: Command> command(type: Class<C>, execution: DelegateExecution): C {
         val name = type.newInstance().name
         val json = execution.getVariable(name) as SpinJsonNode
         return Command.toCommand(json.toString(), type)
@@ -37,6 +37,6 @@ abstract class FlowCommand<out C: Command<*>>: AbstractBpmnActivityBehavior() {
         return Event.toEvent(json.toString(), type)
     }
 
-    abstract fun command(execution: ActivityExecution): C
+    abstract fun command(execution: ActivityExecution): Command
 
 }

@@ -24,7 +24,7 @@ import javax.persistence.*
  */
 @Entity
 @Table(name="COMMANDS")
-open class CommandEntity() : AbstractMessageEntity<Command<*>, CommandId>() {
+class CommandEntity() : AbstractMessageEntity<Command, CommandId>() {
 
     @Column(name = "ISSUED_AT")
     @Temporal(TemporalType.TIMESTAMP)
@@ -39,7 +39,7 @@ open class CommandEntity() : AbstractMessageEntity<Command<*>, CommandId>() {
     lateinit var target: String
         protected set
 
-    internal constructor(command: Command<*>): this() {
+    internal constructor(command: Command): this() {
         this.type = command.type
         this.origin = command.origin
         this.id = CommandId(command.id)
@@ -51,24 +51,24 @@ open class CommandEntity() : AbstractMessageEntity<Command<*>, CommandId>() {
         this.json = command.json
     }
 
-    fun toCommand(): Command<*> {
+    fun toCommand(): Command {
         return Command.toCommand(json)
     }
 
-    fun <C: Command<*>> toCommand(type: Class<C>): C {
+    fun <C: Command> toCommand(type: Class<C>): C {
         return Command.toCommand(json, type)
     }
 
 }
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-open class Command<R: Any?>(triggeredBy: String? = null): Message {
+open class Command(triggeredBy: String? = null): Message {
 
     override var type = MessageType.Command
     override var name =
         this::class.java.simpleName.substring(0,1).toLowerCase() +
             this::class.java.simpleName.substring(1)
-    override var origin: String? = null
+    override var origin: String = context
     override val id = UUID.randomUUID().toString()
     override val definition = 0
     val issuedAt = Date()
@@ -99,46 +99,54 @@ open class Command<R: Any?>(triggeredBy: String? = null): Message {
         var router: ProducerTemplate? = null
             internal set
 
-        private var active: ThreadLocal<Command<Any?>?> = ThreadLocal()
+        private var active: ThreadLocal<Command?> = ThreadLocal()
 
-        fun <R, C: Command<R>> issue(command: C): R {
-            command.origin = context
+        fun async(command: Command) {
             repository.save(CommandEntity(command))
-            active.set(command as Command<Any?>)
-            logger.info("Issued ${command.json}")
+            router?.requestBody("direct:command", command)
+        }
+
+        fun sync(command: Command): Any? {
+            repository.save(CommandEntity(command))
+            return execute(command)
+        }
+
+        fun execute(command: Command): Any? {
+            logger.info("Started ${command.json}")
+            active.set(command)
             val result = router?.requestBody("direct:${command.name}", command)
             logger.info("Executed ${command.json}")
-            return result as R
+            return result
         }
 
-        internal fun toCommand(json: String): Command<Any?> {
+        internal fun toCommand(json: String): Command{
             val command = toCommand(json, Command::class.java)
             command.json = json
-            return command as Command<Any?>
+            return command
         }
 
-        internal fun <C: Command<*>> toCommand(json: String, type: Class<C>): C {
+        internal fun <C: Command> toCommand(json: String, type: Class<C>): C {
             val command = ObjectMapper().readValue(json, type)
             command.json = json
             return command
         }
 
-        internal fun toJson(command: Command<*>): String {
+        internal fun toJson(command: Command): String {
             return ObjectMapper().writeValueAsString(command)
         }
 
-        fun active(): Command<Any?>? {
+        fun active(): Command? {
             return this.active.get()
         }
 
-        val commandTypes = mutableSetOf<Class<Command<Any?>>>()
+        val commandTypes = mutableSetOf<Class<Command>>()
 
-        internal fun register(type: Class<Command<Any?>>) {
+        internal fun register(type: Class<Command>) {
             commandTypes.add(type)
         }
 
-        internal fun triggerBy(event: Event): List<Command<Any?>> {
-            val commands = mutableListOf<Command<Any?>>()
+        internal fun triggerBy(event: Event): List<Command> {
+            val commands = mutableListOf<Command>()
             commandTypes.forEach {
                 val command = it.newInstance()
                 if (command.isTriggeredBy(event)) {
@@ -162,7 +170,7 @@ interface CommandRepository: CrudRepository<CommandEntity, CommandId>
 class InMemoryCommandRepository: InMemoryEntityCrudRepository<CommandEntity, CommandId>(), CommandRepository
 
 @Component
-private class CommandIssuerInitialiser : ApplicationContextAware {
+private class CommandInitialiser : ApplicationContextAware {
 
     @Value("\${com.plexiti.app.context}")
     private lateinit var context: String
@@ -182,18 +190,18 @@ open class CommandExecutor : RouteBuilder() {
     override fun configure() {
 
         this::class.java.declaredMethods.forEach {
-            val command = if (it.parameterTypes.isNotEmpty()
-                && Command::class.java.isAssignableFrom(it.parameterTypes[0]))
-                it.parameterTypes[0] else null
-            if (command != null) {
-                from("direct:${it.name}").bean(object {
-                    @Handler
-                    fun handle(c: Command<Any?>): Command<Any?> {
-                        return Command.toCommand(c.json, command as Class<Command<Any?>>)
-                    }
-                }).bean(this::class.java, it.name)
-                Command.register(command as Class<Command<Any?>>)
-            }
+           if (it.parameterTypes.isNotEmpty()) {
+               val type = it.parameterTypes[0]
+               if (Command::class.java.isAssignableFrom(type)) {
+                   from("direct:${it.name}").bean(object {
+                       @Handler
+                       fun handle(c: Command): Command {
+                           return Command.toCommand(c.json, type as Class<Command>)
+                       }
+                   }).bean(this::class.java, it.name)
+                   Command.register(type as Class<Command>)
+               }
+           }
         }
 
     }

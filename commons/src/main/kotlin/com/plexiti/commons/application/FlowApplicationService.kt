@@ -27,7 +27,7 @@ class FlowApplicationService: CommandExecutor() {
         FlowApplicationService.flow = this.flow
     }
 
-    class StartFlow(): Command<Unit>() {
+    class StartFlow(): Command() {
 
         override fun isTriggeredBy(event: Event): Boolean {
 
@@ -50,7 +50,7 @@ class FlowApplicationService: CommandExecutor() {
             .correlateStartMessage();
     }
 
-    class CompleteActivity(): Command<Unit>() {
+    class CompleteActivity(): Command() {
 
         override fun isTriggeredBy(event: Event): Boolean {
 

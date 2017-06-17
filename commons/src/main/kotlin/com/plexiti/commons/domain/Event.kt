@@ -66,7 +66,7 @@ open class Event(): Message {
     override val name =
         this::class.java.simpleName.substring(0,1).toLowerCase() +
             this::class.java.simpleName.substring(1)
-    override var origin: String? = null
+    override var origin = context
     override lateinit var id: String; protected set
     override val definition = 0
     lateinit var raisedAt: Date
@@ -91,13 +91,12 @@ open class Event(): Message {
 
         private val logger = LoggerFactory.getLogger(this::class.java)
 
-        internal var context: String? = null
+        internal lateinit var context: String
 
         internal var repository: EventEntityRepository = InMemoryEventRepository()
             internal set
 
         fun <E: Event> raise(event: E): E {
-            event.origin = context
             repository.save(EventEntity(event))
             logger.info("Raised ${event.json}")
             return event
@@ -179,7 +178,7 @@ class InMemoryEventRepository: InMemoryEntityCrudRepository<EventEntity, EventId
 }
 
 @Component
-private class EventRaiserInitialiser: ApplicationContextAware {
+private class EventInitialiser : ApplicationContextAware {
 
     @Value("\${com.plexiti.app.context}")
     private lateinit var context: String

@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
 @Component
-class IdentifyCallerCommand: FlowCommand<IdentifyCaller>() {
+class IdentifyCallerCommand: FlowCommand() {
 
     override fun command(execution: ActivityExecution): IdentifyCaller {
         val event = event(Greeting.CallAnsweredAutomatically::class.java, execution)

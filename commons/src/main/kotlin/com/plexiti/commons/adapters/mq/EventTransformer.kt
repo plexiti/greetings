@@ -34,9 +34,8 @@ class EventTransformer {
     @RabbitListener(queues = arrayOf("\${com.plexiti.app.context}-events-queue"))
     fun handle(@Payload json: String) {
         val event = Event.toEvent(json)
-        val commands = Command.triggerBy(event)
-        commands.forEach {
-            route.sendBody("direct:command", it)
+        Command.triggerBy(event).forEach {
+            Command.async(it)
         }
     }
 

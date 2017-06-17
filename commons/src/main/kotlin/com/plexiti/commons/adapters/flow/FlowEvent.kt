@@ -18,7 +18,7 @@ abstract class FlowEvent<out E: Event>: JavaDelegate {
         execution.setVariable(event.name, JSON(event.json))
     }
 
-    protected fun <C: Command<*>> command(type: Class<C>, execution: DelegateExecution): C {
+    protected fun <C: Command> command(type: Class<C>, execution: DelegateExecution): C {
         val name = type.newInstance().name
         val json = execution.getVariable(name) as SpinJsonNode
         return Command.toCommand(json.toString(), type)
