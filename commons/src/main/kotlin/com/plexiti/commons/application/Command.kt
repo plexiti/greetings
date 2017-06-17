@@ -39,6 +39,14 @@ class CommandEntity() : AbstractMessageEntity<Command, CommandId>() {
     var flowId: String? = null
         private set
 
+    @Column(name = "CORRELATION_ID", length=128)
+    lateinit var correlationId: String
+        private set
+
+    @Column(name = "COMPLETED_BY", length=36)
+    var completedBy: String? = null
+        internal set
+
     @Column(name="TARGET", columnDefinition = "varchar(64)")
     lateinit var target: String
         protected set
@@ -51,8 +59,9 @@ class CommandEntity() : AbstractMessageEntity<Command, CommandId>() {
         this.definition = command.definition
         this.issuedAt = command.issuedAt
         this.triggeredBy = command.triggeredBy
+        this.correlationId = command.correlationId
         this.target = command.target
-        this.flowId = flowId
+        this.flowId = command.flowId
         this.json = command.json
     }
 
@@ -78,6 +87,8 @@ open class Command(triggeredBy: String? = null): Message {
     override val definition = 0
     val issuedAt = Date()
     var triggeredBy = triggeredBy
+    var correlationId = id
+    var completedBy: String? = null
     var flowId: String? = null
     open val target = context
 
@@ -93,13 +104,17 @@ open class Command(triggeredBy: String? = null): Message {
         return false
     }
 
+    open fun isCorrelatedWith(event: Event): String? {
+        return event.commandId
+    }
+
     companion object {
 
         private val logger = LoggerFactory.getLogger(this::class.java)
 
         lateinit var context: String
 
-        var repository: CrudRepository<CommandEntity, CommandId> = InMemoryCommandRepository()
+        var repository: CommandRepository = InMemoryCommandRepository()
             internal set
 
         var router: ProducerTemplate? = null
@@ -121,8 +136,14 @@ open class Command(triggeredBy: String? = null): Message {
             logger.info("Started ${command.json}")
             active.set(command)
             val result = router?.requestBody("direct:${command.name}", command)
-            logger.info("Executed ${command.json}")
             return result
+        }
+
+        fun correlate(event: Event, command: Command) {
+            command.completedBy = event.id
+            val commandEntity = repository.findOne(CommandId(command.id))
+            commandEntity.completedBy = command.completedBy
+            logger.info("Executed ${command.json}")
         }
 
         internal fun toCommand(json: String): Command{
@@ -163,8 +184,24 @@ open class Command(triggeredBy: String? = null): Message {
             return commands
         }
 
+        internal fun correlateBy(event: Event): Command? {
+            commandTypes.forEach {
+                var command = it.newInstance()
+                val correlationId = command.isCorrelatedWith(event)
+                if (correlationId != null) {
+                    command = Command.findByCorrelationIdAndCompletedByIsNull(correlationId)
+                    return command
+                }
+            }
+            return null
+        }
+
         fun findOne(id: String): Command? {
             return Command.repository.findOne(CommandId(id))?.toCommand()
+        }
+
+        fun findByCorrelationIdAndCompletedByIsNull(correlationId: String): Command? {
+            return Command.repository.findByCorrelationIdAndCompletedByIsNull(correlationId)?.toCommand()
         }
 
     }
@@ -174,10 +211,21 @@ open class Command(triggeredBy: String? = null): Message {
 class CommandId(value: String = ""): MessageId(value)
 
 @Repository
-interface CommandRepository: CrudRepository<CommandEntity, CommandId>
+interface CommandRepository: CrudRepository<CommandEntity, CommandId> {
+
+    fun findByCorrelationIdAndCompletedByIsNull(correlationId: String): CommandEntity?
+
+}
 
 @NoRepositoryBean
-class InMemoryCommandRepository: InMemoryEntityCrudRepository<CommandEntity, CommandId>(), CommandRepository
+class InMemoryCommandRepository: InMemoryEntityCrudRepository<CommandEntity, CommandId>(), CommandRepository {
+
+    override fun findByCorrelationIdAndCompletedByIsNull(correlationId: String): CommandEntity? {
+        val list = findAll().filter { correlationId == it.correlationId && it.completedBy == null }
+        return if (list.isNotEmpty()) list[0] else null
+    }
+
+}
 
 @Component
 private class CommandInitialiser : ApplicationContextAware {

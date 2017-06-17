@@ -15,6 +15,7 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
 import org.springframework.messaging.handler.annotation.Payload
 import org.springframework.stereotype.Component
+import javax.transaction.Transactional
 
 
 /**
@@ -32,10 +33,15 @@ class EventTransformer {
     private lateinit var route: ProducerTemplate
 
     @RabbitListener(queues = arrayOf("\${com.plexiti.app.context}-events-queue"))
+    @Transactional
     fun handle(@Payload json: String) {
         val event = Event.toEvent(json)
         Command.triggerBy(event).forEach {
             Command.async(it)
+        }
+        val command = Command.correlateBy(event)
+        if (command != null) {
+            Command.correlate(event, command)
         }
     }
 
