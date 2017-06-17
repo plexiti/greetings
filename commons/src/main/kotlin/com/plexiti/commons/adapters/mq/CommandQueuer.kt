@@ -1,6 +1,7 @@
 package com.plexiti.commons.adapters.mq
 
 import com.plexiti.commons.application.Command
+import com.plexiti.commons.application.CommandEntity
 import org.apache.camel.Handler
 import org.apache.camel.builder.RouteBuilder
 import org.slf4j.LoggerFactory
@@ -34,8 +35,11 @@ class CommandQueuer : RouteBuilder() {
     @Autowired
     private lateinit var rabbitTemplate: RabbitTemplate
 
+    val options = "consumer.namedQuery=CommandQueuer&consumeDelete=false"
+
     override fun configure() {
-        from("direct:command").bean(this)
+        from("jpa:${CommandEntity::class.qualifiedName}?${options}")
+            .bean(this)
     }
 
     @Handler

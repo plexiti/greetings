@@ -36,12 +36,9 @@ class EventTransformer {
     @Transactional
     fun handle(@Payload json: String) {
         val event = Event.toEvent(json)
+        Command.correlateBy(event)?.correlate(event)
         Command.triggerBy(event).forEach {
             Command.async(it)
-        }
-        val command = Command.correlateBy(event)
-        if (command != null) {
-            Command.correlate(event, command)
         }
     }
 

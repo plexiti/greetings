@@ -24,6 +24,7 @@ import javax.persistence.*
  */
 @Entity
 @Table(name="COMMANDS")
+@NamedQuery(name = "CommandQueuer", query = "select c from CommandEntity c where c.async = TRUE and c.publishedAt is null")
 class CommandEntity() : AbstractMessageEntity<Command, CommandId>() {
 
     @Column(name = "ISSUED_AT")
@@ -50,6 +51,10 @@ class CommandEntity() : AbstractMessageEntity<Command, CommandId>() {
     @Column(name="TARGET", columnDefinition = "varchar(64)")
     lateinit var target: String
         protected set
+
+    @Column(name="ASYNC")
+    var async = false
+        internal set
 
     internal constructor(command: Command): this() {
         this.type = command.type
@@ -108,6 +113,13 @@ open class Command(triggeredBy: String? = null): Message {
         return event.commandId
     }
 
+    open internal fun correlate(event: Event) {
+        completedBy = event.id
+        val commandEntity = repository.findOne(CommandId(id))
+        commandEntity.completedBy = completedBy
+        logger.info("Executed ${json}")
+    }
+
     companion object {
 
         private val logger = LoggerFactory.getLogger(this::class.java)
@@ -123,8 +135,9 @@ open class Command(triggeredBy: String? = null): Message {
         private var active: ThreadLocal<Command?> = ThreadLocal()
 
         fun async(command: Command) {
-            repository.save(CommandEntity(command))
-            router?.requestBody("direct:command", command)
+            val entity = CommandEntity(command)
+            entity.async = true
+            repository.save(entity)
         }
 
         fun sync(command: Command): Any? {
@@ -137,13 +150,6 @@ open class Command(triggeredBy: String? = null): Message {
             active.set(command)
             val result = router?.requestBody("direct:${command.name}", command)
             return result
-        }
-
-        fun correlate(event: Event, command: Command) {
-            command.completedBy = event.id
-            val commandEntity = repository.findOne(CommandId(command.id))
-            commandEntity.completedBy = command.completedBy
-            logger.info("Executed ${command.json}")
         }
 
         internal fun toCommand(json: String): Command{
