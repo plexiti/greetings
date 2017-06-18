@@ -73,7 +73,7 @@ dependencyManagement {
 
 dependencies {
 
-    compile project(':commons')
+    compile project(':flow')
 
 	compile("org.springframework.boot:spring-boot-starter")
 	compile("org.springframework.boot:spring-boot-devtools")

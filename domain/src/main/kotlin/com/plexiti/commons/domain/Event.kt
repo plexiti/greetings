@@ -108,13 +108,13 @@ open class Event(): Message {
             return event
         }
 
-        internal fun toEvent(json: String): Event {
+        fun toEvent(json: String): Event {
             val event = toEvent(json, Event::class.java)
             event.json = json
             return event
         }
 
-        internal fun <E: Event> toEvent(json: String, type: Class<E>): E {
+        fun <E: Event> toEvent(json: String, type: Class<E>): E {
             val event = ObjectMapper().readValue(json, type)
             event.json = json
             return event

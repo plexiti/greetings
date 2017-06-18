@@ -1,0 +1,89 @@
+buildscript {
+
+	ext {
+
+		kotlinVersion = "1.1.2-2"
+		springBootVersion = "1.5.3.RELEASE"
+		gradleCucumberVersion = "0.9"
+        camundaVersion="7.7.0"
+
+	}
+
+	repositories {
+
+		mavenCentral()
+
+		maven { url "https://repo.spring.io/snapshot" }
+		maven { url "https://repo.spring.io/milestone" }
+
+		maven { url "https://plugins.gradle.org/m2/" }
+
+	}
+
+	dependencies {
+
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}")
+        classpath("org.jetbrains.kotlin:kotlin-allopen:${kotlinVersion}")
+        classpath("com.h2database:h2:1.4.191")
+
+	}
+
+}
+
+apply plugin: "kotlin"
+apply plugin: "kotlin-spring"
+
+group = "plexiti"
+version = "0.0.1-SNAPSHOT"
+
+sourceCompatibility = 1.8
+
+compileKotlin {
+
+	kotlinOptions.jvmTarget = "1.8"
+
+}
+
+compileTestKotlin {
+
+	kotlinOptions.jvmTarget = "1.8"
+
+}
+
+dependencies {
+
+    compile project(':domain')
+
+	compile("org.springframework.boot:spring-boot-starter:${springBootVersion}")
+
+    compile("org.springframework.boot:spring-boot-starter-data-jpa:${springBootVersion}")
+    compile("org.springframework.boot:spring-boot-starter-data-rest:${springBootVersion}")
+
+    compile("org.apache.camel:camel-spring-boot-starter:2.19.0")
+    compile("org.apache.camel:camel-jpa:2.19.0")
+
+    compile("com.fasterxml.jackson.module:jackson-module-kotlin:2.8.7")
+
+    compile("org.camunda.bpm.extension.springboot:camunda-bpm-spring-boot-starter:2.1.2")
+    compile("org.camunda.bpm.extension.springboot:camunda-bpm-spring-boot-starter:2.1.2")
+
+    compile("org.camunda.spin:camunda-spin-core:1.3.1")
+    compile("org.camunda.spin:camunda-spin-dataformat-all:1.3.1")
+    compile("org.camunda.bpm:camunda-engine-plugin-spin:${camundaVersion}")
+
+    compile("org.springframework.boot:spring-boot-starter-amqp:${springBootVersion}")
+	compile("org.springframework.boot:spring-boot-starter-web:${springBootVersion}")
+
+	compile("org.jetbrains.kotlin:kotlin-stdlib-jre8:${kotlinVersion}")
+	compile("org.jetbrains.kotlin:kotlin-reflect:${kotlinVersion}")
+
+	testCompile("org.springframework.boot:spring-boot-starter-test:${springBootVersion}")
+	testCompile("org.assertj:assertj-core:3.8.0")
+
+}
+
+repositories {
+    maven { url "https://repo.spring.io/milestone" }
+    maven { url "https://repo.spring.io/libs-milestone" }
+    mavenCentral()
+}

@@ -44,10 +44,6 @@ class Greeting: Aggregate<GreetingId>() {
         val caller = greeting?.caller
         val greeting = greeting?.greeting
 
-        override fun correlationId(): String? {
-            return caller
-        }
-
     }
 
     class CallerContactedPersonally(greeting: Greeting? = null): Event(greeting) {

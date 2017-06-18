@@ -179,7 +179,7 @@ open class Command(triggeredBy: String? = null): Message {
             return command
         }
 
-        internal fun <C: Command> toCommand(json: String, type: Class<C>): C {
+        fun <C: Command> toCommand(json: String, type: Class<C>): C {
             val command = ObjectMapper().readValue(json, type)
             command.json = json
             return command
@@ -195,7 +195,7 @@ open class Command(triggeredBy: String? = null): Message {
 
         val commandTypes = mutableSetOf<Class<Command>>()
 
-        internal fun register(type: Class<Command>) {
+        fun register(type: Class<Command>) {
             commandTypes.add(type)
         }
 
