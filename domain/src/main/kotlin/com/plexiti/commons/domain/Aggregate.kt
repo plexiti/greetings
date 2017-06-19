@@ -11,7 +11,8 @@ import javax.persistence.*
 @MappedSuperclass
 abstract class Aggregate<ID: AggregateId>: AbstractEntity<ID>() {
 
-    @Version val version: Int? = null;
+    @Version
+    open val version: Int? = null;
 
     fun isNew(): Boolean {
         return version == null

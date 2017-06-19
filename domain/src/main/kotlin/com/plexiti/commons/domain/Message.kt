@@ -1,7 +1,6 @@
 package com.plexiti.commons.domain
 
-import org.apache.camel.component.jpa.Consumed
-import java.io.Serializable
+import com.fasterxml.jackson.annotation.JsonIgnore
 import java.util.*
 import javax.persistence.*
 
@@ -9,56 +8,45 @@ import javax.persistence.*
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
 @MappedSuperclass
-abstract class AbstractMessageEntity<TYPE: Message, ID: MessageId>: AbstractEntity<ID>(), Message {
+abstract class AbstractMessageEntity<ID: MessageId, S: MessageStatus>: Aggregate<ID>() {
 
-    @Enumerated(EnumType.STRING)
-    @Column(name="TYPE", columnDefinition = "varchar(16)")
-    override lateinit var type: MessageType
+    @Transient
+    val type = this::class.simpleName
+
+    @Column(name="CONTEXT", length = 64)
+    lateinit var context: String
         protected set
 
-    @Column(name="NAME", columnDefinition = "varchar(128)")
-    override lateinit var name: String
-        protected set
-
-    @Column(name="ORIGIN", columnDefinition = "varchar(64)")
-    override lateinit var origin: String
+    @Column(name="NAME", length = 128)
+    lateinit var name: String
         protected set
 
     @Column(name="DEFINITION")
-    override var definition: Int = 0
+    var definition: Int = 0
+        protected set
+
+    override val version: Int? = null
+        @JsonIgnore get
+
+    @Enumerated(EnumType.STRING) @JsonIgnore
+    @Column(name="STATUS", length = 16)
+    open lateinit var status: S
+        @JsonIgnore set
+        @JsonIgnore get
+
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "FORWARDED_AT")
+    var forwardedAt: Date? = null
+        protected set
 
     @Lob
     @Column(name="JSON", columnDefinition = "text")
     lateinit var json: String
-        internal set
-
-    @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "PUBLISHED_AT")
-    var publishedAt: Date? = null
         protected set
-
-    @Consumed
-    abstract fun setConsumed();
-
-    fun isPublished(): Boolean {
-        return publishedAt != null
-    }
 
 }
 
 @MappedSuperclass
 open class MessageId(value: String): AggregateId(value)
 
-interface Message {
-
-    val type: MessageType
-    val id: Serializable
-    val origin: String
-    val name: String
-    val definition: Int
-
-}
-
-enum class MessageType {
-    Event, Command, Document, Flow
-}
+interface MessageStatus
