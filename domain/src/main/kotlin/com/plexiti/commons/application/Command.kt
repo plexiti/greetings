@@ -2,10 +2,8 @@ package com.plexiti.commons.application
 
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.plexiti.commons.application.CommandStatus.*
-import com.plexiti.commons.domain.AbstractMessageEntity
-import com.plexiti.commons.domain.EventId
-import com.plexiti.commons.domain.MessageId
-import com.plexiti.commons.domain.MessageStatus
+import com.plexiti.commons.domain.*
+import com.rabbitmq.client.Command
 import org.apache.camel.component.jpa.Consumed
 import org.springframework.data.repository.CrudRepository
 import org.springframework.stereotype.Repository
@@ -15,27 +13,59 @@ import javax.persistence.*
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
+interface CommandInterface: MessageInterface {
+
+    val issuedBy: Context
+    val issuedAt: Date
+    val correlation: String
+
+}
+
+open class Command: CommandInterface {
+
+    override lateinit var type: MessageType
+        protected set
+    override lateinit var context: Context
+        protected set
+    override lateinit var name: String
+        protected set
+    override var definition: Int = 0
+        protected set
+    override var forwardedAt: Date? = null
+        protected set
+    override lateinit var issuedBy: Context
+        protected set
+    override lateinit var issuedAt: Date
+        protected set
+    override lateinit var correlation: String
+        protected set
+
+}
+
 @Entity
 @Table(name="COMMANDS")
-@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
-@DiscriminatorColumn(name = "type", discriminatorType = DiscriminatorType.STRING, length = 16)
 @NamedQueries(
     NamedQuery(
         name = "CommandForwarding",
-        query = "select c from Command c where c.status = com.plexiti.commons.application.CommandStatus.triggered"
+        query = "select c from CommandEntity c" // where c.status = com.plexiti.commons.application.CommandStatus.triggered"
     )
 )
-open class Command : AbstractMessageEntity<CommandId, CommandStatus>() {
+class CommandEntity: AbstractMessageEntity<CommandId, CommandStatus>(), CommandInterface {
 
-    @Column(name="SOURCE", length = 64)
-    lateinit var source: String
+    @Transient
+    override val type = MessageType.Command
+
+    @Embedded @AttributeOverride(name="name", column = Column(name="ISSUED_BY"))
+    override lateinit var issuedBy: Context
         protected set
 
-    override lateinit var status: CommandStatus
+    @Column(name = "CORRELATION", length = 128)
+    override lateinit var correlation: String
+        protected set
 
-    @Column(name = "TRIGGERED_AT")
+    @Column(name = "ISSUED_AT")
     @Temporal(TemporalType.TIMESTAMP)
-    var triggeredAt = Date()
+    override var issuedAt = Date()
         protected set
 
     @JsonIgnore
@@ -62,12 +92,6 @@ open class Command : AbstractMessageEntity<CommandId, CommandStatus>() {
         @JsonIgnore get
         @JsonIgnore protected set
 
-    @JsonIgnore
-    @Column(name = "CORRELATION_KEY", length = 128)
-    lateinit var correlationKey: String
-        @JsonIgnore get
-        @JsonIgnore protected set
-
     @Consumed
     fun transition(): CommandStatus {
         status = when (status) {
@@ -89,7 +113,7 @@ open class Command : AbstractMessageEntity<CommandId, CommandStatus>() {
 class CommandId(value: String = ""): MessageId(value)
 
 @Repository
-interface CommandRepository: CrudRepository<Command, CommandId>
+interface CommandEntityRepository: CrudRepository<CommandEntity, CommandId>
 
 enum class CommandStatus: MessageStatus {
     triggered, forwarded, started, finished

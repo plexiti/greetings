@@ -10,40 +10,60 @@ import javax.persistence.*
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
+interface EventInterface : MessageInterface {
+
+    val raisedAt: Date
+
+}
+
+open class Event: EventInterface {
+
+    override val type: MessageType = MessageType.Event
+    override lateinit var context: Context
+        protected set
+    override lateinit var name: String
+        protected set
+    override var definition: Int = 0
+        protected set
+    override var forwardedAt: Date? = null
+        protected set
+    override lateinit var raisedAt: Date
+
+}
+
 @Entity
 @Table(name="EVENTS")
-@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
-@DiscriminatorColumn(name = "type", discriminatorType = DiscriminatorType.STRING, length = 16)
 @NamedQuery(
     name = "EventForwarding",
-    query = "select e from Event e where e.status = com.plexiti.commons.application.EventStatus.raised'"
+    query = "select e from EventEntity e" // where e.status = com.plexiti.commons.application.EventStatus.raised'"
 )
-open class Event: AbstractMessageEntity<EventId, EventStatus>() {
+class EventEntity(): AbstractMessageEntity<EventId, EventStatus>(), EventInterface {
 
-    @Column(name="TARGET", length = 64)
-    lateinit var target: String
-        protected set
-
-    override lateinit var status: EventStatus
+    @Transient
+    override val type = MessageType.Event
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "RAISED_AT")
-    lateinit var raisedAt: Date
-        private set
+    override lateinit var raisedAt: Date
+        protected set
 
     @Embedded
     @AttributeOverride(name="value", column = Column(name="RAISED_BY"))
     var raisedBy: CommandId? = null
-        private set
+        protected set
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "CONSUMED_AT")
     lateinit var consumedAt: Date
-        private set
+        protected set
 
     @Embedded
     lateinit var aggregate: EventAggregate
-        private set
+
+    constructor(aggregate: Aggregate<*>): this() {
+        this.id = EventId(UUID.randomUUID().toString())
+        this.aggregate = EventAggregate(aggregate)
+    }
 
     @Embeddable
     class EventAggregate() {
@@ -87,9 +107,9 @@ open class Event: AbstractMessageEntity<EventId, EventStatus>() {
 class EventId(value: String = ""): MessageId(value)
 
 @Repository
-interface EventRepository: CrudRepository<Event, EventId> {
+interface EventEntityRepository: CrudRepository<EventEntity, EventId> {
 
-    fun findByAggregateId(id: String): List<Event>
+    fun findByAggregateId(id: String): List<EventInterface>
 
 }
 

@@ -1,11 +1,9 @@
 package com.plexiti.commons.adapters.db
 
-import com.plexiti.commons.application.Command
+import com.plexiti.commons.application.CommandEntity
+import com.plexiti.commons.application.CommandEntityRepository
 import com.plexiti.commons.application.CommandId
-import com.plexiti.commons.application.CommandRepository
-import com.plexiti.commons.domain.Event
-import com.plexiti.commons.domain.EventId
-import com.plexiti.commons.domain.EventRepository
+import com.plexiti.commons.domain.*
 import org.springframework.data.repository.NoRepositoryBean
 
 /**
@@ -13,13 +11,13 @@ import org.springframework.data.repository.NoRepositoryBean
  */
 
 @NoRepositoryBean
-class InMemoryEventRepository: InMemoryEntityCrudRepository<Event, EventId>(), EventRepository {
+class InMemoryEventRepository: InMemoryEntityCrudRepository<EventEntity, EventId>(), EventEntityRepository {
 
-    override fun findByAggregateId(id: String): List<Event> {
+    override fun findByAggregateId(id: String): List<EventEntity> {
         return findAll().filter { id == it.aggregate.id }
     }
 
 }
 
 @NoRepositoryBean
-class InMemoryCommandRepository: InMemoryEntityCrudRepository<Command, CommandId>(), CommandRepository
+class InMemoryCommandRepository: InMemoryEntityCrudRepository<CommandEntity, CommandId>(), CommandEntityRepository

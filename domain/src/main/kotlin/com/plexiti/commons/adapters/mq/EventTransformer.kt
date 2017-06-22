@@ -35,11 +35,11 @@ class EventTransformer {
     @RabbitListener(queues = arrayOf("\${com.plexiti.app.context}-events-queue"))
     @Transactional
     fun handle(@Payload json: String) {
-        val event = Event.toEvent(json)
-        Command.correlateBy(event)?.correlate(event)
-        Command.triggerBy(event).forEach {
-            it.async()
-        }
+        // val event = Event.toEvent(json)
+        // Command.correlateBy(event)?.correlate(event)
+        // Command.triggerBy(event).forEach {
+        //    it.async()
+        //}
     }
 
     @Bean

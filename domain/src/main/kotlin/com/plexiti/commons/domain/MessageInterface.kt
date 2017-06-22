@@ -7,22 +7,31 @@ import javax.persistence.*
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
+interface MessageInterface {
+
+    val type: MessageType
+    val context: Context
+    val name: String
+    val definition: Int
+    val forwardedAt: Date?
+
+}
+
 @MappedSuperclass
-abstract class AbstractMessageEntity<ID: MessageId, S: MessageStatus>: Aggregate<ID>() {
+abstract class AbstractMessageEntity<ID: MessageId, S: MessageStatus>: Aggregate<ID>(), MessageInterface {
 
-    @Transient
-    val type = this::class.simpleName
+    override abstract val type: MessageType
 
-    @Column(name="CONTEXT", length = 64)
-    lateinit var context: String
+    @Embedded @AttributeOverride(name="name", column = Column(name="CONTEXT"))
+    override lateinit var context: Context
         protected set
 
     @Column(name="NAME", length = 128)
-    lateinit var name: String
+    override var name = this::class.simpleName!!
         protected set
 
     @Column(name="DEFINITION")
-    var definition: Int = 0
+    override var definition: Int = 0
         protected set
 
     override val version: Int? = null
@@ -36,7 +45,7 @@ abstract class AbstractMessageEntity<ID: MessageId, S: MessageStatus>: Aggregate
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "FORWARDED_AT")
-    var forwardedAt: Date? = null
+    override var forwardedAt: Date? = null
         protected set
 
     @Lob
@@ -50,3 +59,7 @@ abstract class AbstractMessageEntity<ID: MessageId, S: MessageStatus>: Aggregate
 open class MessageId(value: String): AggregateId(value)
 
 interface MessageStatus
+
+enum class MessageType {
+    Command, Document, Event
+}
