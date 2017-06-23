@@ -3,7 +3,8 @@ package com.plexiti.commons.adapters.db
 import com.plexiti.commons.application.CommandEntity
 import com.plexiti.commons.application.CommandEntityRepository
 import com.plexiti.commons.application.CommandId
-import com.plexiti.commons.domain.*
+import com.plexiti.commons.domain.EventEntity
+import com.plexiti.commons.domain.EventId
 import org.springframework.data.repository.NoRepositoryBean
 
 /**
@@ -11,7 +12,7 @@ import org.springframework.data.repository.NoRepositoryBean
  */
 
 @NoRepositoryBean
-class InMemoryEventRepository: InMemoryEntityCrudRepository<EventEntity, EventId>(), EventEntityRepository {
+class InMemoryEventEntityRepository: InMemoryEntityCrudRepository<EventEntity, EventId>(), EventEntityRepository {
 
     override fun findByAggregateId(id: String): List<EventEntity> {
         return findAll().filter { id == it.aggregate.id }
@@ -20,4 +21,4 @@ class InMemoryEventRepository: InMemoryEntityCrudRepository<EventEntity, EventId
 }
 
 @NoRepositoryBean
-class InMemoryCommandRepository: InMemoryEntityCrudRepository<CommandEntity, CommandId>(), CommandEntityRepository
+class InMemoryCommandEntityRepository: InMemoryEntityCrudRepository<CommandEntity, CommandId>(), CommandEntityRepository

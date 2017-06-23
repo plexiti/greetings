@@ -1,9 +1,5 @@
 package com.plexiti.commons.domain
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize
-import com.fasterxml.jackson.databind.annotation.JsonSerialize
-import com.plexiti.commons.adapters.json.AggregateIdDeserializer
-import com.plexiti.commons.adapters.json.AggregateIdSerializer
 import java.io.Serializable
 import javax.persistence.*
 
@@ -43,12 +39,10 @@ abstract class AbstractEntity<ID: Serializable> {
 
 @Embeddable
 @MappedSuperclass
-@JsonSerialize(using = AggregateIdSerializer::class)
-@JsonDeserialize(using = AggregateIdDeserializer::class)
 abstract class AggregateId(value: String): Serializable {
 
-    @Column(name = "ID", length = 36)
-    var value = value
+    @Column(name = "ID", length = 36, nullable = false)
+    var value: String = value
 
     override fun toString(): String {
         return value

@@ -3,7 +3,6 @@ package com.plexiti.commons.application
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.plexiti.commons.application.CommandStatus.*
 import com.plexiti.commons.domain.*
-import com.rabbitmq.client.Command
 import org.apache.camel.component.jpa.Consumed
 import org.springframework.data.repository.CrudRepository
 import org.springframework.stereotype.Repository
@@ -13,31 +12,24 @@ import javax.persistence.*
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
-interface CommandInterface: MessageInterface {
 
-    val issuedBy: Context
-    val issuedAt: Date
-    val correlation: String
+open class Command: Message {
 
-}
-
-open class Command: CommandInterface {
-
-    override lateinit var type: MessageType
+    lateinit var type: MessageType
         protected set
     override lateinit var context: Context
         protected set
     override lateinit var name: String
         protected set
-    override var definition: Int = 0
+    var definition: Int = 0
         protected set
-    override var forwardedAt: Date? = null
+    var forwardedAt: Date? = null
         protected set
-    override lateinit var issuedBy: Context
+    lateinit var issuedBy: Context
         protected set
-    override lateinit var issuedAt: Date
+    lateinit var issuedAt: Date
         protected set
-    override lateinit var correlation: String
+    lateinit var correlation: String
         protected set
 
 }
@@ -50,22 +42,19 @@ open class Command: CommandInterface {
         query = "select c from CommandEntity c" // where c.status = com.plexiti.commons.application.CommandStatus.triggered"
     )
 )
-class CommandEntity: AbstractMessageEntity<CommandId, CommandStatus>(), CommandInterface {
-
-    @Transient
-    override val type = MessageType.Command
+class CommandEntity: AbstractMessageEntity<CommandId, CommandStatus>() {
 
     @Embedded @AttributeOverride(name="name", column = Column(name="ISSUED_BY"))
-    override lateinit var issuedBy: Context
+    lateinit var issuedBy: Context
         protected set
 
     @Column(name = "CORRELATION", length = 128)
-    override lateinit var correlation: String
+    lateinit var correlation: String
         protected set
 
     @Column(name = "ISSUED_AT")
     @Temporal(TemporalType.TIMESTAMP)
-    override var issuedAt = Date()
+    var issuedAt = Date()
         protected set
 
     @JsonIgnore
