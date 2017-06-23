@@ -1,7 +1,6 @@
 package com.plexiti.commons.adapters.db
 
 import com.plexiti.commons.application.CommandEntity
-import com.plexiti.commons.application.CommandEntityRepository
 import com.plexiti.commons.application.CommandId
 import com.plexiti.commons.domain.EventEntity
 import com.plexiti.commons.domain.EventId

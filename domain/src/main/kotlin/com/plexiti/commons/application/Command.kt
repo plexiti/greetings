@@ -1,11 +1,12 @@
 package com.plexiti.commons.application
 
-import com.fasterxml.jackson.annotation.JsonIgnore
+import com.fasterxml.jackson.annotation.JsonFormat
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.plexiti.commons.application.CommandStatus.*
 import com.plexiti.commons.domain.*
 import org.apache.camel.component.jpa.Consumed
 import org.springframework.data.repository.CrudRepository
-import org.springframework.stereotype.Repository
+import org.springframework.data.repository.NoRepositoryBean
 import java.util.*
 import javax.persistence.*
 
@@ -13,24 +14,48 @@ import javax.persistence.*
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
 
-open class Command: Message {
+abstract class Command: Message {
 
-    lateinit var type: MessageType
+    val type = MessageType.Command
+
+    override var context = Command.context
+
+    override val name = this::class.simpleName!!
+
+    open val definition: Int = 0
+
+    lateinit var id: CommandId
         protected set
-    override lateinit var context: Context
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSZ", timezone = "CET")
+    var issuedAt: Date
         protected set
-    override lateinit var name: String
+
+    var correlation: String
         protected set
-    var definition: Int = 0
-        protected set
-    var forwardedAt: Date? = null
-        protected set
-    lateinit var issuedBy: Context
-        protected set
-    lateinit var issuedAt: Date
-        protected set
-    lateinit var correlation: String
-        protected set
+
+    companion object {
+
+        var context: Context = Context()
+
+    }
+
+    init {
+        id = CommandId(UUID.randomUUID().toString())
+        issuedAt = Date()
+        correlation = id.value
+    }
+
+    override fun hashCode(): Int {
+        return id.hashCode()
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is Command) return false
+        if (id != other.id) return false
+        return true
+    }
 
 }
 
@@ -39,52 +64,56 @@ open class Command: Message {
 @NamedQueries(
     NamedQuery(
         name = "CommandForwarding",
-        query = "select c from CommandEntity c" // where c.status = com.plexiti.commons.application.CommandStatus.triggered"
+        query = "select c from CommandEntity c" // where c.status = com.plexiti.commons.application.CommandStatus.issued"
     )
 )
-class CommandEntity: AbstractMessageEntity<CommandId, CommandStatus>() {
+class CommandEntity(): AbstractMessageEntity<CommandId, CommandStatus>() {
 
-    @Embedded @AttributeOverride(name="name", column = Column(name="ISSUED_BY"))
-    lateinit var issuedBy: Context
-        protected set
-
-    @Column(name = "CORRELATION", length = 128)
-    lateinit var correlation: String
-        protected set
-
-    @Column(name = "ISSUED_AT")
+    @Column(name = "ISSUED_AT", nullable = false)
     @Temporal(TemporalType.TIMESTAMP)
     var issuedAt = Date()
         protected set
 
-    @JsonIgnore
-    @Embedded @AttributeOverride(name="value", column = Column(name="TRIGGERED_BY"))
-    var triggeredBy: EventId? = null
-        @JsonIgnore get
-        @JsonIgnore protected set
+    @Embedded @AttributeOverride(name="name", column = Column(name="ISSUED_BY", nullable = false))
+    var issuedBy = Command.context
+        protected set
 
-    @JsonIgnore
-    @Column(name = "STARTED_AT")
+    @Column(name = "CORRELATION", length = 128, nullable = false)
+    lateinit var correlation: String
+        protected set
+
+    @Embedded @AttributeOverride(name="value", column = Column(name="TRIGGERED_BY", nullable = true))
+    var triggeredBy: EventId? = null
+        protected set
+
+    @Column(name = "STARTED_AT", nullable = true)
     @Temporal(TemporalType.TIMESTAMP)
     var startedAt: Date? = null
         protected set
 
-    @JsonIgnore
-    @Column(name = "FINISHED_AT")
+    @Column(name = "FINISHED_AT", nullable = true)
     @Temporal(TemporalType.TIMESTAMP)
     var finishedAt: Date? = null
         protected set
 
-    @JsonIgnore
-    @Embedded  @AttributeOverride(name="value", column = Column(name="FINISHED_BY"))
+    @Embedded @AttributeOverride(name="value", column = Column(name="FINISHED_BY", nullable = true))
     var finishedBy: EventId? = null
-        @JsonIgnore get
-        @JsonIgnore protected set
+        protected set
+
+    constructor(command: Command): this() {
+        this.context = command.context
+        this.name = command.name
+        this.id = command.id
+        this.issuedAt = command.issuedAt
+        this.correlation = command.correlation
+        this.json = ObjectMapper().writeValueAsString(command)
+        this.status = issued
+    }
 
     @Consumed
-    fun transition(): CommandStatus {
+    fun consumed(): CommandStatus {
         status = when (status) {
-            triggered -> forwarded;
+            issued -> forwarded;
             forwarded -> started
             started -> finished
             finished -> throw IllegalStateException()
@@ -101,9 +130,9 @@ class CommandEntity: AbstractMessageEntity<CommandId, CommandStatus>() {
 
 class CommandId(value: String = ""): MessageId(value)
 
-@Repository
-interface CommandEntityRepository: CrudRepository<CommandEntity, CommandId>
+@NoRepositoryBean
+interface CommandRepository<C>: CrudRepository<C, CommandId>
 
 enum class CommandStatus: MessageStatus {
-    triggered, forwarded, started, finished
+    issued, forwarded, started, finished
 }

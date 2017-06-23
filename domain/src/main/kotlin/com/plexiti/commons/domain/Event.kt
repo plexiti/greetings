@@ -71,8 +71,8 @@ class EventEntity(): AbstractMessageEntity<EventId, EventStatus>() {
         protected set
 
     @Embedded
-    @AttributeOverride(name="value", column = Column(name="RAISED_BY", nullable = true))
-    var raisedBy: CommandId? = null
+    @AttributeOverride(name="value", column = Column(name="RAISED_DURING", nullable = true))
+    var raisedDuring: CommandId? = null
         protected set
 
     @Temporal(TemporalType.TIMESTAMP)
@@ -129,12 +129,7 @@ class EventEntity(): AbstractMessageEntity<EventId, EventStatus>() {
         }
         return status
     }
-
-    internal fun qualifiedName(): String {
-        return "${context.name}/${name}"
-    }
-
-
+    
 }
 
 class EventId(value: String = ""): MessageId(value)

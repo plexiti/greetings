@@ -1,6 +1,7 @@
 package com.plexiti.commons.domain
 
 import com.fasterxml.jackson.annotation.JsonIgnore
+import org.springframework.data.jpa.domain.AbstractPersistable_.id
 import java.util.*
 import javax.persistence.*
 
@@ -11,6 +12,10 @@ interface Message {
 
     val context: Context
     val name: String
+
+    fun qname(): String {
+        return "${context.name}/${name}"
+    }
 
 }
 

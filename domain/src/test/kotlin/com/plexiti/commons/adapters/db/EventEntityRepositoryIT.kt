@@ -43,7 +43,7 @@ class EventEntityRepositoryIT : AbstractDataJpaTest() {
 
     @Test fun qualifiedName () {
         val event = EventEntity(TestEvent(aggregate))
-        assertThat(event.qualifiedName()).isEqualTo("Commons/TestEvent")
+        assertThat(event.qname()).isEqualTo("Commons/TestEvent")
     }
 
 }

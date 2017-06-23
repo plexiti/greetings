@@ -26,7 +26,7 @@ class EventStore: EventRepository<Event>, ApplicationContextAware {
     internal lateinit var eventTypes: Map<String, Class<*>>
 
     private fun toEvent(entity: EventEntity?): Event? {
-        return if (entity != null) ObjectMapper().readValue(entity.json, eventTypes[entity.qualifiedName()]) as Event else null
+        return if (entity != null) ObjectMapper().readValue(entity.json, eventTypes[entity.qname()]) as Event else null
     }
 
     private fun toEntity(event: Event?): EventEntity? {
