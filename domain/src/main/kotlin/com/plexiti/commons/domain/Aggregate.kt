@@ -1,5 +1,6 @@
 package com.plexiti.commons.domain
 
+import com.fasterxml.jackson.annotation.JsonValue
 import java.io.Serializable
 import javax.persistence.*
 
@@ -43,6 +44,8 @@ abstract class AggregateId(value: String): Serializable {
 
     @Column(name = "ID", length = 36, nullable = false)
     var value: String = value
+        @JsonValue get
+        @JsonValue private set
 
     override fun toString(): String {
         return value

@@ -43,7 +43,9 @@ class EventStoreTest {
     fun find() {
         event = TestEvent(aggregate)
         eventStore.save(event)
-        assertThat(eventStore.findOne(event.id)).isEqualTo(event)
+        val e = eventStore.findOne(event.id)
+        assertThat(e)
+            .isEqualTo(event)
     }
 
 }

@@ -1,5 +1,6 @@
 package com.plexiti.commons.domain
 
+import com.fasterxml.jackson.annotation.JsonFormat
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.plexiti.commons.application.CommandId
 import com.plexiti.commons.domain.EventEntity.EventAggregate
@@ -25,6 +26,7 @@ abstract class Event(aggregate: Aggregate<*>? = null) : Message {
     lateinit var id: EventId
         protected set
 
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSZ", timezone = "CET")
     lateinit var raisedAt: Date
         protected set
 
