@@ -1,4 +1,4 @@
-package com.plexiti.commons.domain
+package com.plexiti.commons.adapters.db
 
 import org.junit.runner.RunWith
 import org.springframework.boot.autoconfigure.domain.EntityScan

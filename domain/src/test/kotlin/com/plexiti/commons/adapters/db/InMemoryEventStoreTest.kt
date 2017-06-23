@@ -1,6 +1,8 @@
-package com.plexiti.commons.domain
+package com.plexiti.commons.adapters.db
 
-import com.plexiti.commons.adapters.db.EventStore
+import com.plexiti.commons.domain.Aggregate
+import com.plexiti.commons.domain.AggregateId
+import com.plexiti.commons.domain.Event
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
@@ -9,7 +11,7 @@ import java.util.*
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
-class EventStoreTest {
+class InMemoryEventStoreTest {
 
     internal var eventStore = EventStore()
 

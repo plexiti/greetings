@@ -1,6 +1,11 @@
-package com.plexiti.commons.domain
+package com.plexiti.commons.adapters.db
 
+import com.plexiti.commons.adapters.db.DataJpaTest
 import com.plexiti.commons.adapters.db.EventEntityRepository
+import com.plexiti.commons.domain.Aggregate
+import com.plexiti.commons.domain.AggregateId
+import com.plexiti.commons.domain.Event
+import com.plexiti.commons.domain.EventEntity
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
@@ -10,7 +15,7 @@ import java.util.*
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
-class EventEntityTest: DataJpaTest() {
+class DataJpaEventEntityTest : DataJpaTest() {
 
     @Autowired
     internal lateinit var eventEntityRepository: EventEntityRepository
