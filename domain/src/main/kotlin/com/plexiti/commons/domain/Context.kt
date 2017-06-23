@@ -11,7 +11,7 @@ import javax.persistence.Embeddable
 class Context() {
 
     @Column(name="NAME", length = 64, nullable = false)
-    lateinit var name: String
+    var name: String = "Commons"
         @JsonValue get
         @JsonValue protected set
 

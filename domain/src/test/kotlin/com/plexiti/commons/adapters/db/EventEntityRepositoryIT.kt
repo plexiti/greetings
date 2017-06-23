@@ -1,7 +1,5 @@
 package com.plexiti.commons.adapters.db
 
-import com.plexiti.commons.adapters.db.DataJpaTest
-import com.plexiti.commons.adapters.db.EventEntityRepository
 import com.plexiti.commons.domain.Aggregate
 import com.plexiti.commons.domain.AggregateId
 import com.plexiti.commons.domain.Event
@@ -15,7 +13,7 @@ import java.util.*
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
-class DataJpaEventEntityTest : DataJpaTest() {
+class EventEntityRepositoryIT : AbstractDataJpaTest() {
 
     @Autowired
     internal lateinit var eventEntityRepository: EventEntityRepository
@@ -45,7 +43,7 @@ class DataJpaEventEntityTest : DataJpaTest() {
 
     @Test fun qualifiedName () {
         val event = EventEntity(TestEvent(aggregate))
-        assertThat(event.qualifiedName()).isEqualTo("Test/TestEvent")
+        assertThat(event.qualifiedName()).isEqualTo("Commons/TestEvent")
     }
 
 }

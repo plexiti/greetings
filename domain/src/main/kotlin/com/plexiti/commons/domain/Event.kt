@@ -33,7 +33,7 @@ abstract class Event(aggregate: Aggregate<*>? = null) : Message {
     lateinit var aggregate: EventAggregate
 
     companion object {
-        var context: Context = Context("Test")
+        var context: Context = Context()
     }
 
     init {

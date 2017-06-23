@@ -11,7 +11,7 @@ import java.util.*
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
-class InMemoryEventStoreTest {
+class EventStoreTest {
 
     internal var eventStore = EventStore()
 
@@ -27,7 +27,7 @@ class InMemoryEventStoreTest {
         aggregate = TestAggregate()
         aggregate.id = TestAggregateId(UUID.randomUUID().toString())
         event = TestEvent(aggregate)
-        eventStore.eventTypes = mapOf("Test/TestEvent" to TestEvent::class.java)
+        eventStore.eventTypes = mapOf("Commons/TestEvent" to TestEvent::class.java)
     }
 
     @Test

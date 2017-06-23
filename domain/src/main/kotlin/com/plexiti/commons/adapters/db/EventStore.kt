@@ -8,16 +8,17 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
 import org.springframework.data.repository.NoRepositoryBean
+import org.springframework.stereotype.Component
 import org.springframework.stereotype.Repository
 
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
-@NoRepositoryBean
+@Component @NoRepositoryBean
 class EventStore: EventRepository<Event>, ApplicationContextAware {
 
     @Value("\${com.plexiti.app.context}")
-    private lateinit var context: String;
+    private lateinit var context: String
 
     @Autowired
     private var delegate: EventEntityRepository = InMemoryEventEntityRepository()
@@ -36,7 +37,7 @@ class EventStore: EventRepository<Event>, ApplicationContextAware {
         Event.context = Context(context)
         eventTypes = scanPackageForAssignableClasses("com.plexiti", Event::class.java)
             .map { it.newInstance() as Event }
-            .associate { Pair("${it.context}/${it.name}", it::class.java) }
+            .associate { Pair("${it.context.name}/${it.name}", it::class.java) }
     }
 
     override fun exists(id: EventId?): Boolean {
