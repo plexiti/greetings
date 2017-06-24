@@ -22,7 +22,7 @@ import org.springframework.stereotype.Repository
 class CommandStore: CommandRepository<Command>, ApplicationContextAware {
 
     @Value("\${com.plexiti.app.context}")
-    private lateinit var context: String
+    private var context: String = "Commons"
 
     @Autowired
     private var delegate: CommandEntityRepository = InMemoryCommandEntityRepository()
@@ -39,6 +39,7 @@ class CommandStore: CommandRepository<Command>, ApplicationContextAware {
 
     override fun setApplicationContext(applicationContext: ApplicationContext) {
         Command.context = Context(context)
+        Command.store = this
         commandTypes = scanPackageForAssignableClasses("com.plexiti", Command::class.java)
             .map { it.newInstance() as Command }
             .associate { Pair("${it.context.name}/${it.name}", it::class.java) }
@@ -48,8 +49,8 @@ class CommandStore: CommandRepository<Command>, ApplicationContextAware {
         return delegate.exists(id)
     }
 
-    override fun findOne(id: CommandId?): Command {
-        return toCommand(delegate.findOne(id))!!
+    override fun findOne(id: CommandId?): Command? {
+        return toCommand(delegate.findOne(id))
     }
 
     override fun findAll(): MutableIterable<Command> {

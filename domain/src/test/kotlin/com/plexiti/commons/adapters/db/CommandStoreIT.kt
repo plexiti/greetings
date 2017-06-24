@@ -1,13 +1,9 @@
 package com.plexiti.commons.adapters.db
 
 import com.plexiti.commons.application.Command
-import com.plexiti.commons.domain.Aggregate
-import com.plexiti.commons.domain.AggregateId
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Before
 import org.junit.Test
 import org.springframework.beans.factory.annotation.Autowired
-import java.util.*
 
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
@@ -17,14 +13,7 @@ class CommandStoreIT: AbstractDataJpaTest() {
     @Autowired
     internal lateinit var commandStore: CommandStore
 
-    class TestCommand(): Command()
-
-    lateinit var command: TestCommand
-
-    @Before
-    fun prepare() {
-        command = TestCommand()
-    }
+    class ITCommand(): Command()
 
     @Test
     fun empty () {
@@ -32,14 +21,13 @@ class CommandStoreIT: AbstractDataJpaTest() {
     }
 
     @Test
-    fun save() {
-        commandStore.save(command)
+    fun issue() {
+        Command.issue(ITCommand())
     }
 
     @Test
     fun find() {
-        command = TestCommand()
-        commandStore.save(command)
+        val command = Command.issue(ITCommand())
         val e = commandStore.findOne(command.id)
         assertThat(e)
             .isEqualTo(command)

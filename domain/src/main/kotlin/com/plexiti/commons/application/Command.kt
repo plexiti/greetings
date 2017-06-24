@@ -2,9 +2,11 @@ package com.plexiti.commons.application
 
 import com.fasterxml.jackson.annotation.JsonFormat
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.plexiti.commons.adapters.db.CommandStore
 import com.plexiti.commons.application.CommandStatus.*
 import com.plexiti.commons.domain.*
 import org.apache.camel.component.jpa.Consumed
+import org.springframework.data.jpa.domain.AbstractPersistable_.id
 import org.springframework.data.repository.CrudRepository
 import org.springframework.data.repository.NoRepositoryBean
 import java.util.*
@@ -28,22 +30,27 @@ abstract class Command: Message {
         protected set
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSZ", timezone = "CET")
-    var issuedAt: Date
+    lateinit var issuedAt: Date
         protected set
 
-    var correlation: String
+    lateinit var correlation: String
         protected set
 
     companion object {
 
-        var context: Context = Context()
+        internal var context = Context()
+        internal var store = CommandStore()
 
+        fun <C: Command> issue(command: C): C {
+            command.id = CommandId(UUID.randomUUID().toString())
+            command.issuedAt = Date()
+            command.correlation = command.correlation()
+            return store.save(command)
+        }
     }
 
-    init {
-        id = CommandId(UUID.randomUUID().toString())
-        issuedAt = Date()
-        correlation = id.value
+    fun correlation(): String {
+        return id.value
     }
 
     override fun hashCode(): Int {

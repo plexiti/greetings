@@ -17,18 +17,16 @@ class EventStoreIT: AbstractDataJpaTest() {
     @Autowired
     internal lateinit var eventStore: EventStore
 
-    class TestAggregate: Aggregate<AggregateId>()
-    class TestAggregateId(value: String = ""): AggregateId(value)
-    class TestEvent(aggregate: TestAggregate? = null): Event(aggregate)
+    class ITAggregate : Aggregate<AggregateId>()
+    class ITAggregateId(value: String = ""): AggregateId(value)
+    class ITEvent(aggregate: ITAggregate? = null): Event(aggregate)
 
-    lateinit var event: TestEvent
-    lateinit var aggregate: TestAggregate
+    lateinit var aggregate: ITAggregate
 
     @Before
     fun prepare() {
-        aggregate = TestAggregate()
-        aggregate.id = TestAggregateId(UUID.randomUUID().toString())
-        event = TestEvent(aggregate)
+        aggregate = ITAggregate()
+        aggregate.id = ITAggregateId(UUID.randomUUID().toString())
     }
 
     @Test
@@ -37,15 +35,13 @@ class EventStoreIT: AbstractDataJpaTest() {
     }
 
     @Test
-    fun save() {
-        event = TestEvent(aggregate)
-        eventStore.save(event)
+    fun raise() {
+        Event.raise(ITEvent(aggregate))
     }
 
     @Test
     fun find() {
-        event = TestEvent(aggregate)
-        eventStore.save(event)
+        val event = Event.raise(ITEvent(aggregate))
         val e = eventStore.findOne(event.id)
         assertThat(e)
             .isEqualTo(event)

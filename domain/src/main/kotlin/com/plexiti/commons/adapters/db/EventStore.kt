@@ -18,7 +18,7 @@ import org.springframework.stereotype.Repository
 class EventStore: EventRepository<Event>, ApplicationContextAware {
 
     @Value("\${com.plexiti.app.context}")
-    private lateinit var context: String
+    private var context: String = "Commons"
 
     @Autowired
     private var delegate: EventEntityRepository = InMemoryEventEntityRepository()
@@ -35,6 +35,7 @@ class EventStore: EventRepository<Event>, ApplicationContextAware {
 
     override fun setApplicationContext(applicationContext: ApplicationContext) {
         Event.context = Context(context)
+        Event.store = this
         eventTypes = scanPackageForAssignableClasses("com.plexiti", Event::class.java)
             .map { it.newInstance() as Event }
             .associate { Pair("${it.context.name}/${it.name}", it::class.java) }
@@ -44,8 +45,8 @@ class EventStore: EventRepository<Event>, ApplicationContextAware {
         return delegate.exists(id)
     }
 
-    override fun findOne(id: EventId?): Event {
-        return toEvent(delegate.findOne(id))!!
+    override fun findOne(id: EventId?): Event? {
+        return toEvent(delegate.findOne(id))
     }
 
     override fun findAll(): MutableIterable<Event> {

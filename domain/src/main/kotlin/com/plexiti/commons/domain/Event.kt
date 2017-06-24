@@ -2,9 +2,11 @@ package com.plexiti.commons.domain
 
 import com.fasterxml.jackson.annotation.JsonFormat
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.plexiti.commons.adapters.db.EventStore
 import com.plexiti.commons.application.CommandId
 import com.plexiti.commons.domain.EventEntity.EventAggregate
 import org.apache.camel.component.jpa.Consumed
+import org.springframework.data.jpa.domain.AbstractPersistable_.id
 import org.springframework.data.repository.CrudRepository
 import org.springframework.data.repository.NoRepositoryBean
 import java.util.*
@@ -33,13 +35,20 @@ abstract class Event(aggregate: Aggregate<*>? = null) : Message {
     lateinit var aggregate: EventAggregate
 
     companion object {
-        var context: Context = Context()
-    }
+
+        internal var context = Context()
+        internal var store = EventStore()
+
+        fun <E: Event> raise(event: E): E {
+            event.id = EventId(UUID.randomUUID().toString())
+            event.raisedAt = Date()
+            return store.save(event)
+        }
+
+   }
 
     init {
         if (aggregate != null) {
-            id = EventId(UUID.randomUUID().toString())
-            raisedAt = Date()
             this.aggregate = EventAggregate(aggregate)
         }
     }

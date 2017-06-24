@@ -13,39 +13,34 @@ import java.util.*
  */
 class EventStoreTest {
 
-    internal var eventStore = EventStore()
-
     class TestAggregate: Aggregate<AggregateId>()
     class TestAggregateId(value: String = ""): AggregateId(value)
     class TestEvent(aggregate: TestAggregate? = null): Event(aggregate)
 
-    lateinit var event: TestEvent
     lateinit var aggregate: TestAggregate
 
     @Before
     fun prepare() {
         aggregate = TestAggregate()
         aggregate.id = TestAggregateId(UUID.randomUUID().toString())
-        event = TestEvent(aggregate)
-        eventStore.eventTypes = mapOf("Commons/TestEvent" to TestEvent::class.java)
+        Event.store.eventTypes = mapOf("Commons/TestEvent" to TestEvent::class.java)
+        Event.store.deleteAll()
     }
 
     @Test
     fun empty () {
-        assertThat(eventStore.findAll()).isEmpty()
+        assertThat(Event.store.findAll()).isEmpty()
     }
 
     @Test
     fun save() {
-        event = TestEvent(aggregate)
-        eventStore.save(event)
+        Event.raise(TestEvent(aggregate))
     }
 
     @Test
     fun find() {
-        event = TestEvent(aggregate)
-        eventStore.save(event)
-        val e = eventStore.findOne(event.id)
+        val event = Event.raise(TestEvent(aggregate))
+        val e = Event.store.findOne(event.id)
         assertThat(e)
             .isEqualTo(event)
     }
