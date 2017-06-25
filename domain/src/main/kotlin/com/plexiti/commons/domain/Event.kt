@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode
 import com.plexiti.commons.adapters.db.EventRepository
 import com.plexiti.commons.application.Command
 import com.plexiti.commons.application.CommandId
+import com.plexiti.commons.application.Context
 import com.plexiti.commons.domain.EventEntity.EventAggregate
 import org.apache.camel.component.jpa.Consumed
 import org.springframework.data.repository.CrudRepository
@@ -94,8 +95,8 @@ abstract class Event(aggregate: Aggregate<*>? = null) : Message {
 @Entity
 @Table(name="EVENTS")
 @NamedQuery(
-    name = "EventForwarding",
-    query = "select e from EventEntity e" // where e.status = com.plexiti.commons.application.EventStatus.raised'"
+    name = "EventForwarder",
+    query = "select e from EventEntity e where e.forwardedAt is null"
 )
 class EventEntity(): AbstractMessageEntity<EventId, EventStatus>() {
 

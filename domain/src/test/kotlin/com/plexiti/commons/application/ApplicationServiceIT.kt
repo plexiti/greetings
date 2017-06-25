@@ -11,10 +11,10 @@ import java.util.*
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
-open class CorrelationServiceIT : AbstractDataJpaTest() {
+open class ApplicationServiceIT : AbstractDataJpaTest() {
 
     @Autowired
-    lateinit var correlationService: CorrelationService
+    lateinit var applicationService: ApplicationService
 
     lateinit var aggregate: ITAggregate
 
@@ -41,7 +41,7 @@ open class CorrelationServiceIT : AbstractDataJpaTest() {
     fun consumeEvent_external() {
 
         val external = ExternalITEvent(aggregate)
-        correlationService.consumeEvent(external.toJson())
+        applicationService.consumeEvent(external.toJson())
 
         val event = Event.store.findAll().iterator().next()
 
@@ -66,7 +66,7 @@ open class CorrelationServiceIT : AbstractDataJpaTest() {
         val event = Event.store.findAll().iterator().next()
         event.internals.transitioned()
 
-        correlationService.consumeEvent(event.toJson())
+        applicationService.consumeEvent(event.toJson())
 
         assertThat(event.internals.status).isEqualTo(EventStatus.consumed)
         assertThat(event.internals.raisedAt).isNotNull()
@@ -81,7 +81,7 @@ open class CorrelationServiceIT : AbstractDataJpaTest() {
     fun executeCommand() {
 
         val external = ExternalITEvent(aggregate)
-        correlationService.consumeEvent(external.toJson())
+        applicationService.consumeEvent(external.toJson())
 
         val event = Event.store.findAll().iterator().next()
 
@@ -98,7 +98,7 @@ open class CorrelationServiceIT : AbstractDataJpaTest() {
         assertThat(command.internals.triggeredBy).isEqualTo(event.id)
 
         command.internals.transitioned()
-        correlationService.executeCommand(command.toJson())
+        applicationService.executeCommand(command.toJson())
 
         val events = Event.store.findAll()
 
@@ -112,7 +112,7 @@ open class CorrelationServiceIT : AbstractDataJpaTest() {
         assertThat(command.internals.startedAt).isNotNull()
         assertThat(command.internals.finishedAt).isNull()
 
-        correlationService.consumeEvent(events.find { it.name ==  "InternalITEvent" }!!.toJson())
+        applicationService.consumeEvent(events.find { it.name ==  "InternalITEvent" }!!.toJson())
 
         command = Command.store.findAll().iterator().next()
 

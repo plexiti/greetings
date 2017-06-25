@@ -3,6 +3,7 @@ package com.plexiti.commons.adapters.db
 import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
+import com.plexiti.commons.application.Context
 import com.plexiti.commons.domain.*
 import com.plexiti.commons.domain.EventRepository
 import com.plexiti.utils.scanPackageForAssignableClasses

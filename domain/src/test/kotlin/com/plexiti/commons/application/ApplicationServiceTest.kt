@@ -9,10 +9,10 @@ import java.util.*
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
-class CorrelationServiceTest {
+class ApplicationServiceTest {
 
-    val correlationService: CorrelationService = CorrelationService()
-    lateinit var aggregate: CorrelationServiceTest.TestAggregate
+    val applicationService: ApplicationService = ApplicationService()
+    lateinit var aggregate: ApplicationServiceTest.TestAggregate
 
     class InternalEvent(aggregate: TestAggregate? = null) : Event(aggregate)
     class ExternalEvent(aggregate: TestAggregate? = null) : Event(aggregate) {
@@ -40,15 +40,15 @@ class CorrelationServiceTest {
         )
         Event.store.deleteAll()
         Command.store.deleteAll()
-        correlationService.eventRepository = Event.store
-        correlationService.commandRepository = Command.store
+        applicationService.eventRepository = Event.store
+        applicationService.commandRepository = Command.store
     }
 
     @Test
     fun consumeEvent_External() {
 
         val external = ExternalEvent(aggregate)
-        correlationService.consumeEvent(external.toJson())
+        applicationService.consumeEvent(external.toJson())
 
         val event = Event.store.findAll().iterator().next()
 
@@ -72,7 +72,7 @@ class CorrelationServiceTest {
         val event = Event.store.findAll().iterator().next()
         event.internals.transitioned()
 
-        correlationService.consumeEvent(event.toJson())
+        applicationService.consumeEvent(event.toJson())
         assertThat(event.internals.status).isEqualTo(EventStatus.consumed)
         assertThat(event.internals.raisedAt).isNotNull()
         assertThat(event.internals.forwardedAt).isNotNull()

@@ -1,4 +1,4 @@
-package com.plexiti.commons.domain
+package com.plexiti.commons.application
 
 import com.fasterxml.jackson.annotation.JsonValue
 import org.springframework.data.jpa.domain.AbstractPersistable_.id

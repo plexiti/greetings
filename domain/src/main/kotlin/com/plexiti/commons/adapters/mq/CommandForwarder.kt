@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component
 @Component
 @Configuration
 @Profile("prod")
-class CommandQueuer : RouteBuilder() {
+class CommandForwarder : RouteBuilder() {
 
     private val logger = LoggerFactory.getLogger(this::class.java)
 
@@ -34,7 +34,7 @@ class CommandQueuer : RouteBuilder() {
     @Autowired
     private lateinit var rabbitTemplate: RabbitTemplate
 
-    val options = "consumer.namedQuery=CommandQueuer&consumeDelete=false"
+    val options = "consumer.namedQuery=${CommandForwarder::class.simpleName}&consumeDelete=false"
 
     override fun configure() {
         from("jpa:${CommandEntity::class.qualifiedName}?${options}")
@@ -44,7 +44,7 @@ class CommandQueuer : RouteBuilder() {
     @Handler
     fun send(command: CommandEntity) {
         rabbitTemplate.convertAndSend(queue, command.json);
-        logger.info("Queued ${command.json}")
+        logger.info("Forwarded ${command.json}")
     }
 
 }

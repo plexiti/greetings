@@ -20,7 +20,7 @@ import org.springframework.context.annotation.Profile
 @Component
 @Configuration
 @Profile("prod")
-class EventPublisher : RouteBuilder() {
+class EventForwarder : RouteBuilder() {
 
     private val logger = LoggerFactory.getLogger(this::class.java)
 
@@ -36,7 +36,7 @@ class EventPublisher : RouteBuilder() {
     @Autowired
     private lateinit var rabbitTemplate: RabbitTemplate
 
-    val options = "consumer.namedQuery=EventPublisher&consumeDelete=false"
+    val options = "consumer.namedQuery=${EventForwarder::class.simpleName}&consumeDelete=false"
 
     override fun configure() {
         from("jpa:${EventEntity::class.qualifiedName}?${options}")
@@ -46,7 +46,7 @@ class EventPublisher : RouteBuilder() {
     @Handler
     fun publish(event: EventEntity) {
         rabbitTemplate.convertAndSend(topic, context, event.json);
-        logger.info("Published ${event.json}")
+        logger.info("Forwarded ${event.json}")
     }
 
     @Bean

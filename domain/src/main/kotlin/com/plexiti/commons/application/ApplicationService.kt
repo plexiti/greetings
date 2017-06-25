@@ -12,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
 @Service
-class CorrelationService {
+class ApplicationService {
 
     @Autowired
     lateinit var commandRepository: CommandRepository
@@ -28,8 +28,8 @@ class CorrelationService {
         val eventId = eventRepository.eventId(json)
         if (eventId != null) {
             val event = eventRepository.findOne(eventId) ?: eventRepository.save(Event.fromJson(json))
-            triggerBy(event)
-            finishBy(event)
+            triggerCommand(event)
+            finishCommand(event)
             event.internals.transitioned()
         }
     }
@@ -46,7 +46,7 @@ class CorrelationService {
         }
     }
 
-    private fun triggerBy(event: Event) {
+    private fun triggerCommand(event: Event) {
         commandRepository.commandTypes.values.forEach {
             val instance = it.java.newInstance()
             var command = instance.triggerBy(event)
@@ -57,7 +57,7 @@ class CorrelationService {
         }
     }
 
-    private fun finishBy(event: Event) {
+    private fun finishCommand(event: Event) {
          commandRepository.commandTypes.values.forEach {
              val instance = it.java.newInstance()
              val finishKey = instance.finishKey(event)

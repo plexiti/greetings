@@ -98,8 +98,8 @@ abstract class Command: Message {
 @Table(name="COMMANDS")
 @NamedQueries(
     NamedQuery(
-        name = "CommandForwarding",
-        query = "select c from CommandEntity c" // where c.status = com.plexiti.commons.application.CommandStatus.issued"
+        name = "CommandForwarder",
+        query = "select c from CommandEntity c where c.forwardedAt is null"
     )
 )
 class CommandEntity(): AbstractMessageEntity<CommandId, CommandStatus>() {

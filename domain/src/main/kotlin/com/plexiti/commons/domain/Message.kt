@@ -1,7 +1,7 @@
 package com.plexiti.commons.domain
 
 import com.fasterxml.jackson.annotation.JsonIgnore
-import org.springframework.data.jpa.domain.AbstractPersistable_.id
+import com.plexiti.commons.application.Context
 import java.util.*
 import javax.persistence.*
 

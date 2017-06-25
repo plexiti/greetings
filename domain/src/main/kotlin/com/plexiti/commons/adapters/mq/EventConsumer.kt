@@ -1,8 +1,6 @@
 package com.plexiti.commons.adapters.mq
 
-import com.plexiti.commons.application.Command
-import com.plexiti.commons.domain.Event
-import org.apache.camel.ProducerTemplate
+import com.plexiti.commons.application.ApplicationService
 import org.springframework.amqp.core.Binding
 import org.springframework.amqp.core.BindingBuilder
 import org.springframework.amqp.core.Queue
@@ -24,22 +22,18 @@ import javax.transaction.Transactional
 @Component
 @Configuration
 @Profile("prod")
-class EventTransformer {
+class EventConsumer {
 
     @Value("\${com.plexiti.app.context}")
     private lateinit var context: String;
 
     @Autowired
-    private lateinit var route: ProducerTemplate
+    private lateinit var applicationService: ApplicationService
 
     @RabbitListener(queues = arrayOf("\${com.plexiti.app.context}-events-queue"))
     @Transactional
     fun handle(@Payload json: String) {
-        // val event = Event.toEvent(json)
-        // Command.correlateBy(event)?.correlate(event)
-        // Command.triggerBy(event).forEach {
-        //    it.async()
-        //}
+        applicationService.consumeEvent(json)
     }
 
     @Bean
