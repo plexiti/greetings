@@ -28,12 +28,12 @@ class EventStore: EventRepository<Event>, ApplicationContextAware {
 
     private class RawEvent: Event()
 
+    internal fun type(qName: String): KClass<out Event> {
+        return eventTypes.get(qName) ?: throw IllegalArgumentException("Event type '$qName' is not mapped to a local object type!")
+    }
+
     private fun toEvent(entity: EventEntity?): Event? {
-        if (entity != null) {
-            val type = eventTypes.get(entity.qname()) ?: throw IllegalArgumentException("Provided event represents an unknown type '$entity.qname()'")
-            return Event.fromJson(entity.json, type)
-        }
-        return null
+        return if (entity != null) Event.fromJson(entity.json, type(entity.qname())) else null
     }
 
     private fun toEntity(event: Event?): EventEntity? {
@@ -56,14 +56,16 @@ class EventStore: EventRepository<Event>, ApplicationContextAware {
         return toEvent(delegate.findOne(id))
     }
 
-    fun findOne(json: String): Event? {
-        val raw: Event
+    fun eventId(json: String): EventId? {
         try {
-            raw = Event.fromJson(json, RawEvent::class)
+            return Event.fromJson(json, RawEvent::class).id
         } catch (ex: JsonMappingException) {
-            throw IllegalArgumentException("Provided json does not represent an event: $json", ex)
+            return null
         }
-        return findOne(raw.id)
+    }
+
+    fun findOne(json: String): Event? {
+        return findOne(eventId(json))
     }
 
     override fun findAll(): MutableIterable<Event> {

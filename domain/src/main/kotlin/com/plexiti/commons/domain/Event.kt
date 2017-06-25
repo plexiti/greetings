@@ -2,11 +2,11 @@ package com.plexiti.commons.domain
 
 import com.fasterxml.jackson.annotation.JsonFormat
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.node.ObjectNode
 import com.plexiti.commons.adapters.db.EventStore
 import com.plexiti.commons.application.CommandId
 import com.plexiti.commons.domain.EventEntity.EventAggregate
 import org.apache.camel.component.jpa.Consumed
-import org.springframework.data.jpa.domain.AbstractPersistable_.id
 import org.springframework.data.repository.CrudRepository
 import org.springframework.data.repository.NoRepositoryBean
 import java.util.*
@@ -44,6 +44,22 @@ abstract class Event(aggregate: Aggregate<*>? = null) : Message {
             event.id = EventId(UUID.randomUUID().toString())
             event.raisedAt = Date()
             return store.save(event)
+        }
+
+        fun consume(json: String): Event? {
+            val eventId = store.eventId(json)
+            if (eventId != null) {
+                val event = store.findOne(eventId) ?: Event.fromJson(json)
+                return store.save(event) // TODO mark as consumed
+            }
+            return null
+        }
+
+        fun fromJson(json: String): Event {
+            val node = ObjectMapper().readValue(json, ObjectNode::class.java)
+            val qName =  node.get("context").textValue() + "/" + node.get("name").textValue()
+            val type = store.type(qName)
+            return ObjectMapper().readValue(json, type.java)
         }
 
         fun <E: Event> fromJson(json: String, type: KClass<E>): E {

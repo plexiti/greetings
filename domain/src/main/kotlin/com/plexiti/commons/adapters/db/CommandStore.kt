@@ -1,12 +1,11 @@
 package com.plexiti.commons.adapters.db
 
 import com.fasterxml.jackson.databind.JsonMappingException
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.plexiti.commons.application.Command
 import com.plexiti.commons.application.CommandEntity
 import com.plexiti.commons.application.CommandId
 import com.plexiti.commons.application.CommandRepository
-import com.plexiti.commons.domain.*
+import com.plexiti.commons.domain.Context
 import com.plexiti.utils.scanPackageForAssignableClasses
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
@@ -33,12 +32,12 @@ class CommandStore: CommandRepository<Command>, ApplicationContextAware {
 
     internal lateinit var commandTypes: Map<String, KClass<out Command>>
 
+    internal fun type(qName: String): KClass<out Command> {
+        return commandTypes.get(qName) ?: throw IllegalArgumentException("Command type '$qName' is not mapped to a local object type!")
+    }
+
     private fun toCommand(entity: CommandEntity?): Command? {
-        if (entity != null) {
-            val type = commandTypes.get(entity.qname()) ?: throw IllegalArgumentException("Provided event represents an unknown type '$entity.qname()'")
-            return Command.fromJson(entity.json, type)
-        }
-        return null
+        return if (entity != null) Command.fromJson(entity.json, type(entity.qname())) else null
     }
 
     private fun toEntity(command: Command?): CommandEntity? {
@@ -61,14 +60,16 @@ class CommandStore: CommandRepository<Command>, ApplicationContextAware {
         return toCommand(delegate.findOne(id))
     }
 
-    fun findOne(json: String): Command? {
-        val raw: Command
+    fun commandId(json: String): CommandId? {
         try {
-            raw = Command.fromJson(json, RawCommand::class)
+            return Command.fromJson(json, RawCommand::class).id
         } catch (ex: JsonMappingException) {
-            throw IllegalArgumentException("Provided json does not represent an event: $json", ex)
+            return null
         }
-        return findOne(raw.id)
+    }
+
+    fun findOne(json: String): Command? {
+        return findOne(commandId(json))
     }
 
     override fun findAll(): MutableIterable<Command> {

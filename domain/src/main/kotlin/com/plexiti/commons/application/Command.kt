@@ -2,6 +2,7 @@ package com.plexiti.commons.application
 
 import com.fasterxml.jackson.annotation.JsonFormat
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.node.ObjectNode
 import com.plexiti.commons.adapters.db.CommandStore
 import com.plexiti.commons.application.CommandStatus.*
 import com.plexiti.commons.domain.*
@@ -47,6 +48,13 @@ abstract class Command: Message {
             command.issuedAt = Date()
             command.correlation = command.correlation()
             return store.save(command)
+        }
+
+        fun fromJson(json: String): Command {
+            val node = ObjectMapper().readValue(json, ObjectNode::class.java)
+            val qName =  node.get("context").textValue() + "/" + node.get("name").textValue()
+            val type = store.type(qName)
+            return ObjectMapper().readValue(json, type.java)
         }
 
         fun <C: Command> fromJson(json: String, type: KClass<C>): C {
