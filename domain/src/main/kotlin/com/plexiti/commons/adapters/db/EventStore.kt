@@ -19,7 +19,7 @@ import kotlin.reflect.KClass
 class EventStore: EventRepository<Event>, ApplicationContextAware {
 
     @Value("\${com.plexiti.app.context}")
-    private var context: String = "Commons"
+    private var context: String? = null
 
     @Autowired
     private var delegate: EventEntityRepository = InMemoryEventEntityRepository()
@@ -46,7 +46,7 @@ class EventStore: EventRepository<Event>, ApplicationContextAware {
     }
 
     override fun setApplicationContext(applicationContext: ApplicationContext) {
-        Event.context = Context(context)
+        Context.home = Context(context)
         Event.store = this
         eventTypes = scanPackageForAssignableClasses("com.plexiti", Event::class.java)
             .map { it.newInstance() as Event }

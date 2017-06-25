@@ -1,9 +1,6 @@
 package com.plexiti.commons.adapters.db
 
-import com.plexiti.commons.domain.Aggregate
-import com.plexiti.commons.domain.AggregateId
-import com.plexiti.commons.domain.Event
-import com.plexiti.commons.domain.EventId
+import com.plexiti.commons.domain.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
@@ -24,7 +21,7 @@ class EventStoreTest {
     fun prepare() {
         aggregate = TestAggregate()
         aggregate.id = TestAggregateId(UUID.randomUUID().toString())
-        Event.store.eventTypes = mapOf("Commons/TestEvent" to TestEvent::class)
+        Event.store.eventTypes = mapOf("${Context.home.name}/${TestEvent::class.simpleName}" to TestEvent::class)
         Event.store.deleteAll()
     }
 

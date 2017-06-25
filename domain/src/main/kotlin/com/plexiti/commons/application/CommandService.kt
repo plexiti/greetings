@@ -16,7 +16,8 @@ class CommandService {
         val eventId = Event.store.eventId(json)
         if (eventId != null) {
             val event = Event.store.findOne(eventId) ?: Event.fromJson(json)
-            // TODO mark as consumed
+            event.entity
+                        // TODO mark as consumed
             eventStore.save(event)
         }
     }

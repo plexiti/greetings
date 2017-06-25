@@ -23,7 +23,7 @@ import kotlin.reflect.KClass
 class CommandStore: CommandRepository<Command>, ApplicationContextAware {
 
     @Value("\${com.plexiti.app.context}")
-    private var context: String = "Commons"
+    private var context: String? = null
 
     @Autowired
     private var delegate: CommandEntityRepository = InMemoryCommandEntityRepository()
@@ -50,7 +50,7 @@ class CommandStore: CommandRepository<Command>, ApplicationContextAware {
     }
 
     override fun setApplicationContext(applicationContext: ApplicationContext) {
-        Command.context = Context(context)
+        Context.home = Context(context)
         Command.store = this
         commandTypes = scanPackageForAssignableClasses("com.plexiti", Command::class.java)
             .map { it.newInstance() as Command }

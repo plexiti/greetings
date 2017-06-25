@@ -11,12 +11,16 @@ import javax.persistence.Embeddable
 class Context() {
 
     @Column(name="NAME", length = 64, nullable = false)
-    var name: String = "Commons"
+    var name = "Default"
         @JsonValue get
         @JsonValue protected set
 
-    constructor(name: String): this() {
-        this.name = name
+    constructor(name: String?): this() {
+        this.name = name ?: "Default"
+    }
+
+    companion object {
+        var home = Context()
     }
 
 }

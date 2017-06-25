@@ -1,6 +1,7 @@
 package com.plexiti.commons.adapters.db
 
 import com.plexiti.commons.application.Command
+import com.plexiti.commons.domain.Context
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
@@ -14,7 +15,7 @@ class CommandStoreTest {
 
     @Before
     fun prepare() {
-        Command.store.commandTypes = mapOf("Commons/TestCommand" to TestCommand::class)
+        Command.store.commandTypes = mapOf("${Context.home.name}/${TestCommand::class.simpleName}" to TestCommand::class)
         Command.store.deleteAll()
     }
 

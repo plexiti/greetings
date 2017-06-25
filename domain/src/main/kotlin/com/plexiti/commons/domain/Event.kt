@@ -21,7 +21,7 @@ abstract class Event(aggregate: Aggregate<*>? = null) : Message {
 
     val type = MessageType.Event
 
-    override var context = Event.context
+    override var context = Context.home
 
     override val name = this::class.simpleName!!
 
@@ -42,7 +42,6 @@ abstract class Event(aggregate: Aggregate<*>? = null) : Message {
 
     companion object {
 
-        internal var context = Context()
         internal var store = EventStore()
 
         fun <E: Event> raise(event: E): E {

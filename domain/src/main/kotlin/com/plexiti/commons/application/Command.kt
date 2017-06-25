@@ -22,7 +22,7 @@ abstract class Command: Message {
 
     val type = MessageType.Command
 
-    override var context = Command.context
+    override var context = Context.home
 
     override val name = this::class.simpleName!!
 
@@ -44,7 +44,6 @@ abstract class Command: Message {
 
     companion object {
 
-        internal var context = Context()
         internal var store = CommandStore()
 
         fun <C: Command> issue(command: C): C {
@@ -104,7 +103,7 @@ class CommandEntity(): AbstractMessageEntity<CommandId, CommandStatus>() {
         protected set
 
     @Embedded @AttributeOverride(name="name", column = Column(name="ISSUED_BY", nullable = false))
-    var issuedBy = Command.context
+    var issuedBy = Context.home
         protected set
 
     @Column(name = "CORRELATION", length = 128, nullable = false)
