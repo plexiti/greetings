@@ -1,5 +1,6 @@
 package com.plexiti.commons.adapters.db
 
+import com.plexiti.commons.AbstractDataJpaTest
 import com.plexiti.commons.application.Command
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test

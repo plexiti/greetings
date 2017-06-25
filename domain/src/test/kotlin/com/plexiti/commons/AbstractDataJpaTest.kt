@@ -1,4 +1,4 @@
-package com.plexiti.commons.adapters.db
+package com.plexiti.commons
 
 import org.junit.runner.RunWith
 import org.springframework.boot.autoconfigure.domain.EntityScan
@@ -20,7 +20,7 @@ abstract class AbstractDataJpaTest {
     @Configuration
     @EntityScan("com.plexiti")
     @EnableJpaRepositories("com.plexiti")
-    @ComponentScan("com.plexiti.commons.adapters.db")
+    @ComponentScan("com.plexiti")
     class DataJpaTestConfiguration
 
 }

@@ -38,7 +38,8 @@ abstract class Command: Message {
     lateinit var correlation: String
         protected set
 
-    @JsonIgnore internal lateinit var entity: CommandEntity
+    @JsonIgnore
+    internal lateinit var internals: CommandEntity
         @JsonIgnore get
         @JsonIgnore set
 
@@ -135,23 +136,28 @@ class CommandEntity(): AbstractMessageEntity<CommandId, CommandStatus>() {
         this.issuedAt = command.issuedAt
         this.correlation = command.correlation
         this.json = ObjectMapper().writeValueAsString(command)
-        this.status = issued
+        this.status = if (this.context == Context.home) issued else forwarded
     }
 
     @Consumed
-    fun consumed(): CommandStatus {
+    fun transitioned(): CommandStatus {
         status = when (status) {
             issued -> forwarded;
             forwarded -> started
             started -> finished
             finished -> throw IllegalStateException()
         }
+        transitionTo(status)
+        return status
+    }
+
+    internal fun transitionTo(status: CommandStatus) {
+        this.status = status
         when (status) {
             forwarded -> forwardedAt = Date()
             started -> startedAt = Date()
             finished -> finishedAt = Date()
         }
-        return status
     }
 
 }

@@ -36,7 +36,8 @@ abstract class Event(aggregate: Aggregate<*>? = null) : Message {
 
     lateinit var aggregate: EventAggregate
 
-    @JsonIgnore internal lateinit var entity: EventEntity
+    @JsonIgnore
+    internal lateinit var internals: EventEntity
         @JsonIgnore get
         @JsonIgnore set
 
@@ -45,8 +46,6 @@ abstract class Event(aggregate: Aggregate<*>? = null) : Message {
         internal var store = EventStore()
 
         fun <E: Event> raise(event: E): E {
-            event.id = EventId(UUID.randomUUID().toString())
-            event.raisedAt = Date()
             return store.save(event)
         }
 
@@ -65,6 +64,8 @@ abstract class Event(aggregate: Aggregate<*>? = null) : Message {
 
     init {
         if (aggregate != null) {
+            id = EventId(UUID.randomUUID().toString())
+            raisedAt = Date()
             this.aggregate = EventAggregate(aggregate)
         }
     }
@@ -119,7 +120,7 @@ class EventEntity(): AbstractMessageEntity<EventId, EventStatus>() {
         this.raisedAt = event.raisedAt
         this.aggregate = event.aggregate
         this.json = ObjectMapper().writeValueAsString(event)
-        this.status = EventStatus.raised
+        this.status = if (this.context == Context.home) EventStatus.raised else EventStatus.forwarded
     }
 
     @Embeddable
@@ -146,7 +147,7 @@ class EventEntity(): AbstractMessageEntity<EventId, EventStatus>() {
     }
 
     @Consumed
-    fun consumed(): EventStatus {
+    fun transitioned(): EventStatus {
         status = when (status) {
             EventStatus.raised -> EventStatus.forwarded;
             EventStatus.forwarded -> EventStatus.consumed
