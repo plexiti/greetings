@@ -37,7 +37,12 @@ class CommandStore: CommandRepository<Command>, ApplicationContextAware {
     }
 
     private fun toCommand(entity: CommandEntity?): Command? {
-        return if (entity != null) Command.fromJson(entity.json, type(entity.qname())) else null
+        if (entity != null) {
+            val command = Command.fromJson(entity.json, type(entity.qname()))
+            command.entity = entity
+            return command
+        }
+        return null
     }
 
     private fun toEntity(command: Command?): CommandEntity? {

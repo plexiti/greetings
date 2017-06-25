@@ -1,13 +1,13 @@
 package com.plexiti.commons.application
 
 import com.fasterxml.jackson.annotation.JsonFormat
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.plexiti.commons.adapters.db.CommandStore
 import com.plexiti.commons.application.CommandStatus.*
 import com.plexiti.commons.domain.*
 import org.apache.camel.component.jpa.Consumed
-import org.springframework.data.jpa.domain.AbstractPersistable_.id
 import org.springframework.data.repository.CrudRepository
 import org.springframework.data.repository.NoRepositoryBean
 import java.util.*
@@ -38,6 +38,10 @@ abstract class Command: Message {
     lateinit var correlation: String
         protected set
 
+    @JsonIgnore internal lateinit var entity: CommandEntity
+        @JsonIgnore get
+        @JsonIgnore set
+
     companion object {
 
         internal var context = Context()
@@ -52,9 +56,9 @@ abstract class Command: Message {
 
         fun fromJson(json: String): Command {
             val node = ObjectMapper().readValue(json, ObjectNode::class.java)
-            val qName =  node.get("context").textValue() + "/" + node.get("name").textValue()
+            val qName = node.get("context").textValue() + "/" + node.get("name").textValue()
             val type = store.type(qName)
-            return ObjectMapper().readValue(json, type.java)
+            return fromJson(json, type)
         }
 
         fun <C: Command> fromJson(json: String, type: KClass<C>): C {

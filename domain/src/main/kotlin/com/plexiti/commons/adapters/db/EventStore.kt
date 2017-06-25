@@ -33,7 +33,12 @@ class EventStore: EventRepository<Event>, ApplicationContextAware {
     }
 
     private fun toEvent(entity: EventEntity?): Event? {
-        return if (entity != null) Event.fromJson(entity.json, type(entity.qname())) else null
+        if (entity != null) {
+            val event = Event.fromJson(entity.json, type(entity.qname()))
+            event.entity = entity
+            return event
+        }
+        return null
     }
 
     private fun toEntity(event: Event?): EventEntity? {

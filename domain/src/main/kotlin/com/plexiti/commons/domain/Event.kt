@@ -1,6 +1,7 @@
 package com.plexiti.commons.domain
 
 import com.fasterxml.jackson.annotation.JsonFormat
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.plexiti.commons.adapters.db.EventStore
@@ -35,6 +36,10 @@ abstract class Event(aggregate: Aggregate<*>? = null) : Message {
 
     lateinit var aggregate: EventAggregate
 
+    @JsonIgnore internal lateinit var entity: EventEntity
+        @JsonIgnore get
+        @JsonIgnore set
+
     companion object {
 
         internal var context = Context()
@@ -46,20 +51,11 @@ abstract class Event(aggregate: Aggregate<*>? = null) : Message {
             return store.save(event)
         }
 
-        fun consume(json: String): Event? {
-            val eventId = store.eventId(json)
-            if (eventId != null) {
-                val event = store.findOne(eventId) ?: Event.fromJson(json)
-                return store.save(event) // TODO mark as consumed
-            }
-            return null
-        }
-
         fun fromJson(json: String): Event {
             val node = ObjectMapper().readValue(json, ObjectNode::class.java)
             val qName =  node.get("context").textValue() + "/" + node.get("name").textValue()
             val type = store.type(qName)
-            return ObjectMapper().readValue(json, type.java)
+            return fromJson(json, type)
         }
 
         fun <E: Event> fromJson(json: String, type: KClass<E>): E {
