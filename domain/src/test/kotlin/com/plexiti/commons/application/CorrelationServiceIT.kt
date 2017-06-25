@@ -11,10 +11,10 @@ import java.util.*
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
-open class EventServiceIT: AbstractDataJpaTest() {
+open class CorrelationServiceIT : AbstractDataJpaTest() {
 
     @Autowired
-    lateinit var eventService: EventService
+    lateinit var correlationService: CorrelationService
 
     lateinit var aggregate: ITAggregate
 
@@ -35,7 +35,7 @@ open class EventServiceIT: AbstractDataJpaTest() {
     fun consume_external() {
 
         val external = ExternalITEvent(aggregate)
-        eventService.consume(external.toJson())
+        correlationService.handleEvent(external.toJson())
         val event = Event.store.findAll().iterator().next()
 
         assertThat(event.internals.status).isEqualTo(EventStatus.consumed)
@@ -52,7 +52,7 @@ open class EventServiceIT: AbstractDataJpaTest() {
         val event = Event.store.findAll().iterator().next()
         event.internals.transitioned()
 
-        eventService.consume(event.toJson())
+        correlationService.handleEvent(event.toJson())
 
         assertThat(event.internals.status).isEqualTo(EventStatus.consumed)
         assertThat(event.internals.raisedAt).isNotNull()

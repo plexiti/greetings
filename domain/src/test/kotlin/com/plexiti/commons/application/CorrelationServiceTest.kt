@@ -9,10 +9,10 @@ import java.util.*
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
-class EventServiceTest {
+class CorrelationServiceTest {
 
-    val eventService: EventService = EventService()
-    lateinit var aggregate: EventServiceTest.TestAggregate
+    val correlationService: CorrelationService = CorrelationService()
+    lateinit var aggregate: CorrelationServiceTest.TestAggregate
 
     class InternalEvent(aggregate: TestAggregate? = null) : Event(aggregate)
     class ExternalEvent(aggregate: TestAggregate? = null) : Event(aggregate) {
@@ -30,14 +30,15 @@ class EventServiceTest {
             "External/${ExternalEvent::class.simpleName}" to ExternalEvent::class
         )
         Event.store.deleteAll()
-        eventService.eventStore = Event.store
+        correlationService.eventStore = Event.store
+        correlationService.commandStore = Command.store
     }
 
     @Test
     fun consume_external() {
 
         val external = ExternalEvent(aggregate)
-        eventService.consume(external.toJson())
+        correlationService.handleEvent(external.toJson())
         val event = Event.store.findAll().iterator().next()
         assertThat(event.internals.status).isEqualTo(EventStatus.consumed)
         assertThat(event.internals.raisedAt).isNotNull()
@@ -53,7 +54,22 @@ class EventServiceTest {
         val event = Event.store.findAll().iterator().next()
         event.internals.transitioned()
 
-        eventService.consume(event.toJson())
+        correlationService.handleEvent(event.toJson())
+        assertThat(event.internals.status).isEqualTo(EventStatus.consumed)
+        assertThat(event.internals.raisedAt).isNotNull()
+        assertThat(event.internals.forwardedAt).isNotNull()
+        assertThat(event.internals.consumedAt).isNotNull()
+
+    }
+
+    @Test
+    fun finish() {
+
+        Event.raise(InternalEvent(aggregate))
+        val event = Event.store.findAll().iterator().next()
+        event.internals.transitioned()
+
+        correlationService.handleEvent(event.toJson())
         assertThat(event.internals.status).isEqualTo(EventStatus.consumed)
         assertThat(event.internals.raisedAt).isNotNull()
         assertThat(event.internals.forwardedAt).isNotNull()

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.plexiti.commons.adapters.db.EventStore
+import com.plexiti.commons.application.Command
 import com.plexiti.commons.application.CommandId
 import com.plexiti.commons.domain.EventEntity.EventAggregate
 import org.apache.camel.component.jpa.Consumed
@@ -44,9 +45,12 @@ abstract class Event(aggregate: Aggregate<*>? = null) : Message {
     companion object {
 
         internal var store = EventStore()
+        internal val executingCommand = ThreadLocal<Command?>()
 
         fun <E: Event> raise(event: E): E {
-            return store.save(event)
+            val event = store.save(event)
+            event.internals.raisedDuring = executingCommand.get()?.id
+            return event
         }
 
         fun fromJson(json: String): Event {
@@ -98,17 +102,17 @@ class EventEntity(): AbstractMessageEntity<EventId, EventStatus>() {
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "RAISED_AT", nullable = false)
     lateinit var raisedAt: Date
-        protected set
+        internal set
 
     @Embedded
     @AttributeOverride(name="value", column = Column(name="RAISED_DURING", nullable = true))
     var raisedDuring: CommandId? = null
-        protected set
+        internal set
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "CONSUMED_AT", nullable = true)
     var consumedAt: Date? = null
-        protected set
+        internal set
 
     @Embedded
     lateinit var aggregate: EventAggregate

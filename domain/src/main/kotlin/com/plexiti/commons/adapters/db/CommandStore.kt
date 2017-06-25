@@ -1,10 +1,9 @@
 package com.plexiti.commons.adapters.db
 
 import com.fasterxml.jackson.databind.JsonMappingException
-import com.plexiti.commons.application.Command
-import com.plexiti.commons.application.CommandEntity
-import com.plexiti.commons.application.CommandId
-import com.plexiti.commons.application.CommandRepository
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.node.ObjectNode
+import com.plexiti.commons.application.*
 import com.plexiti.commons.domain.Context
 import com.plexiti.utils.scanPackageForAssignableClasses
 import org.springframework.beans.factory.annotation.Autowired
@@ -28,9 +27,7 @@ class CommandStore: CommandRepository<Command>, ApplicationContextAware {
     @Autowired
     private var delegate: CommandEntityRepository = InMemoryCommandEntityRepository()
 
-    private class RawCommand: Command()
-
-    internal lateinit var commandTypes: Map<String, KClass<out Command>>
+    internal var commandTypes: Map<String, KClass<out Command>> = emptyMap()
 
     internal fun type(qName: String): KClass<out Command> {
         return commandTypes.get(qName) ?: throw IllegalArgumentException("Command type '$qName' is not mapped to a local object type!")
@@ -67,7 +64,9 @@ class CommandStore: CommandRepository<Command>, ApplicationContextAware {
 
     fun commandId(json: String): CommandId? {
         try {
-            return Command.fromJson(json, RawCommand::class).id
+            val node = ObjectMapper().readValue(json, ObjectNode::class.java)
+            val id =  node.get("id").textValue()
+            return if (id != null) CommandId(id) else null
         } catch (ex: JsonMappingException) {
             return null
         }
@@ -75,6 +74,10 @@ class CommandStore: CommandRepository<Command>, ApplicationContextAware {
 
     fun findOne(json: String): Command? {
         return findOne(commandId(json))
+    }
+
+    override fun findByFinishKey(finishKey: CorrelationKey): Command? {
+        return toCommand(delegate.findByFinishKey(finishKey))
     }
 
     override fun findAll(): MutableIterable<Command> {

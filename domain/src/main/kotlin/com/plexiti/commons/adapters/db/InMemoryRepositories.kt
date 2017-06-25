@@ -2,6 +2,7 @@ package com.plexiti.commons.adapters.db
 
 import com.plexiti.commons.application.CommandEntity
 import com.plexiti.commons.application.CommandId
+import com.plexiti.commons.application.CorrelationKey
 import com.plexiti.commons.domain.EventEntity
 import com.plexiti.commons.domain.EventId
 import org.springframework.data.repository.NoRepositoryBean
@@ -20,4 +21,10 @@ class InMemoryEventEntityRepository: InMemoryEntityCrudRepository<EventEntity, E
 }
 
 @NoRepositoryBean
-class InMemoryCommandEntityRepository: InMemoryEntityCrudRepository<CommandEntity, CommandId>(), CommandEntityRepository
+class InMemoryCommandEntityRepository: InMemoryEntityCrudRepository<CommandEntity, CommandId>(), CommandEntityRepository {
+
+    override fun findByFinishKey(finishKey: CorrelationKey): CommandEntity? {
+        return findAll().find { finishKey == it.finishKey }
+    }
+
+}

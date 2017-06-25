@@ -1,6 +1,8 @@
 package com.plexiti.commons.adapters.db
 
 import com.fasterxml.jackson.databind.JsonMappingException
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.node.ObjectNode
 import com.plexiti.commons.domain.*
 import com.plexiti.utils.scanPackageForAssignableClasses
 import org.springframework.beans.factory.annotation.Autowired
@@ -24,9 +26,7 @@ class EventStore: EventRepository<Event>, ApplicationContextAware {
     @Autowired
     private var delegate: EventEntityRepository = InMemoryEventEntityRepository()
 
-    internal lateinit var eventTypes: Map<String, KClass<out Event>>
-
-    private class RawEvent: Event()
+    internal var eventTypes: Map<String, KClass<out Event>> = emptyMap()
 
     internal fun type(qName: String): KClass<out Event> {
         return eventTypes.get(qName) ?: throw IllegalArgumentException("Event type '$qName' is not mapped to a local object type!")
@@ -63,7 +63,9 @@ class EventStore: EventRepository<Event>, ApplicationContextAware {
 
     fun eventId(json: String): EventId? {
         try {
-            return Event.fromJson(json, RawEvent::class).id
+            val node = ObjectMapper().readValue(json, ObjectNode::class.java)
+            val id =  node.get("id").textValue()
+            return if (id != null) EventId(id) else null
         } catch (ex: JsonMappingException) {
             return null
         }

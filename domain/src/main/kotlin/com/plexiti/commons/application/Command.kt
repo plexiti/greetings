@@ -2,6 +2,7 @@ package com.plexiti.commons.application
 
 import com.fasterxml.jackson.annotation.JsonFormat
 import com.fasterxml.jackson.annotation.JsonIgnore
+import com.fasterxml.jackson.annotation.JsonValue
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.plexiti.commons.adapters.db.CommandStore
@@ -10,6 +11,7 @@ import com.plexiti.commons.domain.*
 import org.apache.camel.component.jpa.Consumed
 import org.springframework.data.repository.CrudRepository
 import org.springframework.data.repository.NoRepositoryBean
+import java.io.Serializable
 import java.util.*
 import javax.persistence.*
 import kotlin.reflect.KClass
@@ -35,9 +37,6 @@ abstract class Command: Message {
     lateinit var issuedAt: Date
         protected set
 
-    lateinit var correlation: String
-        protected set
-
     @JsonIgnore
     internal lateinit var internals: CommandEntity
         @JsonIgnore get
@@ -50,7 +49,6 @@ abstract class Command: Message {
         fun <C: Command> issue(command: C): C {
             command.id = CommandId(UUID.randomUUID().toString())
             command.issuedAt = Date()
-            command.correlation = command.correlation()
             return store.save(command)
         }
 
@@ -67,8 +65,12 @@ abstract class Command: Message {
 
     }
 
-    fun correlation(): String {
-        return id.value
+    open fun finishKey(): CorrelationKey {
+        return CorrelationKey.create(id.value)!!
+    }
+
+    open fun finishKey(event: Event): CorrelationKey? {
+        return CorrelationKey.create(event.internals.raisedDuring?.value)
     }
 
     fun toJson(): String {
@@ -101,40 +103,40 @@ class CommandEntity(): AbstractMessageEntity<CommandId, CommandStatus>() {
     @Column(name = "ISSUED_AT", nullable = false)
     @Temporal(TemporalType.TIMESTAMP)
     var issuedAt = Date()
-        protected set
+        internal set
 
     @Embedded @AttributeOverride(name="name", column = Column(name="ISSUED_BY", nullable = false))
     var issuedBy = Context.home
-        protected set
+        internal set
 
-    @Column(name = "CORRELATION", length = 128, nullable = false)
-    lateinit var correlation: String
-        protected set
+    @Embedded @AttributeOverride(name="value", column = Column(name = "FINISH_KEY", length = 128, nullable = false))
+    lateinit var finishKey: CorrelationKey
+        internal set
 
     @Embedded @AttributeOverride(name="value", column = Column(name="TRIGGERED_BY", nullable = true))
     var triggeredBy: EventId? = null
-        protected set
+        internal set
 
     @Column(name = "STARTED_AT", nullable = true)
     @Temporal(TemporalType.TIMESTAMP)
     var startedAt: Date? = null
-        protected set
+        internal set
 
     @Column(name = "FINISHED_AT", nullable = true)
     @Temporal(TemporalType.TIMESTAMP)
     var finishedAt: Date? = null
-        protected set
+        internal set
 
     @Embedded @AttributeOverride(name="value", column = Column(name="FINISHED_BY", nullable = true))
     var finishedBy: EventId? = null
-        protected set
+        internal set
 
     constructor(command: Command): this() {
         this.context = command.context
         this.name = command.name
         this.id = command.id
         this.issuedAt = command.issuedAt
-        this.correlation = command.correlation
+        this.finishKey = command.finishKey()
         this.json = ObjectMapper().writeValueAsString(command)
         this.status = if (this.context == Context.home) issued else forwarded
     }
@@ -147,25 +149,62 @@ class CommandEntity(): AbstractMessageEntity<CommandId, CommandStatus>() {
             started -> finished
             finished -> throw IllegalStateException()
         }
-        transitionTo(status)
-        return status
-    }
-
-    internal fun transitionTo(status: CommandStatus) {
-        this.status = status
         when (status) {
             forwarded -> forwardedAt = Date()
             started -> startedAt = Date()
             finished -> finishedAt = Date()
         }
+        return status
     }
 
 }
 
 class CommandId(value: String = ""): MessageId(value)
 
+@Embeddable
+class CorrelationKey: Serializable {
+
+    @Column(name = "KEY", length = 128, nullable = false)
+    lateinit var value: String
+        @JsonValue get
+        @JsonValue private set
+
+    override fun toString(): String {
+        return value
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is CorrelationKey) return false
+        if (value != other.value) return false
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return value.hashCode()
+    }
+
+    internal fun value(value: String): CorrelationKey {
+        this.value = value
+        return this
+    }
+
+    companion object {
+
+        fun create(value: String?): CorrelationKey? {
+            return if (value != null) CorrelationKey().value(value) else null
+        }
+
+    }
+
+}
+
 @NoRepositoryBean
-interface CommandRepository<C>: CrudRepository<C, CommandId>
+interface CommandRepository<C>: CrudRepository<C, CommandId> {
+
+    fun findByFinishKey(finishKey: CorrelationKey): C?
+
+}
 
 enum class CommandStatus: MessageStatus {
     issued, forwarded, started, finished
