@@ -1,6 +1,6 @@
 package com.plexiti.commons.adapters.db
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.JsonMappingException
 import com.plexiti.commons.domain.*
 import com.plexiti.utils.scanPackageForAssignableClasses
 import org.springframework.beans.factory.annotation.Autowired
@@ -10,6 +10,7 @@ import org.springframework.context.ApplicationContextAware
 import org.springframework.data.repository.NoRepositoryBean
 import org.springframework.stereotype.Component
 import org.springframework.stereotype.Repository
+import kotlin.reflect.KClass
 
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
@@ -23,10 +24,16 @@ class EventStore: EventRepository<Event>, ApplicationContextAware {
     @Autowired
     private var delegate: EventEntityRepository = InMemoryEventEntityRepository()
 
-    internal lateinit var eventTypes: Map<String, Class<*>>
+    internal lateinit var eventTypes: Map<String, KClass<out Event>>
+
+    private class RawEvent: Event()
 
     private fun toEvent(entity: EventEntity?): Event? {
-        return if (entity != null) ObjectMapper().readValue(entity.json, eventTypes[entity.qname()]) as Event else null
+        if (entity != null) {
+            val type = eventTypes.get(entity.qname()) ?: throw IllegalArgumentException("Provided event represents an unknown type '$entity.qname()'")
+            return Event.fromJson(entity.json, type)
+        }
+        return null
     }
 
     private fun toEntity(event: Event?): EventEntity? {
@@ -38,7 +45,7 @@ class EventStore: EventRepository<Event>, ApplicationContextAware {
         Event.store = this
         eventTypes = scanPackageForAssignableClasses("com.plexiti", Event::class.java)
             .map { it.newInstance() as Event }
-            .associate { Pair("${it.context.name}/${it.name}", it::class.java) }
+            .associate { Pair(it.qname(), it::class) }
     }
 
     override fun exists(id: EventId?): Boolean {
@@ -47,6 +54,16 @@ class EventStore: EventRepository<Event>, ApplicationContextAware {
 
     override fun findOne(id: EventId?): Event? {
         return toEvent(delegate.findOne(id))
+    }
+
+    fun findOne(json: String): Event? {
+        val raw: Event
+        try {
+            raw = Event.fromJson(json, RawEvent::class)
+        } catch (ex: JsonMappingException) {
+            throw IllegalArgumentException("Provided json does not represent an event: $json", ex)
+        }
+        return findOne(raw.id)
     }
 
     override fun findAll(): MutableIterable<Event> {

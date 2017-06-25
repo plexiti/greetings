@@ -3,6 +3,7 @@ package com.plexiti.commons.adapters.db
 import com.plexiti.commons.domain.Aggregate
 import com.plexiti.commons.domain.AggregateId
 import com.plexiti.commons.domain.Event
+import com.plexiti.commons.domain.EventId
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
@@ -23,7 +24,7 @@ class EventStoreTest {
     fun prepare() {
         aggregate = TestAggregate()
         aggregate.id = TestAggregateId(UUID.randomUUID().toString())
-        Event.store.eventTypes = mapOf("Commons/TestEvent" to TestEvent::class.java)
+        Event.store.eventTypes = mapOf("Commons/TestEvent" to TestEvent::class)
         Event.store.deleteAll()
     }
 
@@ -38,11 +39,24 @@ class EventStoreTest {
     }
 
     @Test
-    fun find() {
+    fun findOne() {
         val event = Event.raise(TestEvent(aggregate))
         val e = Event.store.findOne(event.id)
         assertThat(e)
             .isEqualTo(event)
+    }
+
+    @Test
+    fun findOne_Null() {
+        val e = Event.store.findOne(EventId("anId"))
+        assertThat(e).isNull()
+    }
+
+    @Test
+    fun findOne_Json() {
+        val expected = Event.raise(TestEvent(aggregate))
+        val actual = Event.store.findOne(expected.toJson())
+        assertThat(actual).isEqualTo(expected)
     }
 
 }

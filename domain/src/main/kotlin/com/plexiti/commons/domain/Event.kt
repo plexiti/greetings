@@ -11,6 +11,7 @@ import org.springframework.data.repository.CrudRepository
 import org.springframework.data.repository.NoRepositoryBean
 import java.util.*
 import javax.persistence.*
+import kotlin.reflect.KClass
 
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
@@ -45,6 +46,10 @@ abstract class Event(aggregate: Aggregate<*>? = null) : Message {
             return store.save(event)
         }
 
+        fun <E: Event> fromJson(json: String, type: KClass<E>): E {
+            return ObjectMapper().readValue(json, type.java)
+        }
+
    }
 
     init {
@@ -62,6 +67,10 @@ abstract class Event(aggregate: Aggregate<*>? = null) : Message {
         if (other !is Event) return false
         if (id != other.id) return false
         return true
+    }
+
+    fun toJson(): String {
+        return ObjectMapper().writeValueAsString(this)
     }
 
 }
