@@ -47,4 +47,11 @@ class EventStoreIT: AbstractDataJpaTest() {
             .isEqualTo(event)
     }
 
+    @Test
+    fun findOne_Json() {
+        val expected = Event.raise(ITEvent(aggregate))
+        val actual = eventStore.findOne(expected.toJson())
+        assertThat(actual).isEqualTo(expected)
+    }
+
 }

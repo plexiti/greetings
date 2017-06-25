@@ -33,4 +33,11 @@ class CommandStoreIT: AbstractDataJpaTest() {
             .isEqualTo(command)
     }
 
+    @Test
+    fun findOne_Json() {
+        val expected = Command.issue(ITCommand())
+        val actual = commandStore.findOne(expected.toJson())
+        assertThat(actual).isEqualTo(expected)
+    }
+
 }

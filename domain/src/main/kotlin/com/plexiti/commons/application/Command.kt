@@ -11,6 +11,7 @@ import org.springframework.data.repository.CrudRepository
 import org.springframework.data.repository.NoRepositoryBean
 import java.util.*
 import javax.persistence.*
+import kotlin.reflect.KClass
 
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
@@ -47,10 +48,19 @@ abstract class Command: Message {
             command.correlation = command.correlation()
             return store.save(command)
         }
+
+        fun <C: Command> fromJson(json: String, type: KClass<C>): C {
+            return ObjectMapper().readValue(json, type.java)
+        }
+
     }
 
     fun correlation(): String {
         return id.value
+    }
+
+    fun toJson(): String {
+        return ObjectMapper().writeValueAsString(this)
     }
 
     override fun hashCode(): Int {

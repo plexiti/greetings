@@ -1,5 +1,6 @@
 package com.plexiti.commons.adapters.db
 
+import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.plexiti.commons.application.Command
 import com.plexiti.commons.application.CommandEntity
@@ -14,6 +15,7 @@ import org.springframework.context.ApplicationContextAware
 import org.springframework.data.repository.NoRepositoryBean
 import org.springframework.stereotype.Component
 import org.springframework.stereotype.Repository
+import kotlin.reflect.KClass
 
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
@@ -27,10 +29,16 @@ class CommandStore: CommandRepository<Command>, ApplicationContextAware {
     @Autowired
     private var delegate: CommandEntityRepository = InMemoryCommandEntityRepository()
 
-    internal lateinit var commandTypes: Map<String, Class<*>>
+    private class RawCommand: Command()
+
+    internal lateinit var commandTypes: Map<String, KClass<out Command>>
 
     private fun toCommand(entity: CommandEntity?): Command? {
-        return if (entity != null) ObjectMapper().readValue(entity.json, commandTypes[entity.qname()]) as Command else null
+        if (entity != null) {
+            val type = commandTypes.get(entity.qname()) ?: throw IllegalArgumentException("Provided event represents an unknown type '$entity.qname()'")
+            return Command.fromJson(entity.json, type)
+        }
+        return null
     }
 
     private fun toEntity(command: Command?): CommandEntity? {
@@ -42,7 +50,7 @@ class CommandStore: CommandRepository<Command>, ApplicationContextAware {
         Command.store = this
         commandTypes = scanPackageForAssignableClasses("com.plexiti", Command::class.java)
             .map { it.newInstance() as Command }
-            .associate { Pair("${it.context.name}/${it.name}", it::class.java) }
+            .associate { Pair(it.qname(), it::class) }
     }
 
     override fun exists(id: CommandId?): Boolean {
@@ -51,6 +59,16 @@ class CommandStore: CommandRepository<Command>, ApplicationContextAware {
 
     override fun findOne(id: CommandId?): Command? {
         return toCommand(delegate.findOne(id))
+    }
+
+    fun findOne(json: String): Command? {
+        val raw: Command
+        try {
+            raw = Command.fromJson(json, RawCommand::class)
+        } catch (ex: JsonMappingException) {
+            throw IllegalArgumentException("Provided json does not represent an event: $json", ex)
+        }
+        return findOne(raw.id)
     }
 
     override fun findAll(): MutableIterable<Command> {
