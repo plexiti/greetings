@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonValue
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
-import com.plexiti.commons.adapters.db.CommandStore
+import com.plexiti.commons.adapters.db.CommandRepository
 import com.plexiti.commons.application.CommandStatus.*
 import com.plexiti.commons.domain.*
 import org.apache.camel.component.jpa.Consumed
@@ -44,7 +44,7 @@ abstract class Command: Message {
 
     companion object {
 
-        internal var store = CommandStore()
+        internal var store = CommandRepository()
 
         fun <C: Command> issue(command: C): C {
             command.id = CommandId(UUID.randomUUID().toString())

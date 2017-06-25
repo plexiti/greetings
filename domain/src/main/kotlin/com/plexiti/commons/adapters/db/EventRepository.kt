@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.plexiti.commons.domain.*
+import com.plexiti.commons.domain.EventRepository
 import com.plexiti.utils.scanPackageForAssignableClasses
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
@@ -18,7 +19,7 @@ import kotlin.reflect.KClass
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
 @Component @NoRepositoryBean
-class EventStore: EventRepository<Event>, ApplicationContextAware {
+class EventRepository : EventRepository<Event>, ApplicationContextAware {
 
     @Value("\${com.plexiti.app.context}")
     private var context: String? = null
@@ -120,3 +121,12 @@ class EventStore: EventRepository<Event>, ApplicationContextAware {
 
 @Repository
 internal interface EventEntityRepository: EventRepository<EventEntity>
+
+@NoRepositoryBean
+class InMemoryEventEntityRepository: InMemoryEntityCrudRepository<EventEntity, EventId>(), EventEntityRepository {
+
+    override fun findByAggregateId(id: String): List<EventEntity> {
+        return findAll().filter { id == it.aggregate.id }
+    }
+
+}

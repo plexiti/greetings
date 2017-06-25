@@ -13,10 +13,10 @@ import java.util.*
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
-class EventStoreIT: AbstractDataJpaTest() {
+class EventRepositoryIT : AbstractDataJpaTest() {
 
     @Autowired
-    internal lateinit var eventStore: EventStore
+    internal lateinit var eventRepository: EventRepository
 
     class ServiceITAggregate : Aggregate<AggregateId>()
     class ServiceITAggregateId(value: String = ""): AggregateId(value)
@@ -32,7 +32,7 @@ class EventStoreIT: AbstractDataJpaTest() {
 
     @Test
     fun empty () {
-        assertThat(eventStore.findAll()).isEmpty()
+        assertThat(eventRepository.findAll()).isEmpty()
     }
 
     @Test
@@ -43,7 +43,7 @@ class EventStoreIT: AbstractDataJpaTest() {
     @Test
     fun find() {
         val event = Event.raise(ServiceITEvent(aggregate))
-        val e = eventStore.findOne(event.id)
+        val e = eventRepository.findOne(event.id)
         assertThat(e)
             .isEqualTo(event)
     }
@@ -51,7 +51,7 @@ class EventStoreIT: AbstractDataJpaTest() {
     @Test
     fun findOne_Json() {
         val expected = Event.raise(ServiceITEvent(aggregate))
-        val actual = eventStore.findOne(expected.toJson())
+        val actual = eventRepository.findOne(expected.toJson())
         assertThat(actual).isEqualTo(expected)
     }
 

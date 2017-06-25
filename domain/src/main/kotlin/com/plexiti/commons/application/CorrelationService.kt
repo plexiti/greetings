@@ -1,7 +1,7 @@
 package com.plexiti.commons.application
 
-import com.plexiti.commons.adapters.db.CommandStore
-import com.plexiti.commons.adapters.db.EventStore
+import com.plexiti.commons.adapters.db.CommandRepository
+import com.plexiti.commons.adapters.db.EventRepository
 import com.plexiti.commons.domain.Event
 import org.apache.camel.ProducerTemplate
 import org.springframework.beans.factory.annotation.Autowired
@@ -15,19 +15,19 @@ import org.springframework.transaction.annotation.Transactional
 class CorrelationService {
 
     @Autowired
-    lateinit var commandStore: CommandStore
+    lateinit var commandRepository: CommandRepository
 
     @Autowired
-    lateinit var eventStore: EventStore
+    lateinit var eventRepository: EventRepository
 
     @Autowired
     private lateinit var route: ProducerTemplate
 
     @Transactional
     fun consumeEvent(json: String) {
-        val eventId = eventStore.eventId(json)
+        val eventId = eventRepository.eventId(json)
         if (eventId != null) {
-            val event = eventStore.findOne(eventId) ?: eventStore.save(Event.fromJson(json))
+            val event = eventRepository.findOne(eventId) ?: eventRepository.save(Event.fromJson(json))
             triggerBy(event)
             finishBy(event)
             event.internals.transitioned()
@@ -36,9 +36,9 @@ class CorrelationService {
 
     @Transactional
     fun executeCommand(json: String) {
-        val commandId = commandStore.commandId(json)
+        val commandId = commandRepository.commandId(json)
         if (commandId != null) {
-            val command = commandStore.findOne(commandId) ?: commandStore.save(Command.fromJson(json))
+            val command = commandRepository.findOne(commandId) ?: commandRepository.save(Command.fromJson(json))
             command.internals.transitioned()
             Event.executingCommand.set(command)
             route.requestBody("direct:${command.name}", command)
@@ -47,7 +47,7 @@ class CorrelationService {
     }
 
     private fun triggerBy(event: Event) {
-        commandStore.commandTypes.values.forEach {
+        commandRepository.commandTypes.values.forEach {
             val instance = it.java.newInstance()
             var command = instance.triggerBy(event)
             if (command != null) {
@@ -58,11 +58,11 @@ class CorrelationService {
     }
 
     private fun finishBy(event: Event) {
-         commandStore.commandTypes.values.forEach {
+         commandRepository.commandTypes.values.forEach {
              val instance = it.java.newInstance()
              val finishKey = instance.finishKey(event)
              if (finishKey != null) {
-                 val command = commandStore.findByFinishKeyAndFinishedAtIsNull(finishKey)
+                 val command = commandRepository.findByFinishKeyAndFinishedAtIsNull(finishKey)
                  if (command != null) {
                      command.internals.finishedBy = event.id
                      command.internals.transitioned()

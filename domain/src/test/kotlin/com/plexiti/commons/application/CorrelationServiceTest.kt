@@ -40,8 +40,8 @@ class CorrelationServiceTest {
         )
         Event.store.deleteAll()
         Command.store.deleteAll()
-        correlationService.eventStore = Event.store
-        correlationService.commandStore = Command.store
+        correlationService.eventRepository = Event.store
+        correlationService.commandRepository = Command.store
     }
 
     @Test

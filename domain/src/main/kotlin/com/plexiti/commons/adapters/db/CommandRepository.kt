@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.plexiti.commons.application.*
+import com.plexiti.commons.application.CommandRepository
 import com.plexiti.commons.domain.Context
 import com.plexiti.utils.scanPackageForAssignableClasses
 import org.apache.camel.builder.RouteBuilder
@@ -20,7 +21,7 @@ import kotlin.reflect.KClass
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
 @Component @NoRepositoryBean
-class CommandStore: CommandRepository<Command>, ApplicationContextAware, RouteBuilder() {
+class CommandRepository : CommandRepository<Command>, ApplicationContextAware, RouteBuilder() {
 
     @Value("\${com.plexiti.app.context}")
     private var context: String? = null
@@ -140,3 +141,12 @@ class CommandStore: CommandRepository<Command>, ApplicationContextAware, RouteBu
 
 @Repository
 internal interface CommandEntityRepository: CommandRepository<CommandEntity>
+
+@NoRepositoryBean
+class InMemoryCommandEntityRepository: InMemoryEntityCrudRepository<CommandEntity, CommandId>(), CommandEntityRepository {
+
+    override fun findByFinishKeyAndFinishedAtIsNull(finishKey: CorrelationKey): CommandEntity? {
+        return findAll().find { finishKey == it.finishKey && it.finishedAt == null }
+    }
+
+}

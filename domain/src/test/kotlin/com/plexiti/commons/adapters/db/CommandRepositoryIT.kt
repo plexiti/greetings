@@ -9,16 +9,16 @@ import org.springframework.beans.factory.annotation.Autowired
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
-class CommandStoreIT: AbstractDataJpaTest() {
+class CommandRepositoryIT : AbstractDataJpaTest() {
 
     @Autowired
-    internal lateinit var commandStore: CommandStore
+    internal lateinit var commandRepository: CommandRepository
 
     class ITCommand(): Command()
 
     @Test
     fun empty () {
-        assertThat(commandStore.findAll()).isEmpty()
+        assertThat(commandRepository.findAll()).isEmpty()
     }
 
     @Test
@@ -29,7 +29,7 @@ class CommandStoreIT: AbstractDataJpaTest() {
     @Test
     fun find() {
         val command = Command.issue(ITCommand())
-        val e = commandStore.findOne(command.id)
+        val e = commandRepository.findOne(command.id)
         assertThat(e)
             .isEqualTo(command)
     }
@@ -37,7 +37,7 @@ class CommandStoreIT: AbstractDataJpaTest() {
     @Test
     fun findOne_Json() {
         val expected = Command.issue(ITCommand())
-        val actual = commandStore.findOne(expected.toJson())
+        val actual = commandRepository.findOne(expected.toJson())
         assertThat(actual).isEqualTo(expected)
     }
 

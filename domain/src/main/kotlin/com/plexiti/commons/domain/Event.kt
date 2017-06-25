@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
-import com.plexiti.commons.adapters.db.EventStore
+import com.plexiti.commons.adapters.db.EventRepository
 import com.plexiti.commons.application.Command
 import com.plexiti.commons.application.CommandId
 import com.plexiti.commons.domain.EventEntity.EventAggregate
@@ -44,7 +44,7 @@ abstract class Event(aggregate: Aggregate<*>? = null) : Message {
 
     companion object {
 
-        internal var store = EventStore()
+        internal var store = EventRepository()
         internal val executingCommand = ThreadLocal<Command?>()
 
         fun <E: Event> raise(event: E): E {
