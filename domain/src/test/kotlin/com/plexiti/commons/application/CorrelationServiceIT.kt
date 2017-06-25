@@ -25,6 +25,12 @@ open class CorrelationServiceIT : AbstractDataJpaTest() {
     class ITAggregate: Aggregate<AggregateId>()
     class ITAggregateId(value: String = ""): AggregateId(value)
 
+    class TriggeredITCommand(): Command() {
+        override fun triggerBy(event: Event): Command? {
+            return if (event.qname().equals("External/ExternalITEvent")) TriggeredITCommand() else null
+        }
+    }
+
     @Before
     fun prepare() {
         aggregate = ITAggregate()
@@ -36,12 +42,20 @@ open class CorrelationServiceIT : AbstractDataJpaTest() {
 
         val external = ExternalITEvent(aggregate)
         correlationService.consumeEvent(external.toJson())
+
         val event = Event.store.findAll().iterator().next()
 
         assertThat(event.internals.status).isEqualTo(EventStatus.consumed)
         assertThat(event.internals.raisedAt).isNotNull()
         assertThat(event.internals.forwardedAt).isNull()
         assertThat(event.internals.consumedAt).isNotNull()
+
+        val command = Command.store.findAll().iterator().next()
+
+        assertThat(command.internals.status).isEqualTo(CommandStatus.issued)
+        assertThat(command.internals.issuedAt).isNotNull()
+        assertThat(command.internals.forwardedAt).isNull()
+        assertThat(command.internals.triggeredBy).isEqualTo(event.id)
 
     }
 
@@ -58,6 +72,8 @@ open class CorrelationServiceIT : AbstractDataJpaTest() {
         assertThat(event.internals.raisedAt).isNotNull()
         assertThat(event.internals.forwardedAt).isNotNull()
         assertThat(event.internals.consumedAt).isNotNull()
+
+        assertThat(Command.store.findAll()).isEmpty()
 
     }
 
