@@ -38,7 +38,7 @@ class CorrelationServiceTest {
     fun consume_external() {
 
         val external = ExternalEvent(aggregate)
-        correlationService.handleEvent(external.toJson())
+        correlationService.consumeEvent(external.toJson())
         val event = Event.store.findAll().iterator().next()
         assertThat(event.internals.status).isEqualTo(EventStatus.consumed)
         assertThat(event.internals.raisedAt).isNotNull()
@@ -54,7 +54,7 @@ class CorrelationServiceTest {
         val event = Event.store.findAll().iterator().next()
         event.internals.transitioned()
 
-        correlationService.handleEvent(event.toJson())
+        correlationService.consumeEvent(event.toJson())
         assertThat(event.internals.status).isEqualTo(EventStatus.consumed)
         assertThat(event.internals.raisedAt).isNotNull()
         assertThat(event.internals.forwardedAt).isNotNull()
@@ -69,7 +69,7 @@ class CorrelationServiceTest {
         val event = Event.store.findAll().iterator().next()
         event.internals.transitioned()
 
-        correlationService.handleEvent(event.toJson())
+        correlationService.consumeEvent(event.toJson())
         assertThat(event.internals.status).isEqualTo(EventStatus.consumed)
         assertThat(event.internals.raisedAt).isNotNull()
         assertThat(event.internals.forwardedAt).isNotNull()

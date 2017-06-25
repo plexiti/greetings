@@ -69,6 +69,10 @@ abstract class Command: Message {
         return CorrelationKey.create(id.value)!!
     }
 
+    open fun triggerBy(event: Event): Command? {
+        return null
+    }
+
     open fun finishKey(event: Event): CorrelationKey? {
         return CorrelationKey.create(event.internals.raisedDuring?.value)
     }

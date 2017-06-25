@@ -35,7 +35,7 @@ open class CorrelationServiceIT : AbstractDataJpaTest() {
     fun consume_external() {
 
         val external = ExternalITEvent(aggregate)
-        correlationService.handleEvent(external.toJson())
+        correlationService.consumeEvent(external.toJson())
         val event = Event.store.findAll().iterator().next()
 
         assertThat(event.internals.status).isEqualTo(EventStatus.consumed)
@@ -52,7 +52,7 @@ open class CorrelationServiceIT : AbstractDataJpaTest() {
         val event = Event.store.findAll().iterator().next()
         event.internals.transitioned()
 
-        correlationService.handleEvent(event.toJson())
+        correlationService.consumeEvent(event.toJson())
 
         assertThat(event.internals.status).isEqualTo(EventStatus.consumed)
         assertThat(event.internals.raisedAt).isNotNull()

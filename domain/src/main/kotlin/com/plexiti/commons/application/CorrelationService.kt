@@ -20,17 +20,18 @@ class CorrelationService {
     lateinit var eventStore: EventStore
 
     @Transactional
-    fun handleEvent(json: String) {
+    fun consumeEvent(json: String) {
         val eventId = eventStore.eventId(json)
         if (eventId != null) {
             val event = eventStore.findOne(eventId) ?: eventStore.save(Event.fromJson(json))
+            triggerBy(event)
             finishBy(event)
             event.internals.transitioned()
         }
     }
 
     @Transactional
-    fun handleCommand(json: String) {
+    fun executeCommand(json: String) {
         val commandId = commandStore.commandId(json)
         if (commandId != null) {
             val command = commandStore.findOne(commandId) ?: commandStore.save(Command.fromJson(json))
@@ -38,6 +39,17 @@ class CorrelationService {
             Event.executingCommand.set(command)
             // TODO execute command
             Event.executingCommand.set(null)
+        }
+    }
+
+    private fun triggerBy(event: Event) {
+        commandStore.commandTypes.values.forEach {
+            val instance = it.java.newInstance()
+            var command = instance.triggerBy(event)
+            if (command != null) {
+                command = Command.issue(command)
+                command.internals.triggeredBy = event.id
+            }
         }
     }
 
