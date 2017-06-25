@@ -206,7 +206,7 @@ class CorrelationKey: Serializable {
 @NoRepositoryBean
 interface CommandRepository<C>: CrudRepository<C, CommandId> {
 
-    fun findByFinishKey(finishKey: CorrelationKey): C?
+    fun findByFinishKeyAndFinishedAtIsNull(finishKey: CorrelationKey): C?
 
 }
 

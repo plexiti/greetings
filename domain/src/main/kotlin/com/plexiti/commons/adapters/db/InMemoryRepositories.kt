@@ -23,8 +23,8 @@ class InMemoryEventEntityRepository: InMemoryEntityCrudRepository<EventEntity, E
 @NoRepositoryBean
 class InMemoryCommandEntityRepository: InMemoryEntityCrudRepository<CommandEntity, CommandId>(), CommandEntityRepository {
 
-    override fun findByFinishKey(finishKey: CorrelationKey): CommandEntity? {
-        return findAll().find { finishKey == it.finishKey }
+    override fun findByFinishKeyAndFinishedAtIsNull(finishKey: CorrelationKey): CommandEntity? {
+        return findAll().find { finishKey == it.finishKey && it.finishedAt == null }
     }
 
 }

@@ -20,7 +20,7 @@ abstract class AbstractDataJpaTest {
     @Configuration
     @EntityScan("com.plexiti")
     @EnableJpaRepositories("com.plexiti")
-    @ComponentScan("com.plexiti")
+    @ComponentScan("com.plexiti", "org.apache.camel")
     class DataJpaTestConfiguration
 
 }

@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode
 import com.plexiti.commons.application.*
 import com.plexiti.commons.domain.Context
 import com.plexiti.utils.scanPackageForAssignableClasses
+import org.apache.camel.builder.RouteBuilder
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.ApplicationContext
@@ -19,7 +20,7 @@ import kotlin.reflect.KClass
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
 @Component @NoRepositoryBean
-class CommandStore: CommandRepository<Command>, ApplicationContextAware {
+class CommandStore: CommandRepository<Command>, ApplicationContextAware, RouteBuilder() {
 
     @Value("\${com.plexiti.app.context}")
     private var context: String? = null
@@ -54,6 +55,24 @@ class CommandStore: CommandRepository<Command>, ApplicationContextAware {
             .associate { Pair(it.qname(), it::class) }
     }
 
+    override fun configure() {
+        commandTypes.entries.forEach {
+            if (it.key.startsWith(Context.home.name + '/')) {
+                val idx = it.key.indexOf('/') + 1
+                val commandName = it.key.substring(idx)
+                val methodName = it.key.substring(idx, idx + 1).toLowerCase() + it.key.substring(idx + 1)
+                val className = it.value.qualifiedName!!
+                val bean = Class.forName(className.substring(0, className.length - methodName.length - 1))
+                try {
+                    bean.getMethod(methodName, it.value.java)
+                    from("direct:${commandName}").bean(bean, methodName)
+                } catch (e: NoSuchMethodException) {
+                    // fall through
+                }
+            }
+        }
+    }
+
     override fun exists(id: CommandId?): Boolean {
         return delegate.exists(id)
     }
@@ -76,8 +95,8 @@ class CommandStore: CommandRepository<Command>, ApplicationContextAware {
         return findOne(commandId(json))
     }
 
-    override fun findByFinishKey(finishKey: CorrelationKey): Command? {
-        return toCommand(delegate.findByFinishKey(finishKey))
+    override fun findByFinishKeyAndFinishedAtIsNull(finishKey: CorrelationKey): Command? {
+        return toCommand(delegate.findByFinishKeyAndFinishedAtIsNull(finishKey))
     }
 
     override fun findAll(): MutableIterable<Command> {

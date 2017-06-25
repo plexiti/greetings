@@ -3,6 +3,7 @@ package com.plexiti.commons.application
 import com.plexiti.commons.adapters.db.CommandStore
 import com.plexiti.commons.adapters.db.EventStore
 import com.plexiti.commons.domain.Event
+import org.apache.camel.ProducerTemplate
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -18,6 +19,9 @@ class CorrelationService {
 
     @Autowired
     lateinit var eventStore: EventStore
+
+    @Autowired
+    private lateinit var route: ProducerTemplate
 
     @Transactional
     fun consumeEvent(json: String) {
@@ -37,7 +41,7 @@ class CorrelationService {
             val command = commandStore.findOne(commandId) ?: commandStore.save(Command.fromJson(json))
             command.internals.transitioned()
             Event.executingCommand.set(command)
-            // TODO execute command
+            route.requestBody("direct:${command.name}", command)
             Event.executingCommand.set(null)
         }
     }
@@ -58,7 +62,7 @@ class CorrelationService {
              val instance = it.java.newInstance()
              val finishKey = instance.finishKey(event)
              if (finishKey != null) {
-                 val command = commandStore.findByFinishKey(finishKey)
+                 val command = commandStore.findByFinishKeyAndFinishedAtIsNull(finishKey)
                  if (command != null) {
                      command.internals.finishedBy = event.id
                      command.internals.transitioned()
