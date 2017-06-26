@@ -1,6 +1,6 @@
 package com.plexiti.commons.adapters.db
 
-import com.plexiti.commons.application.Context
+import com.plexiti.commons.domain.Context
 import com.plexiti.commons.domain.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before

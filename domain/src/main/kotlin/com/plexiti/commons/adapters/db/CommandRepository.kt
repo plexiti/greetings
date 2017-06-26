@@ -5,8 +5,11 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.plexiti.commons.application.*
 import com.plexiti.commons.application.CommandRepository
-import com.plexiti.commons.application.Context
+import com.plexiti.commons.domain.Context
+import com.plexiti.commons.domain.Problem
 import com.plexiti.utils.scanPackageForAssignableClasses
+import org.apache.camel.Exchange
+import org.apache.camel.Processor
 import org.apache.camel.builder.RouteBuilder
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
@@ -57,6 +60,14 @@ class CommandRepository : CommandRepository<Command>, ApplicationContextAware, R
     }
 
     override fun configure() {
+        onException(Problem::class.java)
+            .handled(true)
+            .process { exchange ->
+                val command = exchange.`in`.body as Command
+                val cause = exchange.getProperty(Exchange.EXCEPTION_CAUGHT, Exception::class.java) as Problem
+                command.internals.exit(cause)
+            }
+        .end()
         commandTypes.entries.forEach {
             if (it.key.startsWith(Context.home.name + '/')) {
                 val idx = it.key.indexOf('/') + 1
@@ -66,7 +77,8 @@ class CommandRepository : CommandRepository<Command>, ApplicationContextAware, R
                 val bean = Class.forName(className.substring(0, className.length - methodName.length - 1))
                 try {
                     bean.getMethod(methodName, it.value.java)
-                    from("direct:${commandName}").bean(bean, methodName)
+                    from("direct:${commandName}")
+                        .bean(bean, methodName)
                 } catch (e: NoSuchMethodException) {
                     // fall through
                 }

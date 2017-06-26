@@ -1,7 +1,6 @@
 package com.plexiti.commons.domain
 
 import com.fasterxml.jackson.annotation.JsonIgnore
-import com.plexiti.commons.application.Context
 import java.util.*
 import javax.persistence.*
 

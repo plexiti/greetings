@@ -31,6 +31,8 @@ open class ApplicationServiceIT : AbstractDataJpaTest() {
         }
     }
 
+    class ProblemITCommand: Command()
+
     @Before
     fun prepare() {
         aggregate = ITAggregate()
@@ -122,10 +124,27 @@ open class ApplicationServiceIT : AbstractDataJpaTest() {
 
     }
 
+    @Test
+    fun executeProblemCommand() {
+
+        val command = Command.issue(ProblemITCommand())
+        command.internals.transitioned()
+        applicationService.executeCommand(command.toJson())
+
+        assertThat(command.internals.status).isEqualTo(CommandStatus.exited)
+        assertThat(command.internals.exit!!.occuredAt).isNotNull()
+        assertThat(command.internals.exit!!.code).isEqualTo(Problem::class.simpleName)
+        assertThat(command.internals.exit!!.problem()).isNotNull()
+
+    }
 
     fun triggeredITCommand(command: TriggeredITCommand) {
         prepare()
         Event.raise(InternalITEvent(aggregate))
+    }
+
+    fun problemITCommand(command: ProblemITCommand) {
+        throw Problem()
     }
 
 }

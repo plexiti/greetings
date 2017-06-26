@@ -135,6 +135,14 @@ class CommandEntity(): AbstractMessageEntity<CommandId, CommandStatus>() {
     var finishedBy: EventId? = null
         internal set
 
+    @Embedded
+    var exit: Exit? = null
+
+    internal fun exit(problem: Problem) {
+        this.exit = Exit(problem)
+        this.status = exited
+    }
+
     constructor(command: Command): this() {
         this.context = command.context
         this.name = command.name
@@ -152,6 +160,7 @@ class CommandEntity(): AbstractMessageEntity<CommandId, CommandStatus>() {
             forwarded -> started
             started -> finished
             finished -> throw IllegalStateException()
+            exited -> throw IllegalStateException()
         }
         when (status) {
             forwarded -> forwardedAt = Date()
@@ -159,6 +168,34 @@ class CommandEntity(): AbstractMessageEntity<CommandId, CommandStatus>() {
             finished -> finishedAt = Date()
         }
         return status
+    }
+
+    @Embeddable
+    class Exit() {
+
+        @Temporal(TemporalType.TIMESTAMP)
+        @Column(name = "EXIT_OCCURED_AT", nullable = true)
+        lateinit var occuredAt: Date
+            internal set
+
+        @Column(name = "EXIT_CODE", nullable = true)
+        lateinit var code: String
+            internal set
+
+        @Lob
+        @Column(name="EXIT_PROBLEM", columnDefinition = "text", nullable = true)
+        lateinit private var json: String
+
+        fun problem(): Problem {
+            return ObjectMapper().readValue(json, Problem::class.java)
+        }
+
+        constructor(problem: Problem): this() {
+            this.occuredAt = problem.occuredAt
+            this.code = problem.code
+            this.json = ObjectMapper().setAnnotationIntrospector(ProblemIntrospector()).writeValueAsString(problem)
+        }
+
     }
 
 }
@@ -211,5 +248,5 @@ interface CommandRepository<C>: CrudRepository<C, CommandId> {
 }
 
 enum class CommandStatus: MessageStatus {
-    issued, forwarded, started, finished
+    issued, forwarded, started, finished, exited
 }

@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode
 import com.plexiti.commons.adapters.db.EventRepository
 import com.plexiti.commons.application.Command
 import com.plexiti.commons.application.CommandId
-import com.plexiti.commons.application.Context
 import com.plexiti.commons.domain.EventEntity.EventAggregate
 import org.apache.camel.component.jpa.Consumed
 import org.springframework.data.repository.CrudRepository
