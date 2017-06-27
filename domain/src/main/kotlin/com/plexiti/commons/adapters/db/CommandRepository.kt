@@ -9,7 +9,6 @@ import com.plexiti.commons.domain.Context
 import com.plexiti.commons.domain.Problem
 import com.plexiti.utils.scanPackageForAssignableClasses
 import org.apache.camel.Exchange
-import org.apache.camel.Processor
 import org.apache.camel.builder.RouteBuilder
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
@@ -60,14 +59,6 @@ class CommandRepository : CommandRepository<Command>, ApplicationContextAware, R
     }
 
     override fun configure() {
-        onException(Problem::class.java)
-            .handled(true)
-            .process { exchange ->
-                val command = exchange.`in`.body as Command
-                val cause = exchange.getProperty(Exchange.EXCEPTION_CAUGHT, Exception::class.java) as Problem
-                command.internals.exit(cause)
-            }
-        .end()
         commandTypes.entries.forEach {
             if (it.key.startsWith(Context.home.name + '/')) {
                 val idx = it.key.indexOf('/') + 1
@@ -108,8 +99,8 @@ class CommandRepository : CommandRepository<Command>, ApplicationContextAware, R
         return findOne(commandId(json))
     }
 
-    override fun findByFinishKeyAndFinishedAtIsNull(finishKey: CorrelationKey): Command? {
-        return toCommand(delegate.findByFinishKeyAndFinishedAtIsNull(finishKey))
+    override fun findByFinishKeyAndExecutionFinishedAtIsNull(finishKey: CorrelationKey): Command? {
+        return toCommand(delegate.findByFinishKeyAndExecutionFinishedAtIsNull(finishKey))
     }
 
     override fun findAll(): MutableIterable<Command> {
@@ -157,8 +148,8 @@ internal interface CommandEntityRepository: CommandRepository<CommandEntity>
 @NoRepositoryBean
 class InMemoryCommandEntityRepository: InMemoryEntityCrudRepository<CommandEntity, CommandId>(), CommandEntityRepository {
 
-    override fun findByFinishKeyAndFinishedAtIsNull(finishKey: CorrelationKey): CommandEntity? {
-        return findAll().find { finishKey == it.finishKey && it.finishedAt == null }
+    override fun findByFinishKeyAndExecutionFinishedAtIsNull(finishKey: CorrelationKey): CommandEntity? {
+        return findAll().find { finishKey == it.finishKey && it.execution.finishedAt == null }
     }
 
 }

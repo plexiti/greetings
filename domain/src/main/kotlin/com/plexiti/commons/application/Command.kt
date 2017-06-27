@@ -104,6 +104,16 @@ abstract class Command: Message {
 )
 class CommandEntity(): AbstractMessageEntity<CommandId, CommandStatus>() {
 
+    constructor(command: Command): this() {
+        this.context = command.context
+        this.name = command.name
+        this.id = command.id
+        this.issuedAt = command.issuedAt
+        this.finishKey = command.finishKey()
+        this.json = ObjectMapper().writeValueAsString(command)
+        this.status = if (this.context == Context.home) issued else forwarded
+    }
+
     @Column(name = "ISSUED_AT", nullable = false)
     @Temporal(TemporalType.TIMESTAMP)
     var issuedAt = Date()
@@ -121,79 +131,85 @@ class CommandEntity(): AbstractMessageEntity<CommandId, CommandStatus>() {
     var triggeredBy: EventId? = null
         internal set
 
-    @Column(name = "STARTED_AT", nullable = true)
-    @Temporal(TemporalType.TIMESTAMP)
-    var startedAt: Date? = null
-        internal set
-
-    @Column(name = "FINISHED_AT", nullable = true)
-    @Temporal(TemporalType.TIMESTAMP)
-    var finishedAt: Date? = null
-        internal set
-
-    @Embedded @AttributeOverride(name="value", column = Column(name="FINISHED_BY", nullable = true))
-    var finishedBy: EventId? = null
-        internal set
-
     @Embedded
-    var exit: Exit? = null
+    var execution: Execution = Execution()
 
-    internal fun exit(problem: Problem) {
-        this.exit = Exit(problem)
-        this.status = exited
+    internal fun forward() {
+        this.status = forwarded
+        this.forwardedAt = Date()
     }
 
-    constructor(command: Command): this() {
-        this.context = command.context
-        this.name = command.name
-        this.id = command.id
-        this.issuedAt = command.issuedAt
-        this.finishKey = command.finishKey()
-        this.json = ObjectMapper().writeValueAsString(command)
-        this.status = if (this.context == Context.home) issued else forwarded
+    internal fun start() {
+        this.status = started
+        this.execution.startedAt = Date()
+    }
+
+    internal fun finish() {
+        this.status = finished
+        this.execution.finishedAt = Date()
+    }
+
+    internal fun finish(result: Any) {
+        if (result is Event) {
+            val event = result
+            this.execution.finishedAt = event.raisedAt
+            this.execution.finishedBy = event.id
+        } else if (result is Problem) {
+            val problem = result
+            this.execution.finishedAt = problem.occuredAt
+            this.execution.finishedBy = null
+            this.execution.json = ObjectMapper().setAnnotationIntrospector(ProblemIntrospector()).writeValueAsString(result)
+            this.execution.returnCode = problem.code
+        } else {
+            this.execution.finishedAt = Date()
+            this.execution.json = ObjectMapper().writeValueAsString(result)
+        }
+        this.status = finished
     }
 
     @Consumed
-    fun transitioned(): CommandStatus {
-        status = when (status) {
-            issued -> forwarded;
-            forwarded -> started
-            started -> finished
+    private fun transition(): CommandStatus {
+        when (status) {
+            issued -> forward()
+            forwarded -> start()
+            started -> finish()
             finished -> throw IllegalStateException()
-            exited -> throw IllegalStateException()
         }
         when (status) {
             forwarded -> forwardedAt = Date()
-            started -> startedAt = Date()
-            finished -> finishedAt = Date()
+            started -> execution.startedAt = Date()
+            finished -> execution.finishedAt = Date()
         }
         return status
     }
 
     @Embeddable
-    class Exit() {
+    class Execution() {
 
+        @Column(name = "STARTED_AT", nullable = true)
         @Temporal(TemporalType.TIMESTAMP)
-        @Column(name = "EXIT_OCCURED_AT", nullable = true)
-        lateinit var occuredAt: Date
+        var startedAt: Date? = null
             internal set
 
-        @Column(name = "EXIT_CODE", nullable = true)
-        lateinit var code: String
+        @Column(name = "FINISHED_AT", nullable = true)
+        @Temporal(TemporalType.TIMESTAMP)
+        var finishedAt: Date? = null
+            internal set
+
+        @Embedded @AttributeOverride(name="value", column = Column(name="FINISHED_BY", nullable = true))
+        var finishedBy: EventId? = null
+            internal set
+
+        @Column(name = "RETURN_CODE", nullable = true)
+        var returnCode: String? = null
             internal set
 
         @Lob
-        @Column(name="EXIT_PROBLEM", columnDefinition = "text", nullable = true)
-        lateinit private var json: String
+        @Column(name="RETURN_VALUE", columnDefinition = "text", nullable = true)
+        internal var json: String? = null
 
         fun problem(): Problem {
             return ObjectMapper().readValue(json, Problem::class.java)
-        }
-
-        constructor(problem: Problem): this() {
-            this.occuredAt = problem.occuredAt
-            this.code = problem.code
-            this.json = ObjectMapper().setAnnotationIntrospector(ProblemIntrospector()).writeValueAsString(problem)
         }
 
     }
@@ -243,10 +259,10 @@ class CorrelationKey: Serializable {
 @NoRepositoryBean
 interface CommandRepository<C>: CrudRepository<C, CommandId> {
 
-    fun findByFinishKeyAndFinishedAtIsNull(finishKey: CorrelationKey): C?
+    fun findByFinishKeyAndExecutionFinishedAtIsNull(finishKey: CorrelationKey): C?
 
 }
 
 enum class CommandStatus: MessageStatus {
-    issued, forwarded, started, finished, exited
+    issued, forwarded, started, finished
 }

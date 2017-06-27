@@ -50,6 +50,7 @@ abstract class Event(aggregate: Aggregate<*>? = null) : Message {
         fun <E: Event> raise(event: E): E {
             val event = store.save(event)
             event.internals.raisedDuring = executingCommand.get()?.id
+            executingCommand.get()?.internals?.finish(event)
             return event
         }
 

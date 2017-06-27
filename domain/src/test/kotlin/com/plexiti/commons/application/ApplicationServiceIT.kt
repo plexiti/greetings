@@ -21,6 +21,7 @@ open class ApplicationServiceIT : AbstractDataJpaTest() {
     class InternalITEvent(aggregate: ITAggregate? = null) : Event(aggregate)
     class ExternalITEvent(aggregate: ITAggregate? = null) : Event(aggregate) {
         override var context = Context("External")
+        val businessKey = "myCorrelationKey"
     }
     class ITAggregate: Aggregate<AggregateId>()
     class ITAggregateId(value: String = ""): AggregateId(value)
@@ -32,6 +33,25 @@ open class ApplicationServiceIT : AbstractDataJpaTest() {
     }
 
     class ProblemITCommand: Command()
+
+    class QueryITCommand: Command()
+
+    class ExternalITCommand: Command() {
+
+        override var context = Context("External")
+
+        override fun finishKey(): CorrelationKey {
+            return CorrelationKey.create("myCorrelationKey")!!
+        }
+
+        override fun finishKey(event: Event): CorrelationKey? {
+            if (event is ExternalITEvent) {
+                return CorrelationKey.create(event.businessKey)
+            }
+            return null
+        }
+
+    }
 
     @Before
     fun prepare() {
@@ -80,7 +100,7 @@ open class ApplicationServiceIT : AbstractDataJpaTest() {
     }
 
     @Test
-    fun executeCommand() {
+    fun executeCommand_internal() {
 
         val external = ExternalITEvent(aggregate)
         applicationService.consumeEvent(external.toJson())
@@ -99,7 +119,7 @@ open class ApplicationServiceIT : AbstractDataJpaTest() {
         assertThat(command.internals.forwardedAt).isNull()
         assertThat(command.internals.triggeredBy).isEqualTo(event.id)
 
-        command.internals.transitioned()
+        command.internals.forward()
         applicationService.executeCommand(command.toJson())
 
         val events = Event.store.findAll()
@@ -110,31 +130,54 @@ open class ApplicationServiceIT : AbstractDataJpaTest() {
 
         command = Command.store.findAll().iterator().next()
 
-        assertThat(command.internals.status).isEqualTo(CommandStatus.started)
-        assertThat(command.internals.startedAt).isNotNull()
-        assertThat(command.internals.finishedAt).isNull()
-
-        applicationService.consumeEvent(events.find { it.name ==  "InternalITEvent" }!!.toJson())
-
-        command = Command.store.findAll().iterator().next()
-
         assertThat(command.internals.status).isEqualTo(CommandStatus.finished)
-        assertThat(command.internals.startedAt).isNotNull()
-        assertThat(command.internals.finishedAt).isNotNull()
+        assertThat(command.internals.execution.startedAt).isNotNull()
+        assertThat(command.internals.execution.finishedAt).isNotNull()
 
     }
 
     @Test
-    fun executeProblemCommand() {
+    fun executeCommand_external() {
+
+        val command = Command.issue(ExternalITCommand())
+        command.internals.forward()
+
+        val event = ExternalITEvent(aggregate)
+
+        applicationService.consumeEvent(event.toJson())
+
+        assertThat(command.internals.status).isEqualTo(CommandStatus.finished)
+        assertThat(command.internals.execution.startedAt).isNull()
+        assertThat(command.internals.execution.finishedAt).isNotNull()
+
+    }
+
+    @Test
+    fun executeCommand_withProblem() {
 
         val command = Command.issue(ProblemITCommand())
-        command.internals.transitioned()
+        command.internals.forward()
         applicationService.executeCommand(command.toJson())
 
-        assertThat(command.internals.status).isEqualTo(CommandStatus.exited)
-        assertThat(command.internals.exit!!.occuredAt).isNotNull()
-        assertThat(command.internals.exit!!.code).isEqualTo(Problem::class.simpleName)
-        assertThat(command.internals.exit!!.problem()).isNotNull()
+        assertThat(command.internals.status).isEqualTo(CommandStatus.finished)
+        assertThat(command.internals.execution.finishedAt).isNotNull()
+        assertThat(command.internals.execution.returnCode).isEqualTo(Problem::class.simpleName)
+        assertThat(command.internals.execution.problem()).isNotNull()
+
+    }
+
+    @Test
+    fun executeCommand_withResult() {
+
+        val command = Command.issue(QueryITCommand())
+        command.internals.forward()
+        applicationService.executeCommand(command.toJson())
+
+        assertThat(command.internals.status).isEqualTo(CommandStatus.finished)
+        assertThat(command.internals.execution.finishedAt).isNotNull()
+        assertThat(command.internals.execution.returnCode).isNull()
+        assertThat(command.internals.execution.finishedBy).isNull()
+        assertThat(command.internals.execution.json).isNotNull()
 
     }
 
@@ -145,6 +188,12 @@ open class ApplicationServiceIT : AbstractDataJpaTest() {
 
     fun problemITCommand(command: ProblemITCommand) {
         throw Problem()
+    }
+
+    fun queryITCommand(command: QueryITCommand): Any {
+        return object {
+            val anything = "Something"
+        }
     }
 
 }
