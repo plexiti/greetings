@@ -65,16 +65,16 @@ abstract class Command: Message {
 
     }
 
-    open fun finishKey(): CorrelationKey {
-        return CorrelationKey.create(id.value)!!
+    open fun correlation(): Correlation {
+        return Correlation.create(id.value)!!
     }
 
-    open fun triggerBy(event: Event): Command? {
+    open fun correlation(event: Event): Correlation? {
+        return Correlation.create(event.internals.raisedDuring?.value)
+    }
+
+    open fun trigger(event: Event): Command? {
         return null
-    }
-
-    open fun finishKey(event: Event): CorrelationKey? {
-        return CorrelationKey.create(event.internals.raisedDuring?.value)
     }
 
     fun toJson(): String {
@@ -109,7 +109,7 @@ class CommandEntity(): AbstractMessageEntity<CommandId, CommandStatus>() {
         this.name = command.name
         this.id = command.id
         this.issuedAt = command.issuedAt
-        this.finishKey = command.finishKey()
+        this.correlation = command.correlation()
         this.json = ObjectMapper().writeValueAsString(command)
         this.status = if (this.context == Context.home) issued else forwarded
     }
@@ -123,8 +123,8 @@ class CommandEntity(): AbstractMessageEntity<CommandId, CommandStatus>() {
     var issuedBy = Context.home
         internal set
 
-    @Embedded @AttributeOverride(name="value", column = Column(name = "FINISH_KEY", length = 128, nullable = false))
-    lateinit var finishKey: CorrelationKey
+    @Embedded @AttributeOverride(name="value", column = Column(name = "CORRELATION", length = 128, nullable = false))
+    lateinit var correlation: Correlation
         internal set
 
     @Embedded @AttributeOverride(name="value", column = Column(name="TRIGGERED_BY", nullable = true))
@@ -219,7 +219,7 @@ class CommandEntity(): AbstractMessageEntity<CommandId, CommandStatus>() {
 class CommandId(value: String = ""): MessageId(value)
 
 @Embeddable
-class CorrelationKey: Serializable {
+class Correlation : Serializable {
 
     @Column(name = "KEY", length = 128, nullable = false)
     lateinit var value: String
@@ -232,7 +232,7 @@ class CorrelationKey: Serializable {
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (other !is CorrelationKey) return false
+        if (other !is Correlation) return false
         if (value != other.value) return false
         return true
     }
@@ -241,15 +241,15 @@ class CorrelationKey: Serializable {
         return value.hashCode()
     }
 
-    internal fun value(value: String): CorrelationKey {
+    internal fun value(value: String): Correlation {
         this.value = value
         return this
     }
 
     companion object {
 
-        fun create(value: String?): CorrelationKey? {
-            return if (value != null) CorrelationKey().value(value) else null
+        fun create(value: String?): Correlation? {
+            return if (value != null) Correlation().value(value) else null
         }
 
     }
@@ -259,7 +259,7 @@ class CorrelationKey: Serializable {
 @NoRepositoryBean
 interface CommandRepository<C>: CrudRepository<C, CommandId> {
 
-    fun findByFinishKeyAndExecutionFinishedAtIsNull(finishKey: CorrelationKey): C?
+    fun findByCorrelationAndExecutionFinishedAtIsNull(correlation: Correlation): C?
 
 }
 

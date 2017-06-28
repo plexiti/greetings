@@ -34,7 +34,7 @@ class ApplicationService {
             val event = eventRepository.findOne(eventId) ?: eventRepository.save(Event.fromJson(json))
             triggerCommand(event)
             finishCommand(event)
-            event.internals.transitioned()
+            event.internals.consume()
         }
     }
 
@@ -68,7 +68,7 @@ class ApplicationService {
     private fun triggerCommand(event: Event) {
         commandRepository.commandTypes.values.forEach {
             val instance = it.java.newInstance()
-            var command = instance.triggerBy(event)
+            var command = instance.trigger(event)
             if (command != null) {
                 command = Command.issue(command)
                 command.internals.triggeredBy = event.id
@@ -79,9 +79,9 @@ class ApplicationService {
     private fun finishCommand(event: Event) {
          commandRepository.commandTypes.values.forEach {
              val instance = it.java.newInstance()
-             val finishKey = instance.finishKey(event)
+             val finishKey = instance.correlation(event)
              if (finishKey != null) {
-                 val command = commandRepository.findByFinishKeyAndExecutionFinishedAtIsNull(finishKey)
+                 val command = commandRepository.findByCorrelationAndExecutionFinishedAtIsNull(finishKey)
                  if (command != null) {
                      command.internals.finish(event)
                  }

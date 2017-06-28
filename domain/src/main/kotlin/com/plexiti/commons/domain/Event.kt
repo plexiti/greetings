@@ -7,7 +7,9 @@ import com.fasterxml.jackson.databind.node.ObjectNode
 import com.plexiti.commons.adapters.db.EventRepository
 import com.plexiti.commons.application.Command
 import com.plexiti.commons.application.CommandId
+import com.plexiti.commons.application.CommandStatus
 import com.plexiti.commons.domain.EventEntity.EventAggregate
+import com.plexiti.commons.domain.EventStatus.*
 import org.apache.camel.component.jpa.Consumed
 import org.springframework.data.repository.CrudRepository
 import org.springframework.data.repository.NoRepositoryBean
@@ -125,7 +127,17 @@ class EventEntity(): AbstractMessageEntity<EventId, EventStatus>() {
         this.raisedAt = event.raisedAt
         this.aggregate = event.aggregate
         this.json = ObjectMapper().writeValueAsString(event)
-        this.status = if (this.context == Context.home) EventStatus.raised else EventStatus.forwarded
+        this.status = if (this.context == Context.home) raised else forwarded
+    }
+
+    internal fun forward() {
+        this.status = forwarded
+        this.forwardedAt = Date()
+    }
+
+    internal fun consume() {
+        this.status = consumed
+        this.consumedAt = Date()
     }
 
     @Embeddable
@@ -152,15 +164,11 @@ class EventEntity(): AbstractMessageEntity<EventId, EventStatus>() {
     }
 
     @Consumed
-    fun transitioned(): EventStatus {
-        status = when (status) {
-            EventStatus.raised -> EventStatus.forwarded;
-            EventStatus.forwarded -> EventStatus.consumed
-            EventStatus.consumed -> throw IllegalStateException()
-        }
+    fun transition(): EventStatus {
         when (status) {
-            EventStatus.forwarded -> forwardedAt = Date()
-            EventStatus.consumed -> consumedAt = Date()
+            raised -> forward()
+            forwarded -> consume()
+            consumed -> throw IllegalStateException()
         }
         return status
     }

@@ -7,6 +7,7 @@ import org.junit.Before
 import org.junit.Test
 import org.springframework.beans.factory.annotation.Autowired
 import java.util.*
+import kotlin.RuntimeException
 
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
@@ -27,12 +28,14 @@ open class ApplicationServiceIT : AbstractDataJpaTest() {
     class ITAggregateId(value: String = ""): AggregateId(value)
 
     class TriggeredITCommand(): Command() {
-        override fun triggerBy(event: Event): Command? {
+        override fun trigger(event: Event): Command? {
             return if (event.qname().equals("External/ExternalITEvent")) TriggeredITCommand() else null
         }
     }
 
     class ProblemITCommand: Command()
+
+    class ExceptionITCommand: Command()
 
     class QueryITCommand: Command()
 
@@ -40,13 +43,13 @@ open class ApplicationServiceIT : AbstractDataJpaTest() {
 
         override var context = Context("External")
 
-        override fun finishKey(): CorrelationKey {
-            return CorrelationKey.create("myCorrelationKey")!!
+        override fun correlation(): Correlation {
+            return Correlation.create("myCorrelationKey")!!
         }
 
-        override fun finishKey(event: Event): CorrelationKey? {
+        override fun correlation(event: Event): Correlation? {
             if (event is ExternalITEvent) {
-                return CorrelationKey.create(event.businessKey)
+                return Correlation.create(event.businessKey)
             }
             return null
         }
@@ -86,7 +89,7 @@ open class ApplicationServiceIT : AbstractDataJpaTest() {
 
         Event.raise(InternalITEvent(aggregate))
         val event = Event.store.findAll().iterator().next()
-        event.internals.transitioned()
+        event.internals.forward()
 
         applicationService.consumeEvent(event.toJson())
 
@@ -153,7 +156,7 @@ open class ApplicationServiceIT : AbstractDataJpaTest() {
     }
 
     @Test
-    fun executeCommand_withProblem() {
+    fun executeCommand_internal_withProblem() {
 
         val command = Command.issue(ProblemITCommand())
         command.internals.forward()
@@ -166,8 +169,17 @@ open class ApplicationServiceIT : AbstractDataJpaTest() {
 
     }
 
+    @Test(expected = RuntimeException::class)
+    fun executeCommand_internal_withException() {
+
+        val command = Command.issue(ExceptionITCommand())
+        command.internals.forward()
+        applicationService.executeCommand(command.toJson())
+
+    }
+
     @Test
-    fun executeCommand_withResult() {
+    fun executeCommand_internal_withResult() {
 
         val command = Command.issue(QueryITCommand())
         command.internals.forward()
@@ -188,6 +200,10 @@ open class ApplicationServiceIT : AbstractDataJpaTest() {
 
     fun problemITCommand(command: ProblemITCommand) {
         throw Problem()
+    }
+
+    fun exceptionITCommand(command: ExceptionITCommand) {
+        throw RuntimeException()
     }
 
     fun queryITCommand(command: QueryITCommand): Any {

@@ -6,9 +6,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode
 import com.plexiti.commons.application.*
 import com.plexiti.commons.application.CommandRepository
 import com.plexiti.commons.domain.Context
-import com.plexiti.commons.domain.Problem
 import com.plexiti.utils.scanPackageForAssignableClasses
-import org.apache.camel.Exchange
 import org.apache.camel.builder.RouteBuilder
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
@@ -99,8 +97,8 @@ class CommandRepository : CommandRepository<Command>, ApplicationContextAware, R
         return findOne(commandId(json))
     }
 
-    override fun findByFinishKeyAndExecutionFinishedAtIsNull(finishKey: CorrelationKey): Command? {
-        return toCommand(delegate.findByFinishKeyAndExecutionFinishedAtIsNull(finishKey))
+    override fun findByCorrelationAndExecutionFinishedAtIsNull(correlation: Correlation): Command? {
+        return toCommand(delegate.findByCorrelationAndExecutionFinishedAtIsNull(correlation))
     }
 
     override fun findAll(): MutableIterable<Command> {
@@ -148,8 +146,8 @@ internal interface CommandEntityRepository: CommandRepository<CommandEntity>
 @NoRepositoryBean
 class InMemoryCommandEntityRepository: InMemoryEntityCrudRepository<CommandEntity, CommandId>(), CommandEntityRepository {
 
-    override fun findByFinishKeyAndExecutionFinishedAtIsNull(finishKey: CorrelationKey): CommandEntity? {
-        return findAll().find { finishKey == it.finishKey && it.execution.finishedAt == null }
+    override fun findByCorrelationAndExecutionFinishedAtIsNull(correlation: Correlation): CommandEntity? {
+        return findAll().find { correlation == it.correlation && it.execution.finishedAt == null }
     }
 
 }

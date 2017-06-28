@@ -22,7 +22,7 @@ class ApplicationServiceTest {
     class TestAggregateId(value: String = ""): AggregateId(value)
 
     class TriggeredTestCommand(): Command() {
-        override fun triggerBy(event: Event): Command? {
+        override fun trigger(event: Event): Command? {
             return if (event.qname().equals("External/ExternalEvent")) TriggeredTestCommand() else null
         }
     }
@@ -70,7 +70,7 @@ class ApplicationServiceTest {
 
         Event.raise(InternalEvent(aggregate))
         val event = Event.store.findAll().iterator().next()
-        event.internals.transitioned()
+        event.internals.forward()
 
         applicationService.consumeEvent(event.toJson())
         assertThat(event.internals.status).isEqualTo(EventStatus.consumed)
