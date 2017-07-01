@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.plexiti.commons.application.*
 import com.plexiti.commons.application.CommandRepository
-import com.plexiti.commons.domain.Context
+import com.plexiti.commons.domain.Name
 import com.plexiti.utils.scanPackageForAssignableClasses
 import org.apache.camel.builder.RouteBuilder
 import org.springframework.beans.factory.annotation.Autowired
@@ -24,7 +24,7 @@ import kotlin.reflect.KClass
 class CommandRepository : CommandRepository<Command>, ApplicationContextAware, RouteBuilder() {
 
     @Value("\${com.plexiti.app.context}")
-    private var context: String? = null
+    private var context = Name.default.context
 
     @Autowired
     private var delegate: CommandEntityRepository = InMemoryCommandEntityRepository()
@@ -37,7 +37,7 @@ class CommandRepository : CommandRepository<Command>, ApplicationContextAware, R
 
     private fun toCommand(entity: CommandEntity?): Command? {
         if (entity != null) {
-            val command = Command.fromJson(entity.json, type(entity.qname()))
+            val command = Command.fromJson(entity.json, type(entity.name.qualified))
             command.internals = entity
             return command
         }
@@ -49,16 +49,16 @@ class CommandRepository : CommandRepository<Command>, ApplicationContextAware, R
     }
 
     override fun setApplicationContext(applicationContext: ApplicationContext) {
-        Context.home = Context(context)
+        Name.default.context = context
         Command.store = this
         commandTypes = scanPackageForAssignableClasses("com.plexiti", Command::class.java)
             .map { it.newInstance() as Command }
-            .associate { Pair(it.qname(), it::class) }
+            .associate { Pair(it.name.qualified, it::class) }
     }
 
     override fun configure() {
         commandTypes.entries.forEach {
-            if (it.key.startsWith(Context.home.name + '/')) {
+            if (it.key.startsWith(Name.default.context + '/')) {
                 val idx = it.key.indexOf('/') + 1
                 val commandName = it.key.substring(idx)
                 val methodName = it.key.substring(idx, idx + 1).toLowerCase() + it.key.substring(idx + 1)

@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode
 import com.plexiti.commons.adapters.db.EventRepository
 import com.plexiti.commons.application.Command
 import com.plexiti.commons.application.CommandId
-import com.plexiti.commons.application.CommandStatus
 import com.plexiti.commons.domain.EventEntity.EventAggregate
 import com.plexiti.commons.domain.EventStatus.*
 import org.apache.camel.component.jpa.Consumed
@@ -24,9 +23,7 @@ abstract class Event(aggregate: Aggregate<*>? = null) : Message {
 
     val type = MessageType.Event
 
-    override var context = Context.home
-
-    override val name = this::class.simpleName!!
+    override var name = Name(name = this::class.simpleName!!)
 
     open val definition: Int = 0
 
@@ -58,8 +55,8 @@ abstract class Event(aggregate: Aggregate<*>? = null) : Message {
 
         fun fromJson(json: String): Event {
             val node = ObjectMapper().readValue(json, ObjectNode::class.java)
-            val qName =  node.get("context").textValue() + "/" + node.get("name").textValue()
-            val type = store.type(qName)
+            val name = node.get("name").textValue()
+            val type = store.type(name)
             return fromJson(json, type)
         }
 
@@ -121,13 +118,12 @@ class EventEntity(): AbstractMessageEntity<EventId, EventStatus>() {
     lateinit var aggregate: EventAggregate
 
     constructor(event: Event): this() {
-        this.context = event.context
         this.name = event.name
         this.id = event.id
         this.raisedAt = event.raisedAt
         this.aggregate = event.aggregate
         this.json = ObjectMapper().writeValueAsString(event)
-        this.status = if (this.context == Context.home) raised else forwarded
+        this.status = if (this.name.context == Name.default.context) raised else forwarded
     }
 
     internal fun forward() {

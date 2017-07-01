@@ -16,14 +16,14 @@ class ApplicationServiceTest {
 
     class InternalEvent(aggregate: TestAggregate? = null) : Event(aggregate)
     class ExternalEvent(aggregate: TestAggregate? = null) : Event(aggregate) {
-        override var context = Context("External")
+        override var name = Name("External/ExternalEvent")
     }
     class TestAggregate: Aggregate<AggregateId>()
     class TestAggregateId(value: String = ""): AggregateId(value)
 
     class TriggeredTestCommand(): Command() {
         override fun trigger(event: Event): Command? {
-            return if (event.qname().equals("External/ExternalEvent")) TriggeredTestCommand() else null
+            return if (event.name.qualified.equals("External/ExternalEvent")) TriggeredTestCommand() else null
         }
     }
 
@@ -32,11 +32,11 @@ class ApplicationServiceTest {
         aggregate = TestAggregate()
         aggregate.id = TestAggregateId(UUID.randomUUID().toString())
         Event.store.eventTypes = mapOf(
-            "${Context.home.name}/${InternalEvent::class.simpleName}" to InternalEvent::class,
+            "${Name.default.context}/${InternalEvent::class.simpleName}" to InternalEvent::class,
             "External/${ExternalEvent::class.simpleName}" to ExternalEvent::class
         )
         Command.store.commandTypes = mapOf(
-            "${Context.home.name}/${TriggeredTestCommand::class.simpleName}" to TriggeredTestCommand::class
+            "${Name.default.context}/${TriggeredTestCommand::class.simpleName}" to TriggeredTestCommand::class
         )
         Event.store.deleteAll()
         Command.store.deleteAll()

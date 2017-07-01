@@ -21,7 +21,7 @@ open class ApplicationServiceIT : AbstractDataJpaTest() {
 
     class InternalITEvent(aggregate: ITAggregate? = null) : Event(aggregate)
     class ExternalITEvent(aggregate: ITAggregate? = null) : Event(aggregate) {
-        override var context = Context("External")
+        override var name = Name("External/ExternalITEvent")
         val businessKey = "myCorrelationKey"
     }
     class ITAggregate: Aggregate<AggregateId>()
@@ -29,7 +29,7 @@ open class ApplicationServiceIT : AbstractDataJpaTest() {
 
     class TriggeredITCommand(): Command() {
         override fun trigger(event: Event): Command? {
-            return if (event.qname().equals("External/ExternalITEvent")) TriggeredITCommand() else null
+            return if (event.name.qualified.equals("External/ExternalITEvent")) TriggeredITCommand() else null
         }
     }
 
@@ -41,7 +41,7 @@ open class ApplicationServiceIT : AbstractDataJpaTest() {
 
     class ExternalITCommand: Command() {
 
-        override var context = Context("External")
+        override var name = Name("External/ExternalITCommand")
 
         override fun correlation(): Correlation {
             return Correlation.create("myCorrelationKey")!!
@@ -128,8 +128,8 @@ open class ApplicationServiceIT : AbstractDataJpaTest() {
         val events = Event.store.findAll()
 
         assertThat(events).hasSize(2)
-        assertThat(events.find { it.name ==  "ExternalITEvent" }).isNotNull()
-        assertThat(events.find { it.name ==  "InternalITEvent" }).isNotNull()
+        assertThat(events.find { it.name.name ==  "ExternalITEvent" }).isNotNull()
+        assertThat(events.find { it.name.name ==  "InternalITEvent" }).isNotNull()
 
         command = Command.store.findAll().iterator().next()
 

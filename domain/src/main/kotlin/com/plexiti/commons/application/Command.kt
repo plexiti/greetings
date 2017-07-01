@@ -24,9 +24,7 @@ abstract class Command: Message {
 
     val type = MessageType.Command
 
-    override var context = Context.home
-
-    override val name = this::class.simpleName!!
+    override var name = Name(name = this::class.simpleName!!)
 
     open val definition: Int = 0
 
@@ -54,8 +52,8 @@ abstract class Command: Message {
 
         fun fromJson(json: String): Command {
             val node = ObjectMapper().readValue(json, ObjectNode::class.java)
-            val qName = node.get("context").textValue() + "/" + node.get("name").textValue()
-            val type = store.type(qName)
+            val name = node.get("name").textValue()
+            val type = store.type(name)
             return fromJson(json, type)
         }
 
@@ -105,22 +103,17 @@ abstract class Command: Message {
 class CommandEntity(): AbstractMessageEntity<CommandId, CommandStatus>() {
 
     constructor(command: Command): this() {
-        this.context = command.context
         this.name = command.name
         this.id = command.id
         this.issuedAt = command.issuedAt
         this.correlation = command.correlation()
         this.json = ObjectMapper().writeValueAsString(command)
-        this.status = if (this.context == Context.home) issued else forwarded
+        this.status = if (this.name.context == Name.default.context) issued else forwarded
     }
 
     @Column(name = "ISSUED_AT", nullable = false)
     @Temporal(TemporalType.TIMESTAMP)
     var issuedAt = Date()
-        internal set
-
-    @Embedded @AttributeOverride(name="name", column = Column(name="ISSUED_BY", nullable = false))
-    var issuedBy = Context.home
         internal set
 
     @Embedded @AttributeOverride(name="value", column = Column(name = "CORRELATION", length = 128, nullable = false))

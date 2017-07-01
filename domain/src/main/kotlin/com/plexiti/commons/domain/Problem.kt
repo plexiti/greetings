@@ -12,7 +12,7 @@ import java.util.*
  */
 class Problem: RuntimeException() {
 
-    open val context = Context.home
+    open val name = Name.default
 
     open val code = this::class.simpleName!!
 

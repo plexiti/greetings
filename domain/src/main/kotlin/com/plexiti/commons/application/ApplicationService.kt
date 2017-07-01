@@ -57,7 +57,7 @@ class ApplicationService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     private fun executeCommand(command: Command) {
         try {
-            val result = route.requestBody("direct:${command.name}", command)
+            val result = route.requestBody("direct:${command.name.name}", command)
             if (result !is Command)
                 command.internals.finish(result)
         } catch (e: CamelExecutionException) {

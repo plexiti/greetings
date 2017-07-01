@@ -1,6 +1,7 @@
 package com.plexiti.commons.domain
 
 import com.fasterxml.jackson.annotation.JsonIgnore
+import com.fasterxml.jackson.annotation.JsonValue
 import java.util.*
 import javax.persistence.*
 
@@ -9,24 +10,15 @@ import javax.persistence.*
  */
 interface Message {
 
-    val context: Context
-    val name: String
-
-    fun qname(): String {
-        return "${context.name}/${name}"
-    }
+    val name: Name
 
 }
 
 @MappedSuperclass
 abstract class AbstractMessageEntity<ID: MessageId, S: MessageStatus>: Aggregate<ID>(), Message {
 
-    @Embedded @AttributeOverride(name="name", column = Column(name="CONTEXT", nullable = false))
-    override lateinit var context: Context
-        protected set
-
-    @Column(name="NAME", length = 128, nullable = false)
-    override var name = this::class.simpleName!!
+    @Embedded
+    override var name = Name(name = this::class.simpleName!!)
         protected set
 
     override val version: Int? = null
@@ -57,4 +49,61 @@ interface MessageStatus
 
 enum class MessageType {
     Command, Document, Event
+}
+
+@Embeddable
+class Name() {
+
+    @Column(name="CONTEXT", length = 64, nullable = false)
+    var context = "Default"
+        @JsonIgnore get
+        @JsonIgnore internal set (context) {
+            field = context; qualified
+        }
+
+    @Column(name="NAME", length = 128, nullable = false)
+    var name = "Default"
+        @JsonIgnore get
+        @JsonIgnore internal set (simpleName) {
+            field = simpleName; qualified
+        }
+
+    @Transient
+    var qualified: String = "Default/Default"
+        @JsonValue get() {
+            field = context + "/" + name
+            return field
+        }
+        @JsonValue protected set(fullName) {
+            if (fullName.indexOf("/") < 1 || fullName.length < 3)
+                throw IllegalArgumentException("Full name must consist of two parts (name and name) separated by a slash ('/').")
+            field = fullName
+            context = fullName.substring(0, fullName.indexOf("/"))
+            name = fullName.substring(fullName.indexOf("/") + 1, fullName.length)
+        }
+
+    constructor(qualified: String): this() {
+        this.qualified = qualified
+    }
+
+    constructor(context: String = default.context, name: String): this() {
+        this.context = context
+        this.name = name
+    }
+
+    override fun hashCode(): Int {
+        return qualified.hashCode()
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is Name) return false
+        if (qualified != other.qualified) return false
+        return true
+    }
+
+    companion object {
+        var default = Name()
+    }
+
 }

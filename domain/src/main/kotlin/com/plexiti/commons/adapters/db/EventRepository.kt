@@ -3,7 +3,7 @@ package com.plexiti.commons.adapters.db
 import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
-import com.plexiti.commons.domain.Context
+import com.plexiti.commons.domain.Name
 import com.plexiti.commons.domain.*
 import com.plexiti.commons.domain.EventRepository
 import com.plexiti.utils.scanPackageForAssignableClasses
@@ -23,7 +23,7 @@ import kotlin.reflect.KClass
 class EventRepository : EventRepository<Event>, ApplicationContextAware {
 
     @Value("\${com.plexiti.app.context}")
-    private var context: String? = null
+    private var context = Name.default.context
 
     @Autowired
     private var delegate: EventEntityRepository = InMemoryEventEntityRepository()
@@ -36,7 +36,7 @@ class EventRepository : EventRepository<Event>, ApplicationContextAware {
 
     private fun toEvent(entity: EventEntity?): Event? {
         if (entity != null) {
-            val event = Event.fromJson(entity.json, type(entity.qname()))
+            val event = Event.fromJson(entity.json, type(entity.name.qualified))
             event.internals = entity
             return event
         }
@@ -48,11 +48,11 @@ class EventRepository : EventRepository<Event>, ApplicationContextAware {
     }
 
     override fun setApplicationContext(applicationContext: ApplicationContext) {
-        Context.home = Context(context)
+        Name.default.context = context
         Event.store = this
         eventTypes = scanPackageForAssignableClasses("com.plexiti", Event::class.java)
             .map { it.newInstance() as Event }
-            .associate { Pair(it.qname(), it::class) }
+            .associate { Pair(it.name.qualified, it::class) }
     }
 
     override fun exists(id: EventId?): Boolean {
