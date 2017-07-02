@@ -48,7 +48,7 @@ open class MessageId(value: String): AggregateId(value)
 interface MessageStatus
 
 enum class MessageType {
-    Command, Document, Event
+    Event, Command, Flow, Document
 }
 
 @Embeddable

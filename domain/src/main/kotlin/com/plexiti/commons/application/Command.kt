@@ -19,10 +19,9 @@ import kotlin.reflect.KClass
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
-
 abstract class Command: Message {
 
-    val type = MessageType.Command
+    open val type = MessageType.Command
 
     override var name = Name(name = this::class.simpleName!!)
 
@@ -94,6 +93,8 @@ abstract class Command: Message {
 
 @Entity
 @Table(name="COMMANDS")
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "type", discriminatorType = DiscriminatorType.STRING)
 @NamedQueries(
     NamedQuery(
         name = "CommandForwarder",

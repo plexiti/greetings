@@ -52,6 +52,7 @@ class CommandRepository : CommandRepository<Command>, ApplicationContextAware, R
         Name.default.context = context
         Command.store = this
         commandTypes = scanPackageForAssignableClasses("com.plexiti", Command::class.java)
+            .filter { it != Flow::class.java }
             .map { it.newInstance() as Command }
             .associate { Pair(it.name.qualified, it::class) }
     }
