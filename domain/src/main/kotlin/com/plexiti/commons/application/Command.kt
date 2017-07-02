@@ -57,9 +57,29 @@ abstract class Command: Message {
         }
 
         fun <C: Command> fromJson(json: String, type: KClass<C>): C {
-            return ObjectMapper().readValue(json, type.java)
+            val command =  ObjectMapper().readValue(json, type.java)
+            command.construct()
+            return command
         }
 
+    }
+
+    open fun construct() {}
+
+    open fun flowCommand(name: Name): Command? {
+        if (internals.flowId != null) {
+            return Command.store.findFirstByNameAndFlowIdOrderByIssuedAtDesc(name, internals.flowId!!)
+        } else {
+            throw IllegalStateException()
+        }
+    }
+
+    open fun flowEvent(name: Name): Event? {
+        if (internals.flowId != null) {
+            return Event.store.findFirstByNameAndFlowIdOrderByRaisedAtDesc(name, internals.flowId!!)
+        } else {
+            throw IllegalStateException()
+        }
     }
 
     open fun correlation(): Correlation {
@@ -271,6 +291,8 @@ class Correlation : Serializable {
 interface CommandRepository<C>: CrudRepository<C, CommandId> {
 
     fun findByCorrelationAndExecutionFinishedAtIsNull(correlation: Correlation): C?
+
+    fun findFirstByNameAndFlowIdOrderByIssuedAtDesc(name: Name, flowId: FlowId): C?
 
 }
 

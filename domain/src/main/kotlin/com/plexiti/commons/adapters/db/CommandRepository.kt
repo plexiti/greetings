@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.plexiti.commons.application.*
 import com.plexiti.commons.application.CommandRepository
-import com.plexiti.commons.domain.AggregateId
 import com.plexiti.commons.domain.Name
 import com.plexiti.utils.scanPackageForAssignableClasses
 import org.apache.camel.builder.RouteBuilder
@@ -103,6 +102,10 @@ class CommandRepository : CommandRepository<Command>, ApplicationContextAware, R
         return toCommand(delegate.findByCorrelationAndExecutionFinishedAtIsNull(correlation))
     }
 
+    override fun findFirstByNameAndFlowIdOrderByIssuedAtDesc(name: Name, flowId: FlowId): Command?{
+        return toCommand(delegate.findFirstByNameAndFlowIdOrderByIssuedAtDesc(name, flowId))
+    }
+
     override fun findAll(): MutableIterable<Command> {
         return delegate.findAll().mapTo(ArrayList(), { toCommand(it)!! })
     }
@@ -150,6 +153,10 @@ class InMemoryCommandEntityRepository: InMemoryEntityCrudRepository<CommandEntit
 
     override fun findByCorrelationAndExecutionFinishedAtIsNull(correlation: Correlation): CommandEntity? {
         return findAll().find { correlation == it.correlation && it.execution.finishedAt == null }
+    }
+
+    override fun findFirstByNameAndFlowIdOrderByIssuedAtDesc(name: Name, flowId: FlowId): CommandEntity? {
+        return findAll().sortedByDescending { it.issuedAt }.first { it.name == name && it.flowId == flowId }
     }
 
 }

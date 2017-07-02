@@ -8,7 +8,6 @@ import com.plexiti.commons.adapters.db.EventRepository
 import com.plexiti.commons.application.Command
 import com.plexiti.commons.application.CommandId
 import com.plexiti.commons.application.FlowId
-import com.plexiti.commons.application.TokenId
 import com.plexiti.commons.domain.EventEntity.EventAggregate
 import com.plexiti.commons.domain.EventStatus.*
 import org.apache.camel.component.jpa.Consumed
@@ -63,10 +62,30 @@ abstract class Event(aggregate: Aggregate<*>? = null) : Message {
         }
 
         fun <E: Event> fromJson(json: String, type: KClass<E>): E {
-            return ObjectMapper().readValue(json, type.java)
+            val event =  ObjectMapper().readValue(json, type.java)
+            event.construct()
+            return event
         }
 
-   }
+    }
+
+    open fun construct() {}
+
+    open fun flowCommand(name: Name): Command? {
+        if (internals.flowId != null) {
+            return Command.store.findFirstByNameAndFlowIdOrderByIssuedAtDesc(name, internals.flowId!!)
+        } else {
+            throw IllegalStateException()
+        }
+    }
+
+    open fun flowEvent(name: Name): Event? {
+        if (internals.flowId != null) {
+            return Event.store.findFirstByNameAndFlowIdOrderByRaisedAtDesc(name, internals.flowId!!)
+        } else {
+            throw IllegalStateException()
+        }
+    }
 
     init {
         if (aggregate != null) {
@@ -181,7 +200,11 @@ class EventId(value: String = ""): MessageId(value)
 
 @NoRepositoryBean
 interface EventRepository<E>: CrudRepository<E, EventId> {
+
     fun findByAggregateId(id: String): List<E>
+
+    fun findFirstByNameAndFlowIdOrderByRaisedAtDesc(name: Name, flowId: FlowId): E?
+
 }
 
 enum class EventStatus: MessageStatus {

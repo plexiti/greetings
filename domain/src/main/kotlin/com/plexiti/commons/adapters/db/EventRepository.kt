@@ -3,6 +3,7 @@ package com.plexiti.commons.adapters.db
 import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
+import com.plexiti.commons.application.FlowId
 import com.plexiti.commons.domain.Name
 import com.plexiti.commons.domain.*
 import com.plexiti.commons.domain.EventRepository
@@ -89,6 +90,10 @@ class EventRepository : EventRepository<Event>, ApplicationContextAware {
         return delegate.findByAggregateId(id).map { toEvent(it)!! }
     }
 
+    override fun findFirstByNameAndFlowIdOrderByRaisedAtDesc(name: Name, flowId: FlowId): Event? {
+        return toEvent(delegate.findFirstByNameAndFlowIdOrderByRaisedAtDesc(name, flowId))
+    }
+
     override fun <S : Event?> save(event: S): S {
         @Suppress("unchecked_cast")
         return toEvent(delegate.save(toEntity(event))) as S
@@ -128,6 +133,10 @@ class InMemoryEventEntityRepository: InMemoryEntityCrudRepository<EventEntity, E
 
     override fun findByAggregateId(id: String): List<EventEntity> {
         return findAll().filter { id == it.aggregate.id }
+    }
+
+    override fun findFirstByNameAndFlowIdOrderByRaisedAtDesc(name: Name, flowId: FlowId): EventEntity? {
+        return findAll().sortedByDescending { it.raisedAt }.first { it.name == name && it.flowId == flowId }
     }
 
 }
