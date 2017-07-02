@@ -159,10 +159,6 @@ open class CommandEntity(): AbstractMessageEntity<CommandId, CommandStatus>() {
     var flowId: CommandId? = null
         internal set
 
-    @Embedded @AttributeOverride(name="value", column = Column(name="TOKEN_ID", nullable = true))
-    var tokenId: TokenId? = null
-        internal set
-
     @Embedded
     var execution: Execution = Execution()
 
@@ -184,23 +180,23 @@ open class CommandEntity(): AbstractMessageEntity<CommandId, CommandStatus>() {
     internal fun finish(result: Any) {
         if (result is Event) {
             val event = result
-            this.execution.finishedAt = event.raisedAt
-            this.execution.finishedBy = event.id
+            execution.finishedAt = event.raisedAt
+            execution.finishedBy = event.id
         } else if (result is Problem) {
             val problem = result
-            this.execution.finishedAt = problem.occuredAt
-            this.execution.finishedBy = null
-            this.execution.json = ObjectMapper().setAnnotationIntrospector(ProblemIntrospector()).writeValueAsString(result)
-            this.execution.returnCode = problem.code
+            execution.finishedAt = problem.occuredAt
+            execution.finishedBy = null
+            execution.json = ObjectMapper().setAnnotationIntrospector(ProblemIntrospector()).writeValueAsString(result)
+            execution.returnCode = problem.code
         } else {
-            this.execution.finishedAt = Date()
-            this.execution.json = ObjectMapper().writeValueAsString(result)
+            execution.finishedAt = Date()
+            execution.json = ObjectMapper().writeValueAsString(result)
         }
-        if (tokenId != null) {
-            this.status = finished
+        if (execution.tokenId != null) {
+            status = finished
         } else {
-            this.status = completed
-            this.completedAt = execution.finishedAt
+            status = completed
+            completedAt = execution.finishedAt
         }
     }
 
@@ -242,6 +238,10 @@ open class CommandEntity(): AbstractMessageEntity<CommandId, CommandStatus>() {
         fun problem(): Problem {
             return ObjectMapper().readValue(json, Problem::class.java)
         }
+
+        @Embedded @AttributeOverride(name="value", column = Column(name="TOKEN_ID", nullable = true))
+        var tokenId: TokenId? = null
+            internal set
 
     }
 
