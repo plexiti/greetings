@@ -100,6 +100,10 @@ abstract class Command: Message {
     NamedQuery(
         name = "CommandForwarder",
         query = "select c from CommandEntity c where c.forwardedAt is null"
+    ),
+    NamedQuery(
+        name = "CommandCompleter",
+        query = "select c from CommandEntity c where c.completedAt is null"
     )
 )
 open class CommandEntity(): AbstractMessageEntity<CommandId, CommandStatus>() {
@@ -116,6 +120,11 @@ open class CommandEntity(): AbstractMessageEntity<CommandId, CommandStatus>() {
     @Column(name = "ISSUED_AT", nullable = false)
     @Temporal(TemporalType.TIMESTAMP)
     var issuedAt = Date()
+        internal set
+
+    @Column(name = "COMPLETED_AT", nullable = true)
+    @Temporal(TemporalType.TIMESTAMP)
+    var completedAt: Date? = null
         internal set
 
     @Embedded @AttributeOverride(name="value", column = Column(name = "CORRELATION", length = 128, nullable = false))
@@ -147,9 +156,9 @@ open class CommandEntity(): AbstractMessageEntity<CommandId, CommandStatus>() {
         this.execution.startedAt = Date()
     }
 
-    internal fun finish() {
-        this.status = finished
-        this.execution.finishedAt = Date()
+    internal fun complete() {
+        this.status = completed
+        this.completedAt = Date()
     }
 
     internal fun finish(result: Any) {
@@ -167,21 +176,20 @@ open class CommandEntity(): AbstractMessageEntity<CommandId, CommandStatus>() {
             this.execution.finishedAt = Date()
             this.execution.json = ObjectMapper().writeValueAsString(result)
         }
-        this.status = finished
+        if (tokenId != null) {
+            this.status = finished
+        } else {
+            this.status = completed
+            this.completedAt = execution.finishedAt
+        }
     }
 
     @Consumed
-    private fun transition(): CommandStatus {
+    private fun forwarded(): CommandStatus {
         when (status) {
             issued -> forward()
-            forwarded -> start()
-            started -> finish()
-            finished -> throw IllegalStateException()
-        }
-        when (status) {
-            forwarded -> forwardedAt = Date()
-            started -> execution.startedAt = Date()
-            finished -> execution.finishedAt = Date()
+            finished -> complete()
+            else -> IllegalStateException()
         }
         return status
     }
@@ -267,5 +275,7 @@ interface CommandRepository<C>: CrudRepository<C, CommandId> {
 }
 
 enum class CommandStatus: MessageStatus {
-    issued, forwarded, started, finished
+
+    issued, forwarded, started, finished, completed
+
 }

@@ -23,7 +23,7 @@ import org.mockito.ArgumentCaptor
 class FlowCommandCorrelatorTest {
 
     var rule = ProcessEngineRule() @Rule get
-    val behavior = FlowCommandCorrelator()
+    val behavior = FlowCommandExecutor()
     val json = ArgumentCaptor.forClass(String::class.java)
 
     @Before
@@ -41,7 +41,7 @@ class FlowCommandCorrelatorTest {
     @Test
     fun leave() {
 
-        rule.processEngine.runtimeService.startProcessInstanceByKey("FlowCommandCorrelator")
+        rule.processEngine.runtimeService.startProcessInstanceByKey("FlowCommandExecutor")
 
         verify(behavior.rabbitTemplate, times(1)).convertAndSend(eq(behavior.queue), json.capture())
 

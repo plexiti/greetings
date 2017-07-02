@@ -4,18 +4,22 @@ import com.plexiti.commons.application.*
 import com.plexiti.commons.domain.Name
 import org.camunda.bpm.engine.impl.bpmn.behavior.AbstractBpmnActivityBehavior
 import org.camunda.bpm.engine.impl.pvm.delegate.ActivityExecution
-import org.camunda.spin.Spin.*
+import org.camunda.spin.json.SpinJsonNode
 import org.slf4j.LoggerFactory
 import org.springframework.amqp.rabbit.core.RabbitTemplate
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Component
 
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
 @Component("command")
-class FlowCommandCorrelator: AbstractBpmnActivityBehavior() {
+@Configuration
+@Profile("prod")
+class FlowCommandExecutor : AbstractBpmnActivityBehavior() {
 
     private val logger = LoggerFactory.getLogger(this::class.java)
 
@@ -55,8 +59,8 @@ class FlowCommandCorrelator: AbstractBpmnActivityBehavior() {
     }
 
     override fun signal(execution: ActivityExecution, signalName: String?, signalData: Any?) {
-        if (signalData is Command) {
-            execution.setVariable(signalData.name.qualified, JSON(signalData))
+        if (signalData is SpinJsonNode) {
+            execution.setVariable(signalData.prop("name").stringValue(), signalData)
         }
         leave(execution)
     }
