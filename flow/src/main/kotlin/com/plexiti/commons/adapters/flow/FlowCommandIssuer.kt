@@ -50,7 +50,6 @@ class FlowCommandIssuer : AbstractBpmnActivityBehavior() {
 
         val command = FlowCommand(
             Name(commandName),
-            FlowId(execution.processInstanceId),
             TokenId(execution.id)
         )
 

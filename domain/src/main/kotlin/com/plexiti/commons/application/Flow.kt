@@ -18,19 +18,15 @@ class Flow: Command() {
 @DiscriminatorValue(MessageType.Discriminator.flow)
 class FlowEntity(): CommandEntity()
 
-open class FlowId(value: String = ""): CommandId(value)
-
 open class TokenId(value: String = ""): AggregateId(value)
 
 class FlowCommand(): Command() {
 
-    lateinit var flowId: FlowId
     lateinit var tokenId: TokenId
 
-    constructor(name: Name, flowId: FlowId, tokenId: TokenId, issuedAt: Date = Date()): this() {
+    constructor(name: Name, tokenId: TokenId, issuedAt: Date = Date()): this() {
         this.id = CommandId(UUID.randomUUID().toString())
         this.name = name
-        this.flowId = flowId
         this.tokenId = tokenId
         this.issuedAt = issuedAt
     }

@@ -156,7 +156,7 @@ open class CommandEntity(): AbstractMessageEntity<CommandId, CommandStatus>() {
         internal set
 
     @Embedded @AttributeOverride(name="value", column = Column(name="FLOW_ID", nullable = true))
-    var flowId: FlowId? = null
+    var flowId: CommandId? = null
         internal set
 
     @Embedded @AttributeOverride(name="value", column = Column(name="TOKEN_ID", nullable = true))
@@ -292,7 +292,7 @@ interface CommandRepository<C>: CrudRepository<C, CommandId> {
 
     fun findByCorrelationAndExecutionFinishedAtIsNull(correlation: Correlation): C?
 
-    fun findFirstByNameAndFlowIdOrderByIssuedAtDesc(name: Name, flowId: FlowId): C?
+    fun findFirstByNameAndFlowIdOrderByIssuedAtDesc(name: Name, flowId: CommandId): C?
 
 }
 

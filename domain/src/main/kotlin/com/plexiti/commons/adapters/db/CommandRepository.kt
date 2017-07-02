@@ -102,7 +102,7 @@ class CommandRepository : CommandRepository<Command>, ApplicationContextAware, R
         return toCommand(delegate.findByCorrelationAndExecutionFinishedAtIsNull(correlation))
     }
 
-    override fun findFirstByNameAndFlowIdOrderByIssuedAtDesc(name: Name, flowId: FlowId): Command?{
+    override fun findFirstByNameAndFlowIdOrderByIssuedAtDesc(name: Name, flowId: CommandId): Command?{
         return toCommand(delegate.findFirstByNameAndFlowIdOrderByIssuedAtDesc(name, flowId))
     }
 
@@ -155,7 +155,7 @@ class InMemoryCommandEntityRepository: InMemoryEntityCrudRepository<CommandEntit
         return findAll().find { correlation == it.correlation && it.execution.finishedAt == null }
     }
 
-    override fun findFirstByNameAndFlowIdOrderByIssuedAtDesc(name: Name, flowId: FlowId): CommandEntity? {
+    override fun findFirstByNameAndFlowIdOrderByIssuedAtDesc(name: Name, flowId: CommandId): CommandEntity? {
         return findAll().sortedByDescending { it.issuedAt }.first { it.name == name && it.flowId == flowId }
     }
 
