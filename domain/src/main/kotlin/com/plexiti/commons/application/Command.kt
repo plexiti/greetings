@@ -126,6 +126,14 @@ open class CommandEntity(): AbstractMessageEntity<CommandId, CommandStatus>() {
     var triggeredBy: EventId? = null
         internal set
 
+    @Embedded @AttributeOverride(name="value", column = Column(name="FLOW_ID", nullable = true))
+    var flowId: FlowId? = null
+        internal set
+
+    @Embedded @AttributeOverride(name="value", column = Column(name="TOKEN_ID", nullable = true))
+    var tokenId: TokenId? = null
+        internal set
+
     @Embedded
     var execution: Execution = Execution()
 

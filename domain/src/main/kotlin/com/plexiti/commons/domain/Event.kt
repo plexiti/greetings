@@ -7,6 +7,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode
 import com.plexiti.commons.adapters.db.EventRepository
 import com.plexiti.commons.application.Command
 import com.plexiti.commons.application.CommandId
+import com.plexiti.commons.application.FlowId
+import com.plexiti.commons.application.TokenId
 import com.plexiti.commons.domain.EventEntity.EventAggregate
 import com.plexiti.commons.domain.EventStatus.*
 import org.apache.camel.component.jpa.Consumed
@@ -116,6 +118,10 @@ class EventEntity(): AbstractMessageEntity<EventId, EventStatus>() {
 
     @Embedded
     lateinit var aggregate: EventAggregate
+
+    @Embedded @AttributeOverride(name="value", column = Column(name="FLOW_ID", nullable = true))
+    var flowId: FlowId? = null
+        internal set
 
     constructor(event: Event): this() {
         this.name = event.name
