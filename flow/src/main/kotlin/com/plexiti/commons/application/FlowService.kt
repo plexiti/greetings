@@ -19,7 +19,7 @@ class FlowService {
     lateinit var runtimeService: RuntimeService
 
     @Transactional
-    fun completeCommand(json: String) {
+    fun executeCommand(json: String) {
         val tokenId = tokenId(json)
         if (tokenId != null) {
             runtimeService.signal(tokenId.value, null, org.camunda.spin.Spin.JSON(json), null)

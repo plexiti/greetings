@@ -19,11 +19,11 @@ import org.mockito.ArgumentCaptor
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
-@Deployment(resources = arrayOf("com/plexiti/commons/adapters/flow/FlowCommandCorrelator.bpmn"))
-class FlowCommandCorrelatorTest {
+@Deployment(resources = arrayOf("com/plexiti/commons/adapters/flow/FlowCommandIssuer.bpmn"))
+class FlowCommandIssuerTest {
 
     var rule = ProcessEngineRule() @Rule get
-    val behavior = FlowCommandExecutor()
+    val behavior = FlowCommandIssuer()
     val json = ArgumentCaptor.forClass(String::class.java)
 
     @Before
@@ -41,7 +41,7 @@ class FlowCommandCorrelatorTest {
     @Test
     fun leave() {
 
-        rule.processEngine.runtimeService.startProcessInstanceByKey("FlowCommandExecutor")
+        rule.processEngine.runtimeService.startProcessInstanceByKey("FlowCommandIssuer")
 
         verify(behavior.rabbitTemplate, times(1)).convertAndSend(eq(behavior.queue), json.capture())
 
