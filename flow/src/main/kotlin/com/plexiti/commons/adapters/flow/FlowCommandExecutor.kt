@@ -33,7 +33,7 @@ class FlowCommandExecutor {
 
     @Bean
     fun flowCommandsQueue(): Queue {
-        return Queue("${context}-flow-commands-queue", true)
+        return Queue("${context}-flows-queue", true)
     }
 
 }

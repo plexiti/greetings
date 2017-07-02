@@ -29,7 +29,7 @@ class FlowService {
     private fun tokenId(json: String): TokenId? {
         try {
             val node = ObjectMapper().readValue(json, ObjectNode::class.java)
-            val id =  node.get("tokenId").textValue()
+            val id = node.get("execution").get("tokenId").textValue()
             return if (id != null) TokenId(id) else null
         } catch (ex: JsonMappingException) {
             return null

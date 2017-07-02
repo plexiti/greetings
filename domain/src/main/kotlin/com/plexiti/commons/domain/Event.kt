@@ -113,9 +113,15 @@ abstract class Event(aggregate: Aggregate<*>? = null) : Message {
 
 @Entity
 @Table(name="EVENTS")
-@NamedQuery(
-    name = "EventForwarder",
-    query = "select e from EventEntity e where e.forwardedAt is null"
+@NamedQueries(
+    NamedQuery(
+        name = "EventForwarder",
+        query = "select e from EventEntity e where e.forwardedAt is null"
+    ),
+    NamedQuery(
+        name = "FlowEventForwarder",
+        query = "select e from EventEntity e where e.consumedAt is not null and e.processedAt is null"
+    )
 )
 class EventEntity(): AbstractMessageEntity<EventId, EventStatus>() {
 
@@ -132,6 +138,11 @@ class EventEntity(): AbstractMessageEntity<EventId, EventStatus>() {
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "CONSUMED_AT", nullable = true)
     var consumedAt: Date? = null
+        internal set
+
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "PROCESSED_AT", nullable = true)
+    var processedAt: Date? = null
         internal set
 
     @Embedded
@@ -158,6 +169,11 @@ class EventEntity(): AbstractMessageEntity<EventId, EventStatus>() {
     internal fun consume() {
         this.status = consumed
         this.consumedAt = Date()
+    }
+
+    internal fun process() {
+        this.status = processed
+        this.processedAt = Date()
     }
 
     @Embeddable
@@ -207,5 +223,7 @@ interface EventRepository<E>: CrudRepository<E, EventId> {
 }
 
 enum class EventStatus: MessageStatus {
-    raised, forwarded, consumed
+
+    raised, forwarded, consumed, processed
+
 }

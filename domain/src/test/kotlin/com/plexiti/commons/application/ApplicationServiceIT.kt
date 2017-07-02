@@ -133,7 +133,7 @@ open class ApplicationServiceIT : AbstractDataJpaTest() {
 
         command = Command.store.findAll().iterator().next()
 
-        assertThat(command.internals.status).isEqualTo(CommandStatus.completed)
+        assertThat(command.internals.status).isEqualTo(CommandStatus.processed)
         assertThat(command.internals.execution.startedAt).isNotNull()
         assertThat(command.internals.execution.finishedAt).isNotNull()
 
@@ -149,7 +149,7 @@ open class ApplicationServiceIT : AbstractDataJpaTest() {
 
         applicationService.consumeEvent(event.toJson())
 
-        assertThat(command.internals.status).isEqualTo(CommandStatus.completed)
+        assertThat(command.internals.status).isEqualTo(CommandStatus.processed)
         assertThat(command.internals.execution.startedAt).isNull()
         assertThat(command.internals.execution.finishedAt).isNotNull()
 
@@ -162,7 +162,7 @@ open class ApplicationServiceIT : AbstractDataJpaTest() {
         command.internals.forward()
         applicationService.executeCommand(command.toJson())
 
-        assertThat(command.internals.status).isEqualTo(CommandStatus.completed)
+        assertThat(command.internals.status).isEqualTo(CommandStatus.processed)
         assertThat(command.internals.execution.finishedAt).isNotNull()
         assertThat(command.internals.execution.returnCode).isEqualTo(Problem::class.simpleName)
         assertThat(command.internals.execution.problem()).isNotNull()
@@ -185,7 +185,7 @@ open class ApplicationServiceIT : AbstractDataJpaTest() {
         command.internals.forward()
         applicationService.executeCommand(command.toJson())
 
-        assertThat(command.internals.status).isEqualTo(CommandStatus.completed)
+        assertThat(command.internals.status).isEqualTo(CommandStatus.processed)
         assertThat(command.internals.execution.finishedAt).isNotNull()
         assertThat(command.internals.execution.returnCode).isNull()
         assertThat(command.internals.execution.finishedBy).isNull()

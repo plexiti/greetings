@@ -1,14 +1,12 @@
 package com.plexiti.commons.adapters.mq
 
-import com.plexiti.commons.application.CommandEntity
+import com.plexiti.commons.application.FlowEntity
 import org.apache.camel.Handler
 import org.apache.camel.builder.RouteBuilder
 import org.slf4j.LoggerFactory
-import org.springframework.amqp.core.Queue
 import org.springframework.amqp.rabbit.core.RabbitTemplate
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Component
@@ -20,7 +18,7 @@ import org.springframework.stereotype.Component
 @Component
 @Configuration
 @Profile("prod")
-class CommandCompleter : RouteBuilder() {
+class FlowForwarder : RouteBuilder() {
 
     private val logger = LoggerFactory.getLogger(this::class.java)
 
@@ -36,17 +34,17 @@ class CommandCompleter : RouteBuilder() {
     @Autowired
     private lateinit var rabbitTemplate: RabbitTemplate
 
-    val options = "consumer.namedQuery=${CommandCompleter::class.simpleName}&consumeDelete=false"
+    val options = "consumer.namedQuery=${FlowForwarder::class.simpleName}&consumeDelete=false"
 
     override fun configure() {
-        from("jpa:${CommandEntity::class.qualifiedName}?${options}")
+        from("jpa:${FlowEntity::class.qualifiedName}?${options}")
             .bean(this)
     }
 
     @Handler
-    fun send(command: CommandEntity) {
-        rabbitTemplate.convertAndSend(queue, command.json);
-        logger.info("Forwarded ${command.json}")
+    fun forward(flow: FlowEntity) {
+        rabbitTemplate.convertAndSend(queue, flow.json);
+        logger.info("Forwarded ${flow.json}")
     }
 
 }

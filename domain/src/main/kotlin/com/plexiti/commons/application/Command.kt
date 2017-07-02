@@ -119,11 +119,11 @@ abstract class Command: Message {
 @NamedQueries(
     NamedQuery(
         name = "CommandForwarder",
-        query = "select c from CommandEntity c where c.forwardedAt is null"
+        query = "select c from CommandEntity c where c.forwardedAt is null and type(c) = CommandEntity"
     ),
     NamedQuery(
-        name = "CommandCompleter",
-        query = "select c from CommandEntity c where c.completedAt is null"
+        name = "FlowCommandForwarder",
+        query = "select c from CommandEntity c where c.execution.finishedAt is not null and c.processedAt is null"
     )
 )
 open class CommandEntity(): AbstractMessageEntity<CommandId, CommandStatus>() {
@@ -144,7 +144,7 @@ open class CommandEntity(): AbstractMessageEntity<CommandId, CommandStatus>() {
 
     @Column(name = "COMPLETED_AT", nullable = true)
     @Temporal(TemporalType.TIMESTAMP)
-    var completedAt: Date? = null
+    var processedAt: Date? = null
         internal set
 
     @Embedded @AttributeOverride(name="value", column = Column(name = "CORRELATION", length = 128, nullable = false))
@@ -172,9 +172,9 @@ open class CommandEntity(): AbstractMessageEntity<CommandId, CommandStatus>() {
         this.execution.startedAt = Date()
     }
 
-    internal fun complete() {
-        this.status = completed
-        this.completedAt = Date()
+    internal fun process() {
+        this.status = processed
+        this.processedAt = Date()
     }
 
     internal fun finish(result: Any) {
@@ -195,8 +195,8 @@ open class CommandEntity(): AbstractMessageEntity<CommandId, CommandStatus>() {
         if (execution.tokenId != null) {
             status = finished
         } else {
-            status = completed
-            completedAt = execution.finishedAt
+            status = processed
+            processedAt = execution.finishedAt
         }
     }
 
@@ -204,7 +204,7 @@ open class CommandEntity(): AbstractMessageEntity<CommandId, CommandStatus>() {
     private fun forwarded(): CommandStatus {
         when (status) {
             issued -> forward()
-            finished -> complete()
+            finished -> process()
             else -> IllegalStateException()
         }
         return status
@@ -298,6 +298,6 @@ interface CommandRepository<C>: CrudRepository<C, CommandId> {
 
 enum class CommandStatus: MessageStatus {
 
-    issued, forwarded, started, finished, completed
+    issued, forwarded, started, finished, processed
 
 }
