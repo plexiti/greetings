@@ -35,7 +35,7 @@ abstract class Command: Message {
         protected set
 
     @JsonIgnore
-    internal lateinit var internals: CommandEntity
+    internal open lateinit var internals: CommandEntity
         @JsonIgnore get
         @JsonIgnore set
 
@@ -95,13 +95,14 @@ abstract class Command: Message {
 @Table(name="COMMANDS")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "type", discriminatorType = DiscriminatorType.STRING)
+@DiscriminatorValue(MessageType.Discriminator.command)
 @NamedQueries(
     NamedQuery(
         name = "CommandForwarder",
         query = "select c from CommandEntity c where c.forwardedAt is null"
     )
 )
-class CommandEntity(): AbstractMessageEntity<CommandId, CommandStatus>() {
+open class CommandEntity(): AbstractMessageEntity<CommandId, CommandStatus>() {
 
     constructor(command: Command): this() {
         this.name = command.name
@@ -210,7 +211,7 @@ class CommandEntity(): AbstractMessageEntity<CommandId, CommandStatus>() {
 
 }
 
-class CommandId(value: String = ""): MessageId(value)
+open class CommandId(value: String = ""): MessageId(value)
 
 @Embeddable
 class Correlation : Serializable {
