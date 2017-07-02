@@ -35,7 +35,7 @@ class FlowCommandIssuer : AbstractBpmnActivityBehavior() {
     @Autowired
     internal lateinit var rabbitTemplate: RabbitTemplate
 
-    fun send(command: Command) {
+    fun issue(command: Command) {
         rabbitTemplate.convertAndSend(queue, command.toJson());
         logger.info("Forwarded ${command.toJson()}")
     }
@@ -53,7 +53,7 @@ class FlowCommandIssuer : AbstractBpmnActivityBehavior() {
             TokenId(execution.id)
         )
 
-        send(command)
+        issue(command)
 
     }
 

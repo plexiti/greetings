@@ -1,8 +1,6 @@
 package com.plexiti.commons.application
 
-import com.plexiti.commons.domain.AggregateId
-import com.plexiti.commons.domain.MessageType
-import com.plexiti.commons.domain.Name
+import com.plexiti.commons.domain.*
 import java.util.*
 import javax.persistence.DiscriminatorValue
 import javax.persistence.Entity
@@ -37,6 +35,19 @@ class FlowCommand(): Command() {
         this.name = name
         this.tokenId = tokenId
         this.issuedAt = issuedAt
+    }
+
+}
+
+class FlowEvent(): Event() {
+
+    lateinit var tokenId: TokenId
+
+    constructor(name: Name, tokenId: TokenId, raisedAt: Date = Date()): this() {
+        this.id = EventId(UUID.randomUUID().toString())
+        this.name = name
+        this.tokenId = tokenId
+        this.raisedAt = raisedAt
     }
 
 }

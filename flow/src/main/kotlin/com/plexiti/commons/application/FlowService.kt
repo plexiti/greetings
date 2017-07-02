@@ -15,25 +15,6 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class FlowService {
 
-    @Autowired
-    lateinit var runtimeService: RuntimeService
 
-    @Transactional
-    fun executeCommand(json: String) {
-        val tokenId = tokenId(json)
-        if (tokenId != null) {
-            runtimeService.signal(tokenId.value, null, org.camunda.spin.Spin.JSON(json), null)
-        }
-    }
-
-    private fun tokenId(json: String): TokenId? {
-        try {
-            val node = ObjectMapper().readValue(json, ObjectNode::class.java)
-            val id = node.get("execution").get("tokenId").textValue()
-            return if (id != null) TokenId(id) else null
-        } catch (ex: JsonMappingException) {
-            return null
-        }
-    }
 
 }
