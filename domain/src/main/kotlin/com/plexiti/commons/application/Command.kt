@@ -15,6 +15,7 @@ import java.io.Serializable
 import java.util.*
 import javax.persistence.*
 import kotlin.reflect.KClass
+import com.plexiti.utils.hash
 
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
@@ -128,7 +129,7 @@ abstract class Command: Message {
 )
 open class CommandEntity(): AbstractMessageEntity<CommandId, CommandStatus>() {
 
-    constructor(command: Command): this() {
+    constructor(command: Command) : this() {
         this.name = command.name
         this.id = command.id
         this.issuedAt = command.issuedAt
@@ -150,20 +151,37 @@ open class CommandEntity(): AbstractMessageEntity<CommandId, CommandStatus>() {
     var processedAt: Date? = null
         internal set
 
-    @Embedded @AttributeOverride(name="value", column = Column(name = "CORRELATION", length = 128, nullable = false))
+    @Embedded @AttributeOverride(name = "value", column = Column(name = "CORRELATION", length = 128, nullable = false))
     lateinit var correlation: Correlation
         internal set
 
-    @Embedded @AttributeOverride(name="value", column = Column(name="TRIGGERED_BY", nullable = true))
+    @Embedded @AttributeOverride(name = "value", column = Column(name = "TRIGGERED_BY", nullable = true))
     var triggeredBy: EventId? = null
         internal set
 
-    @Embedded @AttributeOverride(name="value", column = Column(name="FLOW_ID", nullable = true))
+    @Embedded @AttributeOverride(name="value", column = Column(name="FINISHED_BY", nullable = true))
+    var finishedBy: EventId? = null
+        internal set
+
+    @Embedded @AttributeOverride(name = "value", column = Column(name = "FLOW_ID", nullable = true))
     var flowId: CommandId? = null
+        internal set
+
+    @Embedded @AttributeOverride(name="value", column = Column(name="TOKEN_ID", nullable = true))
+    var tokenId: TokenId? = null
+        internal set
+
+    @Embedded @AttributeOverride(name="value", column = Column(name="DOCUMENT_ID", nullable = true))
+    var documentId: DocumentId? = null
         internal set
 
     @Embedded
     var execution: Execution = Execution()
+        internal set
+
+    @Embedded
+    var problem: Problem? = null
+        internal set
 
     internal fun forward() {
         this.status = forwarded
@@ -184,18 +202,16 @@ open class CommandEntity(): AbstractMessageEntity<CommandId, CommandStatus>() {
         if (result is Event) {
             val event = result
             execution.finishedAt = event.raisedAt
-            execution.finishedBy = event.id
+            finishedBy = event.id
         } else if (result is Problem) {
-            val problem = result
-            execution.finishedAt = problem.occuredAt
-            execution.finishedBy = null
-            execution.json = ObjectMapper().setAnnotationIntrospector(ProblemIntrospector()).writeValueAsString(result)
-            execution.returnCode = problem.code
+            problem = result
+            execution.finishedAt = result.occuredAt
+            finishedBy = null
         } else {
             execution.finishedAt = Date()
-            execution.json = ObjectMapper().writeValueAsString(result)
+            documentId = DocumentId(hash(Document.toJson(result)))
         }
-        if (execution.tokenId != null) {
+        if (tokenId != null) {
             status = finished
         } else {
             status = processed
@@ -211,41 +227,6 @@ open class CommandEntity(): AbstractMessageEntity<CommandId, CommandStatus>() {
             else -> IllegalStateException()
         }
         return status
-    }
-
-    @Embeddable
-    class Execution() {
-
-        @Column(name = "STARTED_AT", nullable = true)
-        @Temporal(TemporalType.TIMESTAMP)
-        var startedAt: Date? = null
-            internal set
-
-        @Column(name = "FINISHED_AT", nullable = true)
-        @Temporal(TemporalType.TIMESTAMP)
-        var finishedAt: Date? = null
-            internal set
-
-        @Embedded @AttributeOverride(name="value", column = Column(name="FINISHED_BY", nullable = true))
-        var finishedBy: EventId? = null
-            internal set
-
-        @Column(name = "RETURN_CODE", nullable = true)
-        var returnCode: String? = null
-            internal set
-
-        @Lob
-        @Column(name="RETURN_VALUE", columnDefinition = "text", nullable = true)
-        internal var json: String? = null
-
-        fun problem(): Problem {
-            return ObjectMapper().readValue(json, Problem::class.java)
-        }
-
-        @Embedded @AttributeOverride(name="value", column = Column(name="TOKEN_ID", nullable = true))
-        var tokenId: TokenId? = null
-            internal set
-
     }
 
 }

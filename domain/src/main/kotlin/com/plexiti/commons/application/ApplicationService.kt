@@ -1,6 +1,7 @@
 package com.plexiti.commons.application
 
 import com.plexiti.commons.adapters.db.CommandRepository
+import com.plexiti.commons.adapters.db.DocumentRepository
 import com.plexiti.commons.adapters.db.EventRepository
 import com.plexiti.commons.domain.Event
 import com.plexiti.commons.domain.Problem
@@ -23,6 +24,9 @@ class ApplicationService {
 
     @Autowired
     lateinit var eventRepository: EventRepository
+
+    @Autowired
+    lateinit var documentRepository: DocumentRepository
 
     @Autowired
     private lateinit var route: ProducerTemplate
@@ -58,8 +62,10 @@ class ApplicationService {
     private fun executeCommand(command: Command) {
         try {
             val result = route.requestBody("direct:${command.name.name}", command)
-            if (result !is Command)
+            if (result !is Command) {
+                documentRepository.save(result)
                 command.internals.finish(result)
+            }
         } catch (e: CamelExecutionException) {
             throw e.exchange.exception
         }

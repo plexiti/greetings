@@ -1,11 +1,9 @@
 package com.plexiti.commons.application
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.plexiti.commons.adapters.db.DocumentEntityRepository
-import com.plexiti.commons.adapters.db.InMemoryDocumentEntityRepository
+import com.plexiti.commons.adapters.db.DocumentRepository
 import com.plexiti.commons.adapters.db.KClassAttributeConverter
 import com.plexiti.commons.domain.*
-import com.plexiti.utils.hash
 import org.springframework.data.repository.CrudRepository
 import org.springframework.data.repository.NoRepositoryBean
 import java.util.*
@@ -15,6 +13,24 @@ import kotlin.reflect.KClass
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
+class Document {
+
+    companion object {
+
+        internal var store = DocumentRepository()
+
+        fun <D: Any> fromJson(json: String, type: KClass<D>): D {
+            return ObjectMapper().readValue(json, type.java)
+        }
+
+        fun toJson(any: Any?): String {
+            return ObjectMapper().writeValueAsString(any)
+        }
+
+    }
+
+}
+
 @Entity
 @Table(name="DOCUMENTS")
 open class DocumentEntity(): Aggregate<DocumentId>() {
@@ -38,22 +54,6 @@ open class DocumentEntity(): Aggregate<DocumentId>() {
         this.id = id
         this.type = type
         this.json = json
-    }
-
-    companion object {
-
-        internal var store: DocumentEntityRepository = InMemoryDocumentEntityRepository()
-
-        fun create(document: Any): DocumentEntity {
-            val text = ObjectMapper().writeValueAsString(document)
-            val id = DocumentId(hash(text))
-            return store.findOne(id) ?: DocumentEntity(id, document::class, text)
-        }
-
-        fun <D: Any> fromJson(json: String, type: KClass<D>): D {
-            return ObjectMapper().readValue(json, type.java)
-        }
-
     }
 
 }

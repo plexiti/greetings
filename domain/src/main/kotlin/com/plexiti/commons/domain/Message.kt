@@ -51,14 +51,13 @@ interface MessageStatus
 
 enum class MessageType {
 
-    Event, Command, Flow, Document;
+    Event, Command, Flow, Result, Document;
 
     companion object Discriminator {
 
         const val event = "Event"
         const val command = "Command"
         const val flow = "Flow"
-        const val document = "Document"
 
     }
 

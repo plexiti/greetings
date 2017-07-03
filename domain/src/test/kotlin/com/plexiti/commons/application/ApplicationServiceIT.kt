@@ -39,6 +39,10 @@ open class ApplicationServiceIT : AbstractDataJpaTest() {
 
     class QueryITCommand: Command()
 
+    class QueryITResult {
+        val anything = "Something"
+    }
+
     class ExternalITCommand: Command() {
 
         override var name = Name("External/ExternalITCommand")
@@ -164,8 +168,7 @@ open class ApplicationServiceIT : AbstractDataJpaTest() {
 
         assertThat(command.internals.status).isEqualTo(CommandStatus.processed)
         assertThat(command.internals.execution.finishedAt).isNotNull()
-        assertThat(command.internals.execution.returnCode).isEqualTo(Problem::class.simpleName)
-        assertThat(command.internals.execution.problem()).isNotNull()
+        assertThat(command.internals.problem?.code).isEqualTo(Problem::class.simpleName)
 
     }
 
@@ -187,9 +190,8 @@ open class ApplicationServiceIT : AbstractDataJpaTest() {
 
         assertThat(command.internals.status).isEqualTo(CommandStatus.processed)
         assertThat(command.internals.execution.finishedAt).isNotNull()
-        assertThat(command.internals.execution.returnCode).isNull()
-        assertThat(command.internals.execution.finishedBy).isNull()
-        assertThat(command.internals.execution.json).isNotNull()
+        assertThat(command.internals.problem?.code).isNull()
+        assertThat(command.internals.finishedBy).isNull()
 
     }
 
@@ -207,9 +209,7 @@ open class ApplicationServiceIT : AbstractDataJpaTest() {
     }
 
     fun queryITCommand(command: QueryITCommand): Any {
-        return object {
-            val anything = "Something"
-        }
+        return QueryITResult()
     }
 
 }

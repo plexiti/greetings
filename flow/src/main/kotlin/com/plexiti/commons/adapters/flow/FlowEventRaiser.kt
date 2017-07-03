@@ -51,8 +51,7 @@ class FlowEventRaiser: JavaDelegate {
 
         val event = FlowMessage(
             FlowEvent(Name(eventName)),
-            CommandId(execution.processBusinessKey),
-            TokenId(execution.id))
+            CommandId(execution.processBusinessKey))
 
         raise(event)
 

@@ -1,5 +1,7 @@
 package com.plexiti.commons.adapters.db
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.plexiti.commons.application.Document
 import com.plexiti.commons.application.DocumentEntity
 import com.plexiti.commons.application.DocumentId
 import com.plexiti.commons.application.DocumentRepository
@@ -21,15 +23,20 @@ class DocumentRepository: DocumentRepository<Any>, ApplicationContextAware {
     private var delegate: DocumentEntityRepository = InMemoryDocumentEntityRepository()
 
     private fun toDocument(entity: DocumentEntity?): Any? {
-        return  if (entity != null) DocumentEntity.fromJson(entity.json, entity.type) else null
+        return  if (entity != null) Document.fromJson(entity.json, entity.type) else null
     }
 
     private fun toEntity(document: Any?): DocumentEntity? {
-        return if (document != null) DocumentEntity.create(document) else null
+        if (document != null) {
+            val text = ObjectMapper().writeValueAsString(document)
+            val id = DocumentId(hash(text))
+            return delegate.findOne(id) ?: DocumentEntity(id, document::class, text)
+        }
+        return null
     }
 
     override fun setApplicationContext(applicationContext: ApplicationContext?) {
-        DocumentEntity.store = delegate
+        Document.store = this
     }
 
     override fun exists(id: DocumentId?): Boolean {
