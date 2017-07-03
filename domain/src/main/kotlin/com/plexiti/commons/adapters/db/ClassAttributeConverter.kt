@@ -1,6 +1,7 @@
 package com.plexiti.commons.adapters.db
 
 import javax.persistence.Converter
+import kotlin.reflect.KClass
 
 
 /**
@@ -15,6 +16,19 @@ class ClassAttributeConverter: javax.persistence.AttributeConverter<Class<*>, St
 
     override fun convertToEntityAttribute(className: String): Class<*> {
         return Class.forName(className)
+    }
+
+}
+
+@Converter
+class KClassAttributeConverter: javax.persistence.AttributeConverter<KClass<*>, String> {
+
+    override fun convertToDatabaseColumn(cls: KClass<*>): String {
+        return cls.java.name
+    }
+
+    override fun convertToEntityAttribute(className: String): KClass<*> {
+        return Class.forName(className).kotlin
     }
 
 }
