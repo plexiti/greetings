@@ -2,6 +2,7 @@ package com.plexiti.commons.adapters.flow
 
 import com.plexiti.commons.application.*
 import com.plexiti.commons.domain.Event
+import com.plexiti.commons.domain.MessageType.Discriminator.event
 import com.plexiti.commons.domain.Name
 import org.camunda.bpm.engine.delegate.DelegateExecution
 import org.camunda.bpm.engine.delegate.JavaDelegate
@@ -27,7 +28,7 @@ class FlowEventRaiser: JavaDelegate {
         @Value("\${com.plexiti.app.context}")
         set(value) {
             field = value
-            queue = "${value}-events-queue"
+            queue = "${value}-flows-from-queue"
         }
 
     internal lateinit var queue: String
@@ -35,7 +36,7 @@ class FlowEventRaiser: JavaDelegate {
     @Autowired
     internal lateinit var rabbitTemplate: RabbitTemplate
 
-    fun raise(event: Event) {
+    fun raise(event: FlowMessage) {
         rabbitTemplate.convertAndSend(queue, event.toJson());
         logger.info("Forwarded ${event.toJson()}")
     }
@@ -48,10 +49,10 @@ class FlowEventRaiser: JavaDelegate {
             ?.childElements?.find { it.localName == "property" && it.hasAttribute("name") && it.getAttribute("name") == "event" }
             ?.getAttribute("value") ?: throw IllegalArgumentException("Event must be specified as <camunda:property name='event'/>)")
 
-        val event = FlowEvent(
-            Name(eventName),
-            TokenId(execution.id)
-        )
+        val event = FlowMessage(
+            FlowEvent(Name(eventName)),
+            CommandId(execution.processBusinessKey),
+            TokenId(execution.id))
 
         raise(event)
 

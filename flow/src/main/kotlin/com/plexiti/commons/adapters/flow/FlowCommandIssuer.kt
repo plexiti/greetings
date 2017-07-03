@@ -27,7 +27,7 @@ class FlowCommandIssuer : AbstractBpmnActivityBehavior() {
         @Value("\${com.plexiti.app.context}")
         set(value) {
             field = value
-            queue = "${value}-commands-queue"
+            queue = "${value}-flows-from-queue"
         }
 
     internal lateinit var queue: String
@@ -35,7 +35,7 @@ class FlowCommandIssuer : AbstractBpmnActivityBehavior() {
     @Autowired
     internal lateinit var rabbitTemplate: RabbitTemplate
 
-    fun issue(command: Command) {
+    fun issue(command: FlowMessage) {
         rabbitTemplate.convertAndSend(queue, command.toJson());
         logger.info("Forwarded ${command.toJson()}")
     }
@@ -48,19 +48,16 @@ class FlowCommandIssuer : AbstractBpmnActivityBehavior() {
             ?.childElements?.find { it.localName == "property" && it.hasAttribute("name") && it.getAttribute("name") == "command" }
             ?.getAttribute("value") ?: throw IllegalArgumentException("Command must be specified as <camunda:property name='command'/>)")
 
-        val command = FlowCommand(
-            Name(commandName),
-            TokenId(execution.id)
-        )
+        val command = FlowMessage(
+            FlowCommand(Name(commandName)),
+            CommandId(execution.processBusinessKey),
+            TokenId(execution.id))
 
         issue(command)
 
     }
 
     override fun signal(execution: ActivityExecution, signalName: String?, signalData: Any?) {
-        if (signalData is SpinJsonNode) {
-            execution.setVariable(signalData.prop("name").stringValue(), signalData)
-        }
         leave(execution)
     }
 

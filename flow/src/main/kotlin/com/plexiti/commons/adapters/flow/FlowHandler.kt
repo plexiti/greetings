@@ -1,10 +1,6 @@
 package com.plexiti.commons.adapters.flow
 
-import com.fasterxml.jackson.databind.JsonMappingException
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.node.ObjectNode
 import com.plexiti.commons.application.*
-import com.plexiti.commons.domain.Event
 import com.plexiti.commons.domain.MessageType
 import org.camunda.bpm.engine.MismatchingMessageCorrelationException
 import org.camunda.bpm.engine.RuntimeService
@@ -35,70 +31,58 @@ class FlowHandler {
     @Autowired
     lateinit var runtimeService: RuntimeService
 
-    @RabbitListener(queues = arrayOf("\${com.plexiti.app.context}-flows-queue"))
+    @RabbitListener(queues = arrayOf("\${com.plexiti.app.context}-flows-to-queue"))
     fun handle(json: String) {
-        when(type(json)) {
-            MessageType.Command -> command(json)
-            MessageType.Event -> event(json)
-            MessageType.Flow -> flow(json)
+        val message = FlowMessage.fromJson(json)
+        when(message.message.type) {
+            MessageType.Command -> command(message)
+            MessageType.Event -> event(message)
+            MessageType.Flow -> flow(message)
         }
     }
 
     @Transactional
-    fun command(json: String) {
-        val command = Command.fromJson(json, Command::class)
-        val tokenId: TokenId? = null // TODO
-        runtimeService.signal(tokenId!!.value, null, JSON(command), null)
+    fun command(command: FlowMessage) {
+        val variables = Variables.createVariables().putValue(command.message.name.qualified, JSON(command.message))
+        command.history.forEach {
+            variables.put(it.name.qualified, JSON(it))
+        }
+        runtimeService.signal(command.tokenId!!.value, variables)
     }
 
     @Transactional
-    fun event(json: String) {
-        val event = Event.fromJson(json, Event::class)
-        val flowId: CommandId? = null // TODO
+    fun event(event: FlowMessage) {
         try {
-            val correlation: Correlation? = null  // TODO
-            runtimeService.createMessageCorrelation(correlation!!.value)
-                .processInstanceBusinessKey(flowId!!.value)
-                .setVariable(event.name.qualified, JSON(event))
+            runtimeService.createMessageCorrelation(event.message.name.qualified)
+                .processInstanceBusinessKey(event.flowId.value)
+                .setVariable(event.message.name.qualified, JSON(event.message))
                 .correlateExclusively();
         } catch (e: MismatchingMessageCorrelationException) {
-            val tokenId = null // TODO
-            runtimeService.setVariable(tokenId, event.name.qualified, JSON(event))
+            runtimeService.setVariable(event.flowId.value, event.message.name.qualified, JSON(event.message))
         }
     }
 
     @Transactional
-    fun flow(json: String) {
-        val flow = Command.fromJson(json, Flow::class)
-        val trigger: Event? = null // TODO
+    fun flow(flow: FlowMessage) {
+        val trigger = if (!flow.history.isEmpty()) flow.history.first() else null
         if (trigger != null) {
             runtimeService.startProcessInstanceByMessage(trigger.name.qualified,
-                flow.id.value,
+                flow.message.id.value,
                 Variables.createVariables()
                     .putValue(trigger.name.qualified, JSON(trigger))
-                    .putValue(flow.name.qualified, JSON(flow))
+                    .putValue(flow.message.name.qualified, JSON(flow.message))
             )
         } else {
-            runtimeService.startProcessInstanceByKey(flow.name.qualified,
-                flow.id.value,
+            runtimeService.startProcessInstanceByKey(flow.message.name.qualified,
+                flow.message.id.value,
                 Variables.createVariables()
-                    .putValue(flow.name.qualified, JSON(flow)))
+                    .putValue(flow.message.name.qualified, JSON(flow.message)))
         }
     }
 
     @Bean
-    fun flowsQueue(): Queue {
-        return Queue("${context}-flows-queue", true)
-    }
-
-    private fun type(json: String): MessageType? {
-        try {
-            val node = ObjectMapper().readValue(json, ObjectNode::class.java)
-            val type = node.get("messageType").get("tokenId").textValue()
-            return if (type != null) MessageType.valueOf(type) else null
-        } catch (ex: JsonMappingException) {
-            return null
-        }
+    fun toFlowsQueue(): Queue {
+        return Queue("${context}-flows-to-queue", true)
     }
 
 }

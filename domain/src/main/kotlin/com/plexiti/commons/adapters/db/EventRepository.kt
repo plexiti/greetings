@@ -94,6 +94,10 @@ class EventRepository : EventRepository<Event>, ApplicationContextAware {
         return toEvent(delegate.findFirstByNameAndFlowIdOrderByRaisedAtDesc(name, flowId))
     }
 
+    override fun findByRaisedDuringOrderByRaisedAtDesc(raisedDuring: CommandId): List<Event> {
+        return delegate.findByRaisedDuringOrderByRaisedAtDesc(raisedDuring).map { toEvent(it)!! }
+    }
+
     override fun <S : Event?> save(event: S): S {
         @Suppress("unchecked_cast")
         return toEvent(delegate.save(toEntity(event))) as S
@@ -137,6 +141,10 @@ class InMemoryEventEntityRepository: InMemoryEntityCrudRepository<EventEntity, E
 
     override fun findFirstByNameAndFlowIdOrderByRaisedAtDesc(name: Name, flowId: CommandId): EventEntity? {
         return findAll().sortedByDescending { it.raisedAt }.first { it.name == name && it.flowId == flowId }
+    }
+
+    override fun findByRaisedDuringOrderByRaisedAtDesc(raisedDuring: CommandId): List<EventEntity> {
+        return findAll().sortedByDescending { it.raisedAt }.filter { it.raisedDuring == raisedDuring }
     }
 
 }

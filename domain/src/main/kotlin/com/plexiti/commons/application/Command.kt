@@ -21,13 +21,13 @@ import kotlin.reflect.KClass
  */
 abstract class Command: Message {
 
-    open val type = MessageType.Command
+    override open val type = MessageType.Command
 
     override var name = Name(name = this::class.simpleName!!)
 
     open val definition: Int = 0
 
-    lateinit var id: CommandId
+    override lateinit var id: CommandId
         protected set
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSZ", timezone = "CET")
@@ -136,6 +136,9 @@ open class CommandEntity(): AbstractMessageEntity<CommandId, CommandStatus>() {
         this.json = ObjectMapper().writeValueAsString(command)
         this.status = if (this.name.context == Name.default.context) issued else forwarded
     }
+
+    @Transient
+    override val type = MessageType.Command
 
     @Column(name = "ISSUED_AT", nullable = false)
     @Temporal(TemporalType.TIMESTAMP)

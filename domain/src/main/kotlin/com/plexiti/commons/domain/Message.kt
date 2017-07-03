@@ -10,7 +10,9 @@ import javax.persistence.*
  */
 interface Message {
 
+    val id: MessageId
     val name: Name
+    val type: MessageType
 
 }
 

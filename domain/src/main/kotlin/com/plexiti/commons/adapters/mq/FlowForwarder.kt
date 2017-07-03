@@ -1,6 +1,9 @@
 package com.plexiti.commons.adapters.mq
 
+import com.plexiti.commons.adapters.db.CommandRepository
+import com.plexiti.commons.adapters.db.EventRepository
 import com.plexiti.commons.application.FlowEntity
+import com.plexiti.commons.application.FlowMessage
 import org.apache.camel.Handler
 import org.apache.camel.builder.RouteBuilder
 import org.slf4j.LoggerFactory
@@ -26,10 +29,16 @@ class FlowForwarder : RouteBuilder() {
         @Value("\${com.plexiti.app.context}")
         set(value) {
             field = value
-            queue = "${value}-flows-queue"
+            queue = "${value}-flows-to-queue"
         }
 
     private lateinit var queue: String
+
+    @Autowired
+    private lateinit var commands: CommandRepository
+
+    @Autowired
+    private lateinit var events: EventRepository
 
     @Autowired
     private lateinit var rabbitTemplate: RabbitTemplate
@@ -43,8 +52,12 @@ class FlowForwarder : RouteBuilder() {
 
     @Handler
     fun forward(flow: FlowEntity) {
-        rabbitTemplate.convertAndSend(queue, flow.json);
-        logger.info("Forwarded ${flow.json}")
+        val message = FlowMessage(commands.findOne(flow.id)!!, flow.id)
+        val event = if (flow.triggeredBy != null) events.findOne(flow.triggeredBy) else null
+        if (event != null)
+            message.history = listOf(event)
+        rabbitTemplate.convertAndSend(queue, message.toJson());
+        logger.info("Forwarded ${message.toJson()}")
     }
 
 }

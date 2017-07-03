@@ -21,13 +21,13 @@ import kotlin.reflect.KClass
  */
 abstract class Event(aggregate: Aggregate<*>? = null) : Message {
 
-    val type = MessageType.Event
+    override val type = MessageType.Event
 
     override var name = Name(name = this::class.simpleName!!)
 
     open val definition: Int = 0
 
-    lateinit var id: EventId
+    override lateinit var id: EventId
         protected set
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSZ", timezone = "CET")
@@ -125,6 +125,9 @@ abstract class Event(aggregate: Aggregate<*>? = null) : Message {
 )
 class EventEntity(): AbstractMessageEntity<EventId, EventStatus>() {
 
+    @Transient
+    override val type = MessageType.Event
+
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "RAISED_AT", nullable = false)
     lateinit var raisedAt: Date
@@ -219,6 +222,8 @@ interface EventRepository<E>: CrudRepository<E, EventId> {
     fun findByAggregateId(id: String): List<E>
 
     fun findFirstByNameAndFlowIdOrderByRaisedAtDesc(name: Name, flowId: CommandId): E?
+
+    fun findByRaisedDuringOrderByRaisedAtDesc(raisedDuring: CommandId): List<E>
 
 }
 
