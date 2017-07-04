@@ -15,7 +15,6 @@ import java.io.Serializable
 import java.util.*
 import javax.persistence.*
 import kotlin.reflect.KClass
-import com.plexiti.utils.hash
 
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
@@ -207,9 +206,9 @@ open class CommandEntity(): AbstractMessageEntity<CommandId, CommandStatus>() {
             problem = result
             execution.finishedAt = result.occuredAt
             finishedBy = null
-        } else {
+        } else if (result is Document) {
             execution.finishedAt = Date()
-            documentId = DocumentId(hash(Document.toJson(result)))
+            documentId = DocumentId(result)
         }
         if (tokenId != null) {
             status = finished

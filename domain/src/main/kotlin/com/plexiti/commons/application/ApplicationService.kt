@@ -62,7 +62,7 @@ class ApplicationService {
     private fun executeCommand(command: Command) {
         try {
             val result = route.requestBody("direct:${command.name.name}", command)
-            if (result !is Command) {
+            if (result is Document) {
                 documentRepository.save(result)
                 command.internals.finish(result)
             }

@@ -45,7 +45,7 @@ abstract class AggregateId(value: String): Serializable {
     @Column(name = "ID", length = 36, nullable = false)
     var value: String = value
         @JsonValue get
-        @JsonValue private set
+        @JsonValue protected set
 
     override fun toString(): String {
         return value

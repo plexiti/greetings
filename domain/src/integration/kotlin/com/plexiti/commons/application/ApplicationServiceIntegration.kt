@@ -47,7 +47,7 @@ open class ApplicationServiceIntegration : DataJpaIntegration() {
 
     class QueryITCommand: Command()
 
-    class QueryITResult {
+    class QueryITResult: Document {
         val anything = "Something"
     }
 
@@ -216,7 +216,7 @@ open class ApplicationServiceIntegration : DataJpaIntegration() {
         throw RuntimeException()
     }
 
-    fun queryITCommand(command: QueryITCommand): Any {
+    fun queryITCommand(command: QueryITCommand): Document {
         return QueryITResult()
     }
 

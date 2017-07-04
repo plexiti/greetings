@@ -17,19 +17,19 @@ import org.springframework.stereotype.Repository
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
 @Component @NoRepositoryBean
-class DocumentRepository: DocumentRepository<Any>, ApplicationContextAware {
+class DocumentRepository: DocumentRepository<Document>, ApplicationContextAware {
 
     @Autowired
     private var delegate: DocumentEntityRepository = InMemoryDocumentEntityRepository()
 
-    private fun toDocument(entity: DocumentEntity?): Any? {
+    private fun toDocument(entity: DocumentEntity?): Document? {
         return  if (entity != null) Document.fromJson(entity.json, entity.type) else null
     }
 
-    private fun toEntity(document: Any?): DocumentEntity? {
+    private fun toEntity(document: Document?): DocumentEntity? {
         if (document != null) {
             val text = ObjectMapper().writeValueAsString(document)
-            val id = DocumentId(hash(text))
+            val id = DocumentId(document)
             return delegate.findOne(id) ?: DocumentEntity(id, document::class, text)
         }
         return null
@@ -43,7 +43,7 @@ class DocumentRepository: DocumentRepository<Any>, ApplicationContextAware {
         return delegate.exists(id)
     }
 
-    override fun findOne(id: DocumentId?): Any? {
+    override fun findOne(id: DocumentId?): Document? {
         return toDocument(delegate.findOne(id))
     }
 
@@ -51,37 +51,37 @@ class DocumentRepository: DocumentRepository<Any>, ApplicationContextAware {
         return if (json != null) DocumentId(hash(json)) else null
     }
 
-    fun findOne(json: String): Any? {
+    fun findOne(json: String): Document? {
         return findOne(documentId(json))
     }
 
-    override fun findAll(): MutableIterable<Any> {
+    override fun findAll(): MutableIterable<Document> {
         return delegate.findAll().mapTo(ArrayList(), { toDocument(it)!! })
     }
 
-    override fun findAll(ids: MutableIterable<DocumentId>?): MutableIterable<Any> {
+    override fun findAll(ids: MutableIterable<DocumentId>?): MutableIterable<Document> {
         return delegate.findAll(ids).mapTo(ArrayList(), { toDocument(it)!! })
     }
 
-    override fun <S : Any?> save(any: S): S {
+    override fun <S : Document?> save(document: S): S {
         @Suppress("unchecked_cast")
-        return toDocument(delegate.save(toEntity(any))) as S
+        return toDocument(delegate.save(toEntity(document))) as S
     }
 
-    override fun <S : Any?> save(anys: MutableIterable<S>?): MutableIterable<S> {
-        return anys?.mapTo(ArrayList(), { save(it) })!!
+    override fun <S : Document?> save(documents: MutableIterable<S>?): MutableIterable<S> {
+        return documents?.mapTo(ArrayList(), { save(it) })!!
     }
 
     override fun count(): Long {
         return delegate.count()
     }
 
-    override fun delete(entities: MutableIterable<Any>?) {
+    override fun delete(entities: MutableIterable<Document>?) {
         delegate.delete(entities?.map { toEntity(it) })
     }
 
-    override fun delete(any: Any?) {
-        delegate.delete(toEntity(any))
+    override fun delete(document: Document?) {
+        delegate.delete(toEntity(document))
     }
 
     override fun delete(id: DocumentId?) {
