@@ -1,9 +1,13 @@
 package com.plexiti.commons.adapters.mq
 
+import com.plexiti.commons.application.Command
+import com.plexiti.commons.domain.Event
 import com.plexiti.commons.domain.EventEntity
+import com.plexiti.commons.domain.Name
 import org.apache.camel.Handler
 import org.apache.camel.builder.RouteBuilder
 import org.slf4j.LoggerFactory
+import org.springframework.amqp.core.Queue
 import org.springframework.context.annotation.Configuration
 import org.springframework.stereotype.Component
 import org.springframework.amqp.core.TopicExchange
@@ -11,6 +15,9 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.amqp.rabbit.core.RabbitTemplate
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.config.BeanFactoryPostProcessor
+import org.springframework.beans.factory.support.BeanDefinitionBuilder
+import org.springframework.beans.factory.support.BeanDefinitionRegistry
 import org.springframework.context.annotation.Profile
 
 
@@ -53,5 +60,24 @@ class EventForwarder : RouteBuilder() {
     fun eventsTopic(): TopicExchange {
         return TopicExchange(topic, true, false)
     }
+
+    /*
+    @Bean
+    fun beanFactoryPostProcessor(): BeanFactoryPostProcessor = BeanFactoryPostProcessor {
+        val names = mutableSetOf<Name>()
+        Event.types.forEach { name, _ ->
+            if (!names.contains(name)) {
+                names.add(name)
+                (it as BeanDefinitionRegistry).registerBeanDefinition("eventsTopic${name.context}",
+                    BeanDefinitionBuilder.genericBeanDefinition(TopicExchange::class.java)
+                        .addConstructorArgValue("${name.context}-events-topic")
+                        .addConstructorArgValue(true)
+                        .addConstructorArgValue(false)
+                        .beanDefinition
+                )
+            }
+        }
+    }
+    */
 
 }

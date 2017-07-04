@@ -29,12 +29,12 @@ class EventRepository : EventRepository<Event>, ApplicationContextAware {
     @Autowired
     private var delegate: EventEntityRepository = InMemoryEventEntityRepository()
 
-    internal fun type(qName: String): KClass<out Event> {
+    internal fun type(qName: Name): KClass<out Event> {
         return Event.types.get(qName) ?: throw IllegalArgumentException("Event type '$qName' is not mapped to a local object type!")
     }
 
     internal fun toEvent(entity: EventEntity?): Event? {
-        return if (entity != null) Event.fromJson(entity.json, type(entity.name.qualified)) else null
+        return if (entity != null) Event.fromJson(entity.json, type(entity.name)) else null
     }
 
     internal fun toEntity(event: Event?): EventEntity? {

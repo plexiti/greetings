@@ -29,12 +29,12 @@ class CommandRepository : CommandRepository<Command>, ApplicationContextAware, R
     @Autowired
     private var delegate: CommandEntityRepository = InMemoryCommandEntityRepository()
 
-    internal fun type(qName: String): KClass<out Command> {
+    internal fun type(qName: Name): KClass<out Command> {
         return Command.types.get(qName) ?: throw IllegalArgumentException("Command type '$qName' is not mapped to a local object type!")
     }
 
     internal fun toCommand(entity: CommandEntity?): Command? {
-        return if (entity != null) Command.fromJson(entity.json, type(entity.name.qualified)) else null
+        return if (entity != null) Command.fromJson(entity.json, type(entity.name)) else null
     }
 
     internal fun toEntity(command: Command?): CommandEntity? {
@@ -48,10 +48,9 @@ class CommandRepository : CommandRepository<Command>, ApplicationContextAware, R
 
     override fun configure() {
         Command.types.entries.forEach {
-            if (it.key.startsWith(Name.default.context + '_')) {
-                val idx = it.key.indexOf('_') + 1
-                val commandName = it.key.substring(idx)
-                val methodName = it.key.substring(idx, idx + 1).toLowerCase() + it.key.substring(idx + 1)
+            if (it.key.context == Name.default.context) {
+                val commandName = it.key.name
+                val methodName = commandName.substring(0, 1).toLowerCase() + commandName.substring(1)
                 val className = it.value.qualifiedName!!
                 val bean = Class.forName(className.substring(0, className.length - methodName.length - 1))
                 try {

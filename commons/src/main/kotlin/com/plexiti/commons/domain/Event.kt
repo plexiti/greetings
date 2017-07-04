@@ -1,8 +1,6 @@
 package com.plexiti.commons.domain
 
 import com.fasterxml.jackson.annotation.JsonFormat
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.plexiti.commons.adapters.db.EventRepository
@@ -57,7 +55,7 @@ open class Event() : Message {
 
         internal var types = scanPackageForAssignableClasses("com.plexiti", Event::class.java)
             .map { it.newInstance() as Event }
-            .associate { Pair(it.name.qualified, it::class) }
+            .associate { Pair(it.name, it::class) }
 
         internal var repository = EventRepository()
         internal val executingCommand = ThreadLocal<Command?>()
@@ -72,7 +70,7 @@ open class Event() : Message {
         fun fromJson(json: String): Event {
             val node = ObjectMapper().readValue(json, ObjectNode::class.java)
             val name = node.get("name").textValue()
-            val type = repository.type(name)
+            val type = repository.type(Name(name))
             return fromJson(json, type)
         }
 

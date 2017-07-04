@@ -43,7 +43,7 @@ open class Command(): Message {
         internal var types = scanPackageForAssignableClasses("com.plexiti", Command::class.java)
             .filter { it != Flow::class.java }
             .map { it.newInstance() as Command }
-            .associate { Pair(it.name.qualified, it::class) }
+            .associate { Pair(it.name, it::class) }
 
         internal var repository = CommandRepository()
 
@@ -54,7 +54,7 @@ open class Command(): Message {
         fun fromJson(json: String): Command {
             val node = ObjectMapper().readValue(json, ObjectNode::class.java)
             val name = node.get("name").textValue()
-            val type = repository.type(name)
+            val type = repository.type(Name(name))
             return fromJson(json, type)
         }
 
