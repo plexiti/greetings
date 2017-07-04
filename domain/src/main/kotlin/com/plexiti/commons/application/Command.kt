@@ -36,7 +36,7 @@ abstract class Command: Message {
         protected set
 
     @JsonIgnore
-    internal open lateinit var internals: CommandEntity
+    lateinit var internals: CommandEntity
         @JsonIgnore get
         @JsonIgnore set
 
@@ -183,22 +183,22 @@ open class CommandEntity(): AbstractMessageEntity<CommandId, CommandStatus>() {
     var problem: Problem? = null
         internal set
 
-    internal fun forward() {
+    fun forward() {
         this.status = forwarded
         this.forwardedAt = Date()
     }
 
-    internal fun start() {
+    fun start() {
         this.status = started
         this.execution.startedAt = Date()
     }
 
-    internal fun process() {
+    fun process() {
         this.status = processed
         this.processedAt = Date()
     }
 
-    internal fun finish(result: Any) {
+    fun finish(result: Any) {
         if (result is Event) {
             val event = result
             execution.finishedAt = event.raisedAt
@@ -220,7 +220,7 @@ open class CommandEntity(): AbstractMessageEntity<CommandId, CommandStatus>() {
     }
 
     @Consumed
-    private fun forwarded(): CommandStatus {
+    fun forwarded(): CommandStatus {
         when (status) {
             issued -> forward()
             finished -> process()

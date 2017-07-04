@@ -49,6 +49,33 @@ compileTestKotlin {
 
 }
 
+// Add integration test source sets
+sourceSets {
+    integration { sourceSet ->
+        ["java", "kotlin", "resources"].each {
+            if (!sourceSet.hasProperty(it)) return
+            sourceSet."$it".srcDir file("src/integration/${it}")
+        }
+    }
+}
+
+// Setup dependencies for integration testing
+dependencies {
+    integrationCompile sourceSets.main.output
+    integrationCompile sourceSets.test.output
+    integrationCompile configurations.testCompile
+    integrationRuntime configurations.testRuntime
+}
+
+// Define integration test task
+task integration(type: Test) {
+    testClassesDir = sourceSets.integration.output.classesDir
+    classpath = sourceSets.integration.runtimeClasspath
+}
+
+// Make sure 'check' task calls integration test
+check.dependsOn integration
+
 dependencies {
 
 	compile("org.springframework.boot:spring-boot-starter:${springBootVersion}")

@@ -1,6 +1,8 @@
 package com.plexiti.commons.application
 
 import com.plexiti.commons.AbstractDataJpaTest
+import com.plexiti.commons.adapters.db.CommandRepository
+import com.plexiti.commons.adapters.db.EventRepository
 import com.plexiti.commons.domain.*
 import org.assertj.core.api.Assertions.*
 import org.junit.Before
@@ -16,6 +18,12 @@ open class ApplicationServiceIT : AbstractDataJpaTest() {
 
     @Autowired
     lateinit var applicationService: ApplicationService
+
+    @Autowired
+    lateinit var eventRepository: EventRepository
+
+    @Autowired
+    lateinit var commandRepository: CommandRepository
 
     lateinit var aggregate: ITAggregate
 
@@ -72,14 +80,14 @@ open class ApplicationServiceIT : AbstractDataJpaTest() {
         val external = ExternalITEvent(aggregate)
         applicationService.consumeEvent(external.toJson())
 
-        val event = Event.store.findAll().iterator().next()
+        val event = eventRepository.findAll().iterator().next()
 
         assertThat(event.internals.status).isEqualTo(EventStatus.consumed)
         assertThat(event.internals.raisedAt).isNotNull()
         assertThat(event.internals.forwardedAt).isNull()
         assertThat(event.internals.consumedAt).isNotNull()
 
-        val command = Command.store.findAll().iterator().next()
+        val command = commandRepository.findAll().iterator().next()
 
         assertThat(command.internals.status).isEqualTo(CommandStatus.issued)
         assertThat(command.internals.issuedAt).isNotNull()
@@ -92,7 +100,7 @@ open class ApplicationServiceIT : AbstractDataJpaTest() {
     fun consumeEvent_internal() {
 
         Event.raise(InternalITEvent(aggregate))
-        val event = Event.store.findAll().iterator().next()
+        val event = eventRepository.findAll().iterator().next()
         event.internals.forward()
 
         applicationService.consumeEvent(event.toJson())
@@ -102,7 +110,7 @@ open class ApplicationServiceIT : AbstractDataJpaTest() {
         assertThat(event.internals.forwardedAt).isNotNull()
         assertThat(event.internals.consumedAt).isNotNull()
 
-        assertThat(Command.store.findAll()).isEmpty()
+        assertThat(commandRepository.findAll()).isEmpty()
 
     }
 
@@ -112,14 +120,14 @@ open class ApplicationServiceIT : AbstractDataJpaTest() {
         val external = ExternalITEvent(aggregate)
         applicationService.consumeEvent(external.toJson())
 
-        val event = Event.store.findAll().iterator().next()
+        val event = eventRepository.findAll().iterator().next()
 
         assertThat(event.internals.status).isEqualTo(EventStatus.consumed)
         assertThat(event.internals.raisedAt).isNotNull()
         assertThat(event.internals.forwardedAt).isNull()
         assertThat(event.internals.consumedAt).isNotNull()
 
-        var command = Command.store.findAll().iterator().next()
+        var command = commandRepository.findAll().iterator().next()
 
         assertThat(command.internals.status).isEqualTo(CommandStatus.issued)
         assertThat(command.internals.issuedAt).isNotNull()
@@ -129,13 +137,13 @@ open class ApplicationServiceIT : AbstractDataJpaTest() {
         command.internals.forward()
         applicationService.executeCommand(command.toJson())
 
-        val events = Event.store.findAll()
+        val events = eventRepository.findAll()
 
         assertThat(events).hasSize(2)
         assertThat(events.find { it.name.name ==  "ExternalITEvent" }).isNotNull()
         assertThat(events.find { it.name.name ==  "InternalITEvent" }).isNotNull()
 
-        command = Command.store.findAll().iterator().next()
+        command = commandRepository.findAll().iterator().next()
 
         assertThat(command.internals.status).isEqualTo(CommandStatus.processed)
         assertThat(command.internals.execution.startedAt).isNotNull()

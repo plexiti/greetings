@@ -37,7 +37,7 @@ abstract class Event(aggregate: Aggregate<*>? = null) : Message {
     lateinit var aggregate: EventAggregate
 
     @JsonIgnore
-    internal lateinit var internals: EventEntity
+    lateinit var internals: EventEntity
         @JsonIgnore get
         @JsonIgnore set
 
@@ -164,17 +164,17 @@ class EventEntity(): AbstractMessageEntity<EventId, EventStatus>() {
         this.status = if (this.name.context == Name.default.context) raised else forwarded
     }
 
-    internal fun forward() {
+    fun forward() {
         this.status = forwarded
         this.forwardedAt = Date()
     }
 
-    internal fun consume() {
+    fun consume() {
         this.status = consumed
         this.consumedAt = Date()
     }
 
-    internal fun process() {
+    fun process() {
         this.status = processed
         this.processedAt = Date()
     }
@@ -207,7 +207,8 @@ class EventEntity(): AbstractMessageEntity<EventId, EventStatus>() {
         when (status) {
             raised -> forward()
             forwarded -> consume()
-            consumed -> throw IllegalStateException()
+            consumed -> process()
+            processed -> throw IllegalStateException()
         }
         return status
     }

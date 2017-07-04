@@ -14,16 +14,16 @@ class ApplicationServiceTest {
     val applicationService: ApplicationService = ApplicationService()
     lateinit var aggregate: ApplicationServiceTest.TestAggregate
 
-    class InternalEvent(aggregate: TestAggregate? = null) : Event(aggregate)
-    class ExternalEvent(aggregate: TestAggregate? = null) : Event(aggregate) {
-        override var name = Name("External/ExternalEvent")
+    class ApplicationInternalEvent(aggregate: TestAggregate? = null) : Event(aggregate)
+    class ApplicationExternalEvent(aggregate: TestAggregate? = null) : Event(aggregate) {
+        override var name = Name("External/ApplicationExternalEvent")
     }
     class TestAggregate: Aggregate<AggregateId>()
     class TestAggregateId(value: String = ""): AggregateId(value)
 
     class TriggeredTestCommand(): Command() {
         override fun trigger(event: Event): Command? {
-            return if (event.name.qualified.equals("External/ExternalEvent")) TriggeredTestCommand() else null
+            return if (event.name.qualified.equals("External/ApplicationExternalEvent")) TriggeredTestCommand() else null
         }
     }
 
@@ -32,8 +32,8 @@ class ApplicationServiceTest {
         aggregate = TestAggregate()
         aggregate.id = TestAggregateId(UUID.randomUUID().toString())
         Event.store.eventTypes = mapOf(
-            "${Name.default.context}/${InternalEvent::class.simpleName}" to InternalEvent::class,
-            "External/${ExternalEvent::class.simpleName}" to ExternalEvent::class
+            "${Name.default.context}/${ApplicationInternalEvent::class.simpleName}" to ApplicationInternalEvent::class,
+            "External/${ApplicationExternalEvent::class.simpleName}" to ApplicationExternalEvent::class
         )
         Command.store.commandTypes = mapOf(
             "${Name.default.context}/${TriggeredTestCommand::class.simpleName}" to TriggeredTestCommand::class
@@ -47,7 +47,7 @@ class ApplicationServiceTest {
     @Test
     fun consumeEvent_External() {
 
-        val external = ExternalEvent(aggregate)
+        val external = ApplicationExternalEvent(aggregate)
         applicationService.consumeEvent(external.toJson())
 
         val event = Event.store.findAll().iterator().next()
@@ -68,7 +68,7 @@ class ApplicationServiceTest {
     @Test
     fun consumeEvent_Internal() {
 
-        Event.raise(InternalEvent(aggregate))
+        Event.raise(ApplicationInternalEvent(aggregate))
         val event = Event.store.findAll().iterator().next()
         event.internals.forward()
 
