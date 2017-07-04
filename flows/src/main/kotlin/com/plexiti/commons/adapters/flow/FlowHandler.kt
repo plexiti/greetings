@@ -5,6 +5,7 @@ import com.plexiti.commons.domain.MessageType
 import org.camunda.bpm.engine.MismatchingMessageCorrelationException
 import org.camunda.bpm.engine.RuntimeService
 import org.camunda.bpm.engine.variable.Variables
+import org.camunda.spin.json.SpinJsonNode
 import org.camunda.spin.json.SpinJsonNode.JSON
 import org.springframework.amqp.core.Queue
 import org.springframework.amqp.rabbit.annotation.RabbitListener
@@ -35,64 +36,67 @@ class FlowHandler {
     fun handle(json: String) {
         val message = FlowMessage.fromJson(json)
         when(message.type) {
-            MessageType.Flow -> flow(message)
-            MessageType.Event -> event(message)
-            MessageType.Result -> result(message)
+            MessageType.Flow -> flow(message, JSON(json))
+            MessageType.Event -> event(message, JSON(json))
+            MessageType.Result -> result(message, JSON(json))
         }
     }
 
     @Transactional
-    fun result(message: FlowMessage) {
+    fun result(message: FlowMessage, json: SpinJsonNode) {
         val result = message.result
         val command = result!!.command
-        val variables = Variables.createVariables().putValue(command.name.qualified, JSON(result.toJson()))
+        val variables = Variables.createVariables().putValue(command.name.qualified, json.prop("result"))
         if (result.problem != null) {
-            variables.putValue(result.problem!!.code, JSON(result.problem!!.toJson()))
+            variables.putValue(result.problem!!.code, json.prop("result").prop("problem"))
             runtimeService.signal(message.tokenId!!.value, result.problem!!.code, result.problem!!.message, variables)
         } else {
             if (result.document != null) {
-                variables.put(result.document!!.name().qualified, JSON(result.document!!.toJson()))
+                val document = json.prop("result").prop("document")
+                variables.put(document.prop("name").stringValue(), document)
             }
+            var idx = 0
             result.events?.forEach {
-                variables.put(it.name.qualified, JSON(it.toJson()))
+                val event = json.prop("result").prop("events").elements()[idx++]
+                variables.put(it.name.qualified, event)
             }
             runtimeService.signal(message.tokenId!!.value, variables)
         }
     }
 
     @Transactional
-    fun event(message: FlowMessage) {
+    fun event(message: FlowMessage, json: SpinJsonNode) {
         val event = message.event!!
         try {
             runtimeService.createMessageCorrelation(event.name.qualified)
                 .processInstanceBusinessKey(message.flowId.value)
-                .setVariable(event.name.qualified, JSON(event.toJson()))
+                .setVariable(event.name.qualified, json.prop("result").prop("event"))
                 .correlateExclusively();
         } catch (e: MismatchingMessageCorrelationException) {
             val tokenId = runtimeService.createProcessInstanceQuery()
                 .processInstanceBusinessKey(message.flowId.value).singleResult()?.id
             if (tokenId != null) {
-                runtimeService.setVariable(tokenId, event.name.qualified, JSON(event.toJson()))
+                runtimeService.setVariable(tokenId, event.name.qualified, json.prop("result").prop("event"))
             }
         }
     }
 
     @Transactional
-    fun flow(message: FlowMessage) {
+    fun flow(message: FlowMessage, json: SpinJsonNode) {
         val command = message.command!!
         val trigger = if (!message.events.isEmpty()) message.events.first() else null
         if (trigger != null) {
             runtimeService.startProcessInstanceByMessage(trigger.name.qualified,
                 command.id.value,
                 Variables.createVariables()
-                    .putValue(trigger.name.qualified, JSON(trigger.toJson()))
-                    .putValue(command.name.qualified, JSON(command.toJson()))
+                    .putValue(trigger.name.qualified, json.prop("result").prop("events").elements()[0])
+                    .putValue(command.name.qualified, json.prop("result").prop("command"))
             )
         } else {
             runtimeService.startProcessInstanceByKey(command.name.qualified,
                 command.id.value,
                 Variables.createVariables()
-                    .putValue(command.name.qualified, JSON(command.toJson())))
+                    .putValue(command.name.qualified, json.prop("result").prop("command")))
         }
     }
 

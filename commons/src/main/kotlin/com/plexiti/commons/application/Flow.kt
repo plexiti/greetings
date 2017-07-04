@@ -1,5 +1,8 @@
 package com.plexiti.commons.application
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.annotation.JsonInclude
+import com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.plexiti.commons.domain.*
 import com.plexiti.commons.domain.MessageType.Discriminator.event
@@ -46,6 +49,8 @@ class FlowEvent(): Event() {
 
 }
 
+@JsonInclude(NON_EMPTY)
+@JsonIgnoreProperties(ignoreUnknown = true)
 class FlowMessage() {
 
     lateinit var type: MessageType

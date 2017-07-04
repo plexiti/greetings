@@ -1,9 +1,11 @@
 package com.plexiti.commons.adapters.flow
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.plexiti.commons.application.Document
 import com.plexiti.commons.application.FlowMessage
 import com.plexiti.commons.application.Result
 import com.plexiti.commons.domain.MessageType
+import com.plexiti.commons.domain.Name
 import com.plexiti.commons.domain.Problem
 import org.assertj.core.api.Assertions.*
 import org.camunda.bpm.engine.test.Deployment
@@ -21,7 +23,7 @@ import org.mockito.ArgumentCaptor
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
-@Deployment(resources = arrayOf("com/plexiti/commons/adapters/flow/FlowCommandIssuer.bpmn"))
+@Deployment(resources = arrayOf("com/plexiti/commons/adapters/flow/FlowCommandTest.bpmn"))
 class FlowCommandTest {
 
     var rule = ProcessEngineRule() @Rule get
@@ -46,7 +48,7 @@ class FlowCommandTest {
     fun happyPath() {
 
         rule.processEngine
-            .runtimeService.startProcessInstanceByKey("FlowCommandIssuer", "aBusinessKey")
+            .runtimeService.startProcessInstanceByKey("FlowCommandTest", "aBusinessKey")
 
         verify(issuer.rabbitTemplate, times(1)).convertAndSend(eq(issuer.queue), json.capture())
 
@@ -76,7 +78,7 @@ class FlowCommandTest {
     fun errorPath() {
 
         rule.processEngine
-            .runtimeService.startProcessInstanceByKey("FlowCommandIssuer", "aBusinessKey")
+            .runtimeService.startProcessInstanceByKey("FlowCommandTest", "aBusinessKey")
 
         verify(issuer.rabbitTemplate, times(1)).convertAndSend(eq(issuer.queue), json.capture())
 
@@ -93,6 +95,34 @@ class FlowCommandTest {
         ProcessEngineAssertions.assertThat(pi)
             .hasPassed("FailureEndEvent")
             .hasVariables("Flow_Test", "someError")
+
+    }
+
+    @Test
+    fun happyResult() {
+
+        rule.processEngine
+            .runtimeService.startProcessInstanceByKey("FlowCommandTest", "aBusinessKey")
+
+        verify(issuer.rabbitTemplate, times(1)).convertAndSend(eq(issuer.queue), json.capture())
+
+        val request = ObjectMapper().readValue(json.value, FlowMessage::class.java)
+        val command = request.command!!
+        val result = Result(command)
+        result.document = object: Document {
+            override val name: Name
+                get() = Name("Flow_Document")
+            val someProperty =  "someValue"
+        }
+        val response = FlowMessage(result, request.flowId, request.tokenId)
+
+        val pi = rule.processEngine.runtimeService.createProcessInstanceQuery().singleResult()
+
+        handler.handle(response.toJson())
+
+        ProcessEngineAssertions.assertThat(pi)
+            .hasPassed("SuccessFulEndEvent")
+            .hasVariables("Flow_Test", "Flow_Document")
 
     }
 

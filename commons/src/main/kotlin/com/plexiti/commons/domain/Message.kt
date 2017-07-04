@@ -1,12 +1,15 @@
 package com.plexiti.commons.domain
 
 import com.fasterxml.jackson.annotation.*
+import com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY
 import java.util.*
 import javax.persistence.*
 
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
+@JsonInclude(NON_EMPTY)
+@JsonIgnoreProperties(ignoreUnknown = true)
 interface Message {
 
     val id: MessageId

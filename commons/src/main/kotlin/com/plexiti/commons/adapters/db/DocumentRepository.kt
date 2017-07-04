@@ -33,7 +33,7 @@ class DocumentRepository: DocumentRepository<Document>, ApplicationContextAware 
         if (document != null) {
             val text = ObjectMapper().writeValueAsString(document)
             val id = DocumentId(document)
-            return delegate.findOne(id) ?: DocumentEntity(id, document.name(), text)
+            return delegate.findOne(id) ?: DocumentEntity(id, document.name, text)
         }
         return null
     }

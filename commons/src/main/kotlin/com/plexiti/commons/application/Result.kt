@@ -1,6 +1,9 @@
 package com.plexiti.commons.application
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.plexiti.commons.domain.*
 import java.util.*
 import javax.persistence.Column
@@ -26,6 +29,7 @@ class Result(): Message {
 
     var events: List<Event>? = null
 
+    @JsonDeserialize(`as` = DocumentImpl::class)
     var document: Document? = null
 
     var problem: Problem? = null

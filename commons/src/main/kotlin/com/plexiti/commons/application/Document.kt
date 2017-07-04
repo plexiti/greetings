@@ -1,5 +1,6 @@
 package com.plexiti.commons.application
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.plexiti.commons.adapters.db.DocumentRepository
 import com.plexiti.commons.domain.*
@@ -14,13 +15,22 @@ import kotlin.reflect.KClass
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
-interface Document {
+interface Document: Message {
+
+    override val id: DocumentId
+        @JsonIgnore get() = DocumentId(toJson())
+
+    override val type: MessageType
+        @JsonIgnore get() = MessageType.Document
+
+    override val name: Name
+        get() = Name(name = this::class.java.simpleName)
 
     companion object {
 
         internal var types = scanPackageForAssignableClasses("com.plexiti", Document::class.java)
             .map { it.newInstance() as Document }
-            .associate { Pair(it.name().qualified, it::class) }
+            .associate { Pair(it.name.qualified, it::class) }
 
         internal var repository = DocumentRepository()
 
@@ -34,11 +44,9 @@ interface Document {
         return ObjectMapper().writeValueAsString(this)
     }
 
-    fun name(): Name {
-        return Name(name = this::class.java.simpleName)
-    }
-
 }
+
+class DocumentImpl: Document
 
 @Entity
 @Table(name="DOCUMENTS")

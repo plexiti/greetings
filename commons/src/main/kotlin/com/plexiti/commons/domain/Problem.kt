@@ -1,6 +1,9 @@
 package com.plexiti.commons.domain
 
 import com.fasterxml.jackson.annotation.JsonFormat
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.annotation.JsonInclude
+import com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.introspect.AnnotatedMember
 import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector
@@ -15,6 +18,8 @@ import javax.persistence.TemporalType
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
 @Embeddable
+@JsonInclude(NON_EMPTY)
+@JsonIgnoreProperties(ignoreUnknown = true)
 open class Problem(): RuntimeException() {
 
     @Column(name = "PROBLEM_CODE", nullable = true)

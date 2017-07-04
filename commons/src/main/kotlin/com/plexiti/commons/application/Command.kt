@@ -1,14 +1,12 @@
 package com.plexiti.commons.application
 
 import com.fasterxml.jackson.annotation.JsonFormat
-import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonValue
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.plexiti.commons.adapters.db.CommandRepository
 import com.plexiti.commons.application.CommandStatus.*
 import com.plexiti.commons.domain.*
-import com.plexiti.commons.domain.MessageType.Discriminator.command
 import com.plexiti.utils.scanPackageForAssignableClasses
 import org.apache.camel.component.jpa.Consumed
 import org.springframework.data.repository.CrudRepository
