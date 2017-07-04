@@ -2,18 +2,19 @@ package com.plexiti.commons.application
 
 import com.plexiti.commons.domain.*
 import java.util.*
-import javax.persistence.*
+import javax.persistence.Column
+import javax.persistence.Embeddable
+import javax.persistence.Temporal
+import javax.persistence.TemporalType
 
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
 class Result(): Message {
 
-    override open val type = MessageType.Result
+    override val type = MessageType.Result
 
     override lateinit var name: Name
-
-    open val definition: Int = 0
 
     override lateinit var id: CommandId
         protected set

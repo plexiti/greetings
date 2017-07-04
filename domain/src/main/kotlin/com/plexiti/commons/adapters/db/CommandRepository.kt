@@ -59,8 +59,8 @@ class CommandRepository : CommandRepository<Command>, ApplicationContextAware, R
 
     override fun configure() {
         commandTypes.entries.forEach {
-            if (it.key.startsWith(Name.default.context + '/')) {
-                val idx = it.key.indexOf('/') + 1
+            if (it.key.startsWith(Name.default.context + '_')) {
+                val idx = it.key.indexOf('_') + 1
                 val commandName = it.key.substring(idx)
                 val methodName = it.key.substring(idx, idx + 1).toLowerCase() + it.key.substring(idx + 1)
                 val className = it.value.qualifiedName!!

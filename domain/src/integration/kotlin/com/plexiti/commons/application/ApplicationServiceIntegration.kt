@@ -4,12 +4,11 @@ import com.plexiti.commons.DataJpaIntegration
 import com.plexiti.commons.adapters.db.CommandRepository
 import com.plexiti.commons.adapters.db.EventRepository
 import com.plexiti.commons.domain.*
-import org.assertj.core.api.Assertions.*
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
 import org.springframework.beans.factory.annotation.Autowired
 import java.util.*
-import kotlin.RuntimeException
 
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
@@ -29,7 +28,7 @@ open class ApplicationServiceIntegration : DataJpaIntegration() {
 
     class InternalITEvent(aggregate: ITAggregate? = null) : Event(aggregate)
     class ExternalITEvent(aggregate: ITAggregate? = null) : Event(aggregate) {
-        override var name = Name("External/ExternalITEvent")
+        override var name = Name("External_ExternalITEvent")
         val businessKey = "myCorrelationKey"
     }
     class ITAggregate: Aggregate<AggregateId>()
@@ -37,7 +36,7 @@ open class ApplicationServiceIntegration : DataJpaIntegration() {
 
     class TriggeredITCommand(): Command() {
         override fun trigger(event: Event): Command? {
-            return if (event.name.qualified.equals("External/ExternalITEvent")) TriggeredITCommand() else null
+            return if (event.name.qualified.equals("External_ExternalITEvent")) TriggeredITCommand() else null
         }
     }
 
@@ -53,7 +52,7 @@ open class ApplicationServiceIntegration : DataJpaIntegration() {
 
     class ExternalITCommand: Command() {
 
-        override var name = Name("External/ExternalITCommand")
+        override var name = Name("External_ExternalITCommand")
 
         override fun correlation(): Correlation {
             return Correlation.create("myCorrelationKey")!!

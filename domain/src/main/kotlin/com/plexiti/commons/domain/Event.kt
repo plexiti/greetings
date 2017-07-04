@@ -47,9 +47,9 @@ abstract class Event(aggregate: Aggregate<*>? = null) : Message {
         internal val executingCommand = ThreadLocal<Command?>()
 
         fun <E: Event> raise(event: E): E {
-            val event = store.save(event)
-            event.internals.raisedDuring = executingCommand.get()?.id
-            executingCommand.get()?.internals?.finish(event)
+            val e = store.save(event)
+            e.internals.raisedDuring = executingCommand.get()?.id
+            executingCommand.get()?.internals?.finish(e)
             return event
         }
 

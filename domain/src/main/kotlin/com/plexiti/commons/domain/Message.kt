@@ -81,17 +81,17 @@ class Name() {
         }
 
     @Transient
-    var qualified: String = "Default/Default"
+    var qualified: String = "Default_Default"
         @JsonValue get() {
-            field = context + "/" + name
+            field = context + "_" + name
             return field
         }
         @JsonValue protected set(fullName) {
-            if (fullName.indexOf("/") < 1 || fullName.length < 3)
-                throw IllegalArgumentException("Full name must consist of two parts (name and name) separated by a slash ('/').")
+            if (fullName.indexOf("_") < 1 || fullName.length < 3)
+                throw IllegalArgumentException("Full name must consist of two parts (name and name) separated by an underscore ('_').")
             field = fullName
-            context = fullName.substring(0, fullName.indexOf("/"))
-            name = fullName.substring(fullName.indexOf("/") + 1, fullName.length)
+            context = fullName.substring(0, fullName.indexOf("_"))
+            name = fullName.substring(fullName.indexOf("_") + 1, fullName.length)
         }
 
     constructor(qualified: String): this() {

@@ -15,7 +15,7 @@ class CommandRepositoryTest {
 
     @Before
     fun prepare() {
-        Command.store.commandTypes = mapOf("${Name.default.context}/${TestCommand::class.simpleName}" to TestCommand::class)
+        Command.store.commandTypes = mapOf("${Name.default.context}_${TestCommand::class.simpleName}" to TestCommand::class)
         Command.store.deleteAll()
     }
 

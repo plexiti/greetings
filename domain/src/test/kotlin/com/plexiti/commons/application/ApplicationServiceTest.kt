@@ -1,7 +1,7 @@
 package com.plexiti.commons.application
 
 import com.plexiti.commons.domain.*
-import org.assertj.core.api.Assertions.*
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
 import java.util.*
@@ -16,14 +16,14 @@ class ApplicationServiceTest {
 
     class ApplicationInternalEvent(aggregate: TestAggregate? = null) : Event(aggregate)
     class ApplicationExternalEvent(aggregate: TestAggregate? = null) : Event(aggregate) {
-        override var name = Name("External/ApplicationExternalEvent")
+        override var name = Name("External_ApplicationExternalEvent")
     }
     class TestAggregate: Aggregate<AggregateId>()
     class TestAggregateId(value: String = ""): AggregateId(value)
 
     class TriggeredTestCommand(): Command() {
         override fun trigger(event: Event): Command? {
-            return if (event.name.qualified.equals("External/ApplicationExternalEvent")) TriggeredTestCommand() else null
+            return if (event.name.qualified.equals("External_ApplicationExternalEvent")) TriggeredTestCommand() else null
         }
     }
 
@@ -32,11 +32,11 @@ class ApplicationServiceTest {
         aggregate = TestAggregate()
         aggregate.id = TestAggregateId(UUID.randomUUID().toString())
         Event.store.eventTypes = mapOf(
-            "${Name.default.context}/${ApplicationInternalEvent::class.simpleName}" to ApplicationInternalEvent::class,
-            "External/${ApplicationExternalEvent::class.simpleName}" to ApplicationExternalEvent::class
+            "${Name.default.context}_${ApplicationInternalEvent::class.simpleName}" to ApplicationInternalEvent::class,
+            "External_${ApplicationExternalEvent::class.simpleName}" to ApplicationExternalEvent::class
         )
         Command.store.commandTypes = mapOf(
-            "${Name.default.context}/${TriggeredTestCommand::class.simpleName}" to TriggeredTestCommand::class
+            "${Name.default.context}_${TriggeredTestCommand::class.simpleName}" to TriggeredTestCommand::class
         )
         Event.store.deleteAll()
         Command.store.deleteAll()
