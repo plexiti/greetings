@@ -47,7 +47,8 @@ class FlowHandler {
         val command = result!!.command
         val variables = Variables.createVariables().putValue(command.name.qualified, JSON(result.toJson()))
         if (result.problem != null) {
-            runtimeService.signal(message.tokenId!!.value, result.problem!!.code, null, variables)
+            variables.putValue(result.problem!!.code, JSON(result.problem!!.toJson()))
+            runtimeService.signal(message.tokenId!!.value, result.problem!!.code, result.problem!!.message, variables)
         } else {
             if (result.document != null) {
                 variables.put(result.document!!.name().qualified, JSON(result.document!!.toJson()))

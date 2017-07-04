@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.plexiti.commons.application.FlowMessage
 import com.plexiti.commons.application.Result
 import com.plexiti.commons.domain.MessageType
+import com.plexiti.commons.domain.Problem
 import org.assertj.core.api.Assertions.*
 import org.camunda.bpm.engine.test.Deployment
 import org.camunda.bpm.engine.test.ProcessEngineRule
@@ -65,7 +66,33 @@ class FlowCommandTest {
 
         handler.handle(response.toJson())
 
-        ProcessEngineAssertions.assertThat(pi).hasPassed("SuccessFulEndEvent")
+        ProcessEngineAssertions.assertThat(pi)
+            .hasPassed("SuccessFulEndEvent")
+            .hasVariables("Flow_Test")
+
+    }
+
+    @Test
+    fun errorPath() {
+
+        rule.processEngine
+            .runtimeService.startProcessInstanceByKey("FlowCommandIssuer", "aBusinessKey")
+
+        verify(issuer.rabbitTemplate, times(1)).convertAndSend(eq(issuer.queue), json.capture())
+
+        val request = ObjectMapper().readValue(json.value, FlowMessage::class.java)
+        val command = request.command!!
+        val result = Result(command)
+        result.problem = Problem("someError", "someMessage")
+        val response = FlowMessage(result, request.flowId, request.tokenId)
+
+        val pi = rule.processEngine.runtimeService.createProcessInstanceQuery().singleResult()
+
+        handler.handle(response.toJson())
+
+        ProcessEngineAssertions.assertThat(pi)
+            .hasPassed("FailureEndEvent")
+            .hasVariables("Flow_Test", "someError")
 
     }
 

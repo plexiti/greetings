@@ -50,7 +50,7 @@ class FlowCommandIssuer : AbstractBpmnActivityBehavior() {
     }
 
     override fun signal(execution: ActivityExecution, signalName: String?, signalData: Any?) {
-        if (signalName == null) leave(execution) else propagateBpmnError(BpmnError(signalName), execution)
+        if (signalName == null) leave(execution) else propagateBpmnError(BpmnError(signalName, signalData as String?), execution)
     }
 
     private fun commandName(execution: DelegateExecution): String {
