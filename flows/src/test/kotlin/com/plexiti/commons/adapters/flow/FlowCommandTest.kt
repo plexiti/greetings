@@ -2,6 +2,7 @@ package com.plexiti.commons.adapters.flow
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.plexiti.commons.application.FlowMessage
+import com.plexiti.commons.application.Result
 import com.plexiti.commons.domain.MessageType
 import org.assertj.core.api.Assertions.*
 import org.camunda.bpm.engine.test.Deployment
@@ -60,9 +61,9 @@ class FlowCommandTest {
         val pi = rule.processEngine.runtimeService.createProcessInstanceQuery().singleResult()
         assertThat(pi).isNotNull()
 
-        val response = FlowMessage(command, request.flowId, request.tokenId)
+        val response = FlowMessage(Result(command), request.flowId, request.tokenId)
 
-        handler.command(response)
+        handler.handle(response.toJson())
 
         ProcessEngineAssertions.assertThat(pi).hasPassed("SuccessFulEndEvent")
 

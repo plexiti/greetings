@@ -34,21 +34,29 @@ class FlowHandler {
     @RabbitListener(queues = arrayOf("\${com.plexiti.app.context}-flows-to-queue"))
     fun handle(json: String) {
         val message = FlowMessage.fromJson(json)
-        when(message.command?.type) {
-            MessageType.Command -> command(message)
+        when(message.type) {
             MessageType.Flow -> flow(message)
-            else -> event(message)
+            MessageType.Event -> event(message)
+            MessageType.Result -> result(message)
         }
     }
 
     @Transactional
-    fun command(message: FlowMessage) {
-        val command = message.command!!
-        val variables = Variables.createVariables().putValue(command.name.qualified, JSON(command.toJson()))
-        message.events.forEach {
-            variables.put(it.name.qualified, JSON(command.toJson()))
+    fun result(message: FlowMessage) {
+        val result = message.result
+        val command = result!!.command
+        val variables = Variables.createVariables().putValue(command.name.qualified, JSON(result.toJson()))
+        if (result.problem != null) {
+            runtimeService.signal(message.tokenId!!.value, result.problem!!.code, null, variables)
+        } else {
+            if (result.document != null) {
+                variables.put(result.document!!.name().qualified, JSON(result.document!!.toJson()))
+            }
+            result.events?.forEach {
+                variables.put(it.name.qualified, JSON(it.toJson()))
+            }
+            runtimeService.signal(message.tokenId!!.value, variables)
         }
-        runtimeService.signal(message.tokenId!!.value, variables)
     }
 
     @Transactional
@@ -60,7 +68,11 @@ class FlowHandler {
                 .setVariable(event.name.qualified, JSON(event.toJson()))
                 .correlateExclusively();
         } catch (e: MismatchingMessageCorrelationException) {
-            runtimeService.setVariable(message.flowId.value, event.name.qualified, JSON(event.toJson()))
+            val tokenId = runtimeService.createProcessInstanceQuery()
+                .processInstanceBusinessKey(message.flowId.value).singleResult()?.id
+            if (tokenId != null) {
+                runtimeService.setVariable(tokenId, event.name.qualified, JSON(event.toJson()))
+            }
         }
     }
 

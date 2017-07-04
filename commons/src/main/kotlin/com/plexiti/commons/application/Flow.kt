@@ -36,16 +36,6 @@ class FlowEntity(): CommandEntity() {
 
 open class TokenId(value: String = ""): AggregateId(value)
 
-class FlowCommand(): Command() {
-
-    constructor(name: Name): this() {
-        this.id = CommandId(UUID.randomUUID().toString())
-        this.name = name
-        this.issuedAt = Date()
-    }
-
-}
-
 class FlowEvent(): Event() {
 
     constructor(name: Name): this() {
@@ -58,19 +48,33 @@ class FlowEvent(): Event() {
 
 class FlowMessage() {
 
-    lateinit var flowId: CommandId
+    lateinit var type: MessageType
+
     var command: Command? = null
     var event: Event? = null
+    var result: Result? = null
+
+    lateinit var flowId: CommandId
     var tokenId: TokenId? = null
+
     var events: List<Event> = emptyList()
 
     constructor(event: Event, flowId: CommandId): this() {
+        this.type = event.type
         this.event = event
         this.flowId = flowId
     }
 
     constructor(command: Command, flowId: CommandId, tokenId: TokenId? = null): this() {
+        this.type = command.type
         this.command = command
+        this.flowId = flowId
+        this.tokenId = tokenId
+    }
+
+    constructor(result: Result, flowId: CommandId, tokenId: TokenId? = null): this() {
+        this.type = result.type
+        this.result = result
         this.flowId = flowId
         this.tokenId = tokenId
     }

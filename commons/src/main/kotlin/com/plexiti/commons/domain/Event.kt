@@ -1,12 +1,10 @@
 package com.plexiti.commons.domain
 
 import com.fasterxml.jackson.annotation.JsonFormat
-import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.plexiti.commons.adapters.db.EventRepository
 import com.plexiti.commons.application.Command
-import com.plexiti.commons.application.CommandEntity
 import com.plexiti.commons.application.CommandId
 import com.plexiti.commons.domain.EventEntity.EventAggregate
 import com.plexiti.commons.domain.EventStatus.*
@@ -21,7 +19,17 @@ import kotlin.reflect.KClass
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
-open class Event(aggregate: Aggregate<*>? = null) : Message {
+open class Event() : Message {
+
+    constructor(aggregate: Aggregate<*>? = null): this() {
+        if (aggregate != null) {
+            this.aggregate = EventAggregate(aggregate)
+        }
+    }
+
+    constructor(name: Name): this() {
+        this.name = name
+    }
 
     override val type = MessageType.Event
 
@@ -37,6 +45,11 @@ open class Event(aggregate: Aggregate<*>? = null) : Message {
         protected set
 
     lateinit var aggregate: EventAggregate
+
+    init {
+        id = EventId(UUID.randomUUID().toString())
+        raisedAt = Date()
+    }
 
     companion object {
 
@@ -75,7 +88,7 @@ open class Event(aggregate: Aggregate<*>? = null) : Message {
 
     open fun construct() {}
 
-    open fun flowCommand(name: Name): Command? {
+    open fun command(name: Name): Command? {
         if (internals().flowId != null) {
             return Command.repository.findFirstByNameAndFlowIdOrderByIssuedAtDesc(name, internals().flowId!!)
         } else {
@@ -83,19 +96,11 @@ open class Event(aggregate: Aggregate<*>? = null) : Message {
         }
     }
 
-    open fun flowEvent(name: Name): Event? {
+    open fun event(name: Name): Event? {
         if (internals().flowId != null) {
             return Event.repository.findFirstByNameAndFlowIdOrderByRaisedAtDesc(name, internals().flowId!!)
         } else {
             throw IllegalStateException()
-        }
-    }
-
-    init {
-        if (aggregate != null) {
-            id = EventId(UUID.randomUUID().toString())
-            raisedAt = Date()
-            this.aggregate = EventAggregate(aggregate)
         }
     }
 

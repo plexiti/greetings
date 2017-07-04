@@ -2,6 +2,7 @@ package com.plexiti.commons.adapters.flow
 
 import com.plexiti.commons.application.*
 import com.plexiti.commons.domain.Event
+import com.plexiti.commons.domain.EventId
 import com.plexiti.commons.domain.MessageType.Discriminator.event
 import com.plexiti.commons.domain.Name
 import org.camunda.bpm.engine.delegate.DelegateExecution
@@ -13,6 +14,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Component
+import java.util.*
 
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
@@ -42,19 +44,17 @@ class FlowEventRaiser: JavaDelegate {
     }
 
     override fun execute(execution: DelegateExecution) {
+        raise(FlowMessage(
+            Event(Name(eventName(execution))),
+            CommandId(execution.processBusinessKey)))
+    }
 
-        val eventName = execution.bpmnModelElementInstance.domElement
+    private fun eventName(execution: DelegateExecution): String {
+        return execution.bpmnModelElementInstance.domElement
             .childElements.find { it.localName == "extensionElements" }
             ?.childElements?.find { it.localName == "properties" }
             ?.childElements?.find { it.localName == "property" && it.hasAttribute("name") && it.getAttribute("name") == "event" }
             ?.getAttribute("value") ?: throw IllegalArgumentException("Event must be specified as <camunda:property name='event'/>)")
-
-        val event = FlowMessage(
-            FlowEvent(Name(eventName)),
-            CommandId(execution.processBusinessKey))
-
-        raise(event)
-
     }
 
 }

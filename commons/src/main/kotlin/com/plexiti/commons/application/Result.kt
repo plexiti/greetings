@@ -1,5 +1,6 @@
 package com.plexiti.commons.application
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.plexiti.commons.domain.*
 import java.util.*
 import javax.persistence.Column
@@ -23,9 +24,9 @@ class Result(): Message {
 
     lateinit var execution: Execution
 
-    lateinit var raised: List<Event>
+    var events: List<Event>? = null
 
-    var document: Any? = null
+    var document: Document? = null
 
     var problem: Problem? = null
 
@@ -34,9 +35,15 @@ class Result(): Message {
         this.id = command.id
         this.command = command
         this.execution = command.internals().execution
-        this.raised = Event.repository.findByRaisedDuringOrderByRaisedAtDesc(command.id)
-        this.document = Document.repository.findOne(command.internals().documentId)
+        this.events = Event.repository.findByRaisedDuringOrderByRaisedAtDesc(command.id)
+        if (command.internals().documentId != null) {
+            this.document = Document.repository.findOne(command.internals().documentId)
+        }
         this.problem = command.internals().problem
+    }
+
+    fun toJson(): String {
+        return ObjectMapper().writeValueAsString(this)
     }
 
 }

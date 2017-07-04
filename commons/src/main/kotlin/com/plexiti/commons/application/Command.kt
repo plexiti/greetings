@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode
 import com.plexiti.commons.adapters.db.CommandRepository
 import com.plexiti.commons.application.CommandStatus.*
 import com.plexiti.commons.domain.*
+import com.plexiti.commons.domain.MessageType.Discriminator.command
 import com.plexiti.utils.scanPackageForAssignableClasses
 import org.apache.camel.component.jpa.Consumed
 import org.springframework.data.repository.CrudRepository
@@ -20,7 +21,11 @@ import kotlin.reflect.KClass
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
-open class Command: Message {
+open class Command(): Message {
+
+    constructor(name: Name): this() {
+        this.name = name
+    }
 
     override val type = MessageType.Command
 
@@ -28,25 +33,23 @@ open class Command: Message {
 
     open val definition: Int = 0
 
-    override lateinit var id: CommandId
+    override var id = CommandId(UUID.randomUUID().toString())
         protected set
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSZ", timezone = "CET")
-    lateinit var issuedAt: Date
+    var issuedAt = Date()
         protected set
 
     companion object {
 
         internal var types = scanPackageForAssignableClasses("com.plexiti", Command::class.java)
-            .filter { it != Flow::class.java && it != FlowCommand::class.java }
+            .filter { it != Flow::class.java }
             .map { it.newInstance() as Command }
             .associate { Pair(it.name.qualified, it::class) }
 
         internal var repository = CommandRepository()
 
         fun <C: Command> issue(command: C): C {
-            command.id = CommandId(UUID.randomUUID().toString())
-            command.issuedAt = Date()
             return repository.save(command)
         }
 

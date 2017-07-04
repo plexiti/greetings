@@ -2,6 +2,8 @@ package com.plexiti.commons.adapters.flow
 
 import com.plexiti.commons.application.*
 import com.plexiti.commons.domain.Name
+import org.camunda.bpm.engine.delegate.BpmnError
+import org.camunda.bpm.engine.delegate.DelegateExecution
 import org.camunda.bpm.engine.impl.bpmn.behavior.AbstractBpmnActivityBehavior
 import org.camunda.bpm.engine.impl.pvm.delegate.ActivityExecution
 import org.camunda.spin.json.SpinJsonNode
@@ -41,24 +43,22 @@ class FlowCommandIssuer : AbstractBpmnActivityBehavior() {
     }
 
     override fun execute(execution: ActivityExecution) {
+        issue(FlowMessage(
+            Command(Name(commandName(execution))),
+            CommandId(execution.processBusinessKey),
+            TokenId(execution.id)))
+    }
 
-        val commandName = execution.bpmnModelElementInstance.domElement
+    override fun signal(execution: ActivityExecution, signalName: String?, signalData: Any?) {
+        if (signalName == null) leave(execution) else propagateBpmnError(BpmnError(signalName), execution)
+    }
+
+    private fun commandName(execution: DelegateExecution): String {
+        return execution.bpmnModelElementInstance.domElement
             .childElements.find { it.localName == "extensionElements" }
             ?.childElements?.find { it.localName == "properties" }
             ?.childElements?.find { it.localName == "property" && it.hasAttribute("name") && it.getAttribute("name") == "command" }
             ?.getAttribute("value") ?: throw IllegalArgumentException("Command must be specified as <camunda:property name='command'/>)")
-
-        val command = FlowMessage(
-            FlowCommand(Name(commandName)),
-            CommandId(execution.processBusinessKey),
-            TokenId(execution.id))
-
-        issue(command)
-
-    }
-
-    override fun signal(execution: ActivityExecution, signalName: String?, signalData: Any?) {
-        leave(execution)
     }
 
 }
