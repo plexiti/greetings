@@ -70,13 +70,13 @@ class FlowHandler {
         try {
             runtimeService.createMessageCorrelation(event.name.qualified)
                 .processInstanceBusinessKey(message.flowId.value)
-                .setVariable(event.name.qualified, json.prop("result").prop("event"))
+                .setVariable(event.name.qualified, json.prop("event"))
                 .correlateExclusively();
         } catch (e: MismatchingMessageCorrelationException) {
             val tokenId = runtimeService.createProcessInstanceQuery()
                 .processInstanceBusinessKey(message.flowId.value).singleResult()?.id
             if (tokenId != null) {
-                runtimeService.setVariable(tokenId, event.name.qualified, json.prop("result").prop("event"))
+                runtimeService.setVariable(tokenId, event.name.qualified, json.prop("event"))
             }
         }
     }
@@ -89,14 +89,14 @@ class FlowHandler {
             runtimeService.startProcessInstanceByMessage(trigger.name.qualified,
                 command.id.value,
                 Variables.createVariables()
-                    .putValue(trigger.name.qualified, json.prop("result").prop("events").elements()[0])
-                    .putValue(command.name.qualified, json.prop("result").prop("command"))
+                    .putValue(trigger.name.qualified, json.prop("events").elements()[0])
+                    .putValue(command.name.name, json.prop("command"))
             )
         } else {
-            runtimeService.startProcessInstanceByKey(command.name.qualified,
+            runtimeService.startProcessInstanceByKey(command.name.name,
                 command.id.value,
                 Variables.createVariables()
-                    .putValue(command.name.qualified, json.prop("result").prop("command")))
+                    .putValue(command.name.name, json.prop("command")))
         }
     }
 

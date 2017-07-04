@@ -5,20 +5,19 @@ import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.plexiti.commons.domain.*
-import com.plexiti.commons.domain.MessageType.Discriminator.event
 import java.util.*
-import javax.persistence.DiscriminatorValue
-import javax.persistence.Entity
-import javax.persistence.NamedQueries
-import javax.persistence.NamedQuery
-import javax.persistence.Transient
+import javax.persistence.*
 
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
-class Flow: Command() {
+class Flow(): Command() {
 
     override val type = MessageType.Flow
+
+    constructor(name: Name): this() {
+        this.name = name
+    }
 
 }
 
