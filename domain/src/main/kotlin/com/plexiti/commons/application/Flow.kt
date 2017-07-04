@@ -14,7 +14,9 @@ import javax.persistence.Transient
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
 class Flow: Command() {
+
     override val type = MessageType.Flow
+
 }
 
 @Entity

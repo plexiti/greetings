@@ -2,9 +2,9 @@ package com.plexiti.commons.application
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.plexiti.commons.adapters.db.DocumentRepository
-import com.plexiti.commons.adapters.db.KClassAttributeConverter
 import com.plexiti.commons.domain.*
 import com.plexiti.utils.hash
+import com.plexiti.utils.scanPackageForAssignableClasses
 import org.springframework.data.repository.CrudRepository
 import org.springframework.data.repository.NoRepositoryBean
 import java.util.*
@@ -18,7 +18,11 @@ interface Document {
 
     companion object {
 
-        internal var store = DocumentRepository()
+        internal var types = scanPackageForAssignableClasses("com.plexiti", Document::class.java)
+            .map { it.newInstance() as Document }
+            .associate { Pair(it.name().qualified, it::class) }
+
+        internal var repository = DocumentRepository()
 
         fun <D: Document> fromJson(json: String, type: KClass<D>): D {
             return ObjectMapper().readValue(json, type.java)
@@ -28,6 +32,10 @@ interface Document {
 
     fun toJson(): String {
         return ObjectMapper().writeValueAsString(this)
+    }
+
+    fun name(): Name {
+        return Name(name = this::class.java.simpleName)
     }
 
 }
@@ -41,9 +49,8 @@ open class DocumentEntity(): Aggregate<DocumentId>() {
     var createdAt = Date()
         internal set
 
-    @Column(name="TYPE", columnDefinition = "text", nullable = false, length = 256)
-    @Convert(converter = KClassAttributeConverter::class)
-    lateinit var type: KClass<out Document>
+    @Embedded
+    var name = Name(name = this::class.simpleName!!)
         protected set
 
     @Lob
@@ -51,9 +58,9 @@ open class DocumentEntity(): Aggregate<DocumentId>() {
     lateinit var json: String
         protected set
 
-    constructor(id: DocumentId, type: KClass<out Document>, json: String): this() {
+    constructor(id: DocumentId, name: Name, json: String): this() {
         this.id = id
-        this.type = type
+        this.name = name
         this.json = json
     }
 

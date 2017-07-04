@@ -31,17 +31,8 @@ class ApplicationServiceTest {
     fun prepare() {
         aggregate = TestAggregate()
         aggregate.id = TestAggregateId(UUID.randomUUID().toString())
-        Event.store.eventTypes = mapOf(
-            "${Name.default.context}_${ApplicationInternalEvent::class.simpleName}" to ApplicationInternalEvent::class,
-            "External_${ApplicationExternalEvent::class.simpleName}" to ApplicationExternalEvent::class
-        )
-        Command.store.commandTypes = mapOf(
-            "${Name.default.context}_${TriggeredTestCommand::class.simpleName}" to TriggeredTestCommand::class
-        )
-        Event.store.deleteAll()
-        Command.store.deleteAll()
-        applicationService.eventRepository = Event.store
-        applicationService.commandRepository = Command.store
+        Event.repository.deleteAll()
+        Command.repository.deleteAll()
     }
 
     @Test
@@ -50,14 +41,14 @@ class ApplicationServiceTest {
         val external = ApplicationExternalEvent(aggregate)
         applicationService.consumeEvent(external.toJson())
 
-        val event = Event.store.findAll().iterator().next()
+        val event = Event.repository.findAll().iterator().next()
 
         assertThat(event.internals.status).isEqualTo(EventStatus.consumed)
         assertThat(event.internals.raisedAt).isNotNull()
         assertThat(event.internals.forwardedAt).isNull()
         assertThat(event.internals.consumedAt).isNotNull()
 
-        val command = Command.store.findAll().iterator().next()
+        val command = Command.repository.findAll().iterator().next()
         assertThat(command.internals.status).isEqualTo(CommandStatus.issued)
         assertThat(command.internals.issuedAt).isNotNull()
         assertThat(command.internals.forwardedAt).isNull()
@@ -69,7 +60,7 @@ class ApplicationServiceTest {
     fun consumeEvent_Internal() {
 
         Event.raise(ApplicationInternalEvent(aggregate))
-        val event = Event.store.findAll().iterator().next()
+        val event = Event.repository.findAll().iterator().next()
         event.internals.forward()
 
         applicationService.consumeEvent(event.toJson())
@@ -78,7 +69,7 @@ class ApplicationServiceTest {
         assertThat(event.internals.forwardedAt).isNotNull()
         assertThat(event.internals.consumedAt).isNotNull()
 
-        assertThat(Command.store.findAll()).isEmpty()
+        assertThat(Command.repository.findAll()).isEmpty()
 
     }
 

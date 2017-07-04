@@ -68,7 +68,7 @@ dependencies {
 }
 
 // Define integration test task
-task integration(type: Test) {
+task integration(type: Test, dependsOn: test) {
     testClassesDir = sourceSets.integration.output.classesDir
     classpath = sourceSets.integration.runtimeClasspath
 }

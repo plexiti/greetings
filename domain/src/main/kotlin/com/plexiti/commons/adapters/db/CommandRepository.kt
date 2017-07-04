@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode
 import com.plexiti.commons.application.*
 import com.plexiti.commons.application.CommandRepository
 import com.plexiti.commons.domain.Name
-import com.plexiti.utils.scanPackageForAssignableClasses
 import org.apache.camel.builder.RouteBuilder
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
@@ -29,10 +28,8 @@ class CommandRepository : CommandRepository<Command>, ApplicationContextAware, R
     @Autowired
     private var delegate: CommandEntityRepository = InMemoryCommandEntityRepository()
 
-    internal var commandTypes: Map<String, KClass<out Command>> = emptyMap()
-
     internal fun type(qName: String): KClass<out Command> {
-        return commandTypes.get(qName) ?: throw IllegalArgumentException("Command type '$qName' is not mapped to a local object type!")
+        return Command.types.get(qName) ?: throw IllegalArgumentException("Command type '$qName' is not mapped to a local object type!")
     }
 
     private fun toCommand(entity: CommandEntity?): Command? {
@@ -50,15 +47,11 @@ class CommandRepository : CommandRepository<Command>, ApplicationContextAware, R
 
     override fun setApplicationContext(applicationContext: ApplicationContext) {
         Name.default.context = context
-        Command.store = this
-        commandTypes = scanPackageForAssignableClasses("com.plexiti", Command::class.java)
-            .filter { it != Flow::class.java && it != FlowCommand::class.java }
-            .map { it.newInstance() as Command }
-            .associate { Pair(it.name.qualified, it::class) }
+        Command.repository = this
     }
 
     override fun configure() {
-        commandTypes.entries.forEach {
+        Command.types.entries.forEach {
             if (it.key.startsWith(Name.default.context + '_')) {
                 val idx = it.key.indexOf('_') + 1
                 val commandName = it.key.substring(idx)

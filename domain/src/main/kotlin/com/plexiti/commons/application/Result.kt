@@ -34,8 +34,8 @@ class Result(): Message {
         this.id = command.id
         this.command = command
         this.execution = command.internals.execution
-        this.raised = Event.store.findByRaisedDuringOrderByRaisedAtDesc(command.id)
-        this.document = Document.store.findOne(command.internals.documentId)
+        this.raised = Event.repository.findByRaisedDuringOrderByRaisedAtDesc(command.id)
+        this.document = Document.repository.findOne(command.internals.documentId)
         this.problem = command.internals.problem
     }
 

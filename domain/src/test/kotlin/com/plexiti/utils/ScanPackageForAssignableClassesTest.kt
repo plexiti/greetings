@@ -13,7 +13,7 @@ open class ScanPackageForAssignableClassesTest {
     @Test
     fun testScan() {
         val classes = scanPackageForAssignableClasses(this::class.java.`package`.name, ScanPackageForAssignableClassesTest::class.java)
-        Assertions.assertThat(classes).hasSize(2).contains(ScanPackageForAssignableClassesTest::class.java, TestClass::class.java)
+        Assertions.assertThat(classes).hasSize(1).contains(TestClass::class.java)
     }
 
 }

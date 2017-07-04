@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode
 import com.plexiti.commons.adapters.db.CommandRepository
 import com.plexiti.commons.application.CommandStatus.*
 import com.plexiti.commons.domain.*
+import com.plexiti.utils.scanPackageForAssignableClasses
 import org.apache.camel.component.jpa.Consumed
 import org.springframework.data.repository.CrudRepository
 import org.springframework.data.repository.NoRepositoryBean
@@ -19,9 +20,9 @@ import kotlin.reflect.KClass
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
-abstract class Command: Message {
+open class Command: Message {
 
-    override open val type = MessageType.Command
+    override val type = MessageType.Command
 
     override var name = Name(name = this::class.simpleName!!)
 
@@ -41,18 +42,23 @@ abstract class Command: Message {
 
     companion object {
 
-        internal var store = CommandRepository()
+        internal var types = scanPackageForAssignableClasses("com.plexiti", Command::class.java)
+            .filter { it != Flow::class.java && it != FlowCommand::class.java }
+            .map { it.newInstance() as Command }
+            .associate { Pair(it.name.qualified, it::class) }
+
+        internal var repository = CommandRepository()
 
         fun <C: Command> issue(command: C): C {
             command.id = CommandId(UUID.randomUUID().toString())
             command.issuedAt = Date()
-            return store.save(command)
+            return repository.save(command)
         }
 
         fun fromJson(json: String): Command {
             val node = ObjectMapper().readValue(json, ObjectNode::class.java)
             val name = node.get("name").textValue()
-            val type = store.type(name)
+            val type = repository.type(name)
             return fromJson(json, type)
         }
 
@@ -68,7 +74,7 @@ abstract class Command: Message {
 
     open fun flowCommand(name: Name): Command? {
         if (internals.flowId != null) {
-            return Command.store.findFirstByNameAndFlowIdOrderByIssuedAtDesc(name, internals.flowId!!)
+            return Command.repository.findFirstByNameAndFlowIdOrderByIssuedAtDesc(name, internals.flowId!!)
         } else {
             throw IllegalStateException()
         }
@@ -76,7 +82,7 @@ abstract class Command: Message {
 
     open fun flowEvent(name: Name): Event? {
         if (internals.flowId != null) {
-            return Event.store.findFirstByNameAndFlowIdOrderByRaisedAtDesc(name, internals.flowId!!)
+            return Event.repository.findFirstByNameAndFlowIdOrderByRaisedAtDesc(name, internals.flowId!!)
         } else {
             throw IllegalStateException()
         }

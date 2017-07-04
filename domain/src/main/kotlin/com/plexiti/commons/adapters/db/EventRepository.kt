@@ -7,7 +7,6 @@ import com.plexiti.commons.application.CommandId
 import com.plexiti.commons.domain.Name
 import com.plexiti.commons.domain.*
 import com.plexiti.commons.domain.EventRepository
-import com.plexiti.utils.scanPackageForAssignableClasses
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.ApplicationContext
@@ -29,10 +28,8 @@ class EventRepository : EventRepository<Event>, ApplicationContextAware {
     @Autowired
     private var delegate: EventEntityRepository = InMemoryEventEntityRepository()
 
-    internal var eventTypes: Map<String, KClass<out Event>> = emptyMap()
-
     internal fun type(qName: String): KClass<out Event> {
-        return eventTypes.get(qName) ?: throw IllegalArgumentException("Event type '$qName' is not mapped to a local object type!")
+        return Event.types.get(qName) ?: throw IllegalArgumentException("Event type '$qName' is not mapped to a local object type!")
     }
 
     private fun toEvent(entity: EventEntity?): Event? {
@@ -50,10 +47,7 @@ class EventRepository : EventRepository<Event>, ApplicationContextAware {
 
     override fun setApplicationContext(applicationContext: ApplicationContext) {
         Name.default.context = context
-        Event.store = this
-        eventTypes = scanPackageForAssignableClasses("com.plexiti", Event::class.java)
-            .map { it.newInstance() as Event }
-            .associate { Pair(it.name.qualified, it::class) }
+        Event.repository = this
     }
 
     override fun exists(id: EventId?): Boolean {

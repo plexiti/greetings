@@ -9,6 +9,7 @@ import com.plexiti.commons.application.Command
 import com.plexiti.commons.application.CommandId
 import com.plexiti.commons.domain.EventEntity.EventAggregate
 import com.plexiti.commons.domain.EventStatus.*
+import com.plexiti.utils.scanPackageForAssignableClasses
 import org.apache.camel.component.jpa.Consumed
 import org.springframework.data.repository.CrudRepository
 import org.springframework.data.repository.NoRepositoryBean
@@ -19,7 +20,7 @@ import kotlin.reflect.KClass
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
-abstract class Event(aggregate: Aggregate<*>? = null) : Message {
+open class Event(aggregate: Aggregate<*>? = null) : Message {
 
     override val type = MessageType.Event
 
@@ -43,11 +44,15 @@ abstract class Event(aggregate: Aggregate<*>? = null) : Message {
 
     companion object {
 
-        internal var store = EventRepository()
+        internal var types = scanPackageForAssignableClasses("com.plexiti", Event::class.java)
+            .map { it.newInstance() as Event }
+            .associate { Pair(it.name.qualified, it::class) }
+
+        internal var repository = EventRepository()
         internal val executingCommand = ThreadLocal<Command?>()
 
         fun <E: Event> raise(event: E): E {
-            val e = store.save(event)
+            val e = repository.save(event)
             e.internals.raisedDuring = executingCommand.get()?.id
             executingCommand.get()?.internals?.finish(e)
             return event
@@ -56,7 +61,7 @@ abstract class Event(aggregate: Aggregate<*>? = null) : Message {
         fun fromJson(json: String): Event {
             val node = ObjectMapper().readValue(json, ObjectNode::class.java)
             val name = node.get("name").textValue()
-            val type = store.type(name)
+            val type = repository.type(name)
             return fromJson(json, type)
         }
 
@@ -72,7 +77,7 @@ abstract class Event(aggregate: Aggregate<*>? = null) : Message {
 
     open fun flowCommand(name: Name): Command? {
         if (internals.flowId != null) {
-            return Command.store.findFirstByNameAndFlowIdOrderByIssuedAtDesc(name, internals.flowId!!)
+            return Command.repository.findFirstByNameAndFlowIdOrderByIssuedAtDesc(name, internals.flowId!!)
         } else {
             throw IllegalStateException()
         }
@@ -80,7 +85,7 @@ abstract class Event(aggregate: Aggregate<*>? = null) : Message {
 
     open fun flowEvent(name: Name): Event? {
         if (internals.flowId != null) {
-            return Event.store.findFirstByNameAndFlowIdOrderByRaisedAtDesc(name, internals.flowId!!)
+            return Event.repository.findFirstByNameAndFlowIdOrderByRaisedAtDesc(name, internals.flowId!!)
         } else {
             throw IllegalStateException()
         }

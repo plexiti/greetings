@@ -1,9 +1,7 @@
 package com.plexiti.commons.adapters.db
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.plexiti.commons.application.Document
-import com.plexiti.commons.application.DocumentEntity
-import com.plexiti.commons.application.DocumentId
+import com.plexiti.commons.application.*
 import com.plexiti.commons.application.DocumentRepository
 import com.plexiti.utils.hash
 import org.springframework.beans.factory.annotation.Autowired
@@ -12,6 +10,7 @@ import org.springframework.context.ApplicationContextAware
 import org.springframework.data.repository.NoRepositoryBean
 import org.springframework.stereotype.Component
 import org.springframework.stereotype.Repository
+import kotlin.reflect.KClass
 
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
@@ -22,21 +21,25 @@ class DocumentRepository: DocumentRepository<Document>, ApplicationContextAware 
     @Autowired
     private var delegate: DocumentEntityRepository = InMemoryDocumentEntityRepository()
 
+    internal fun type(qName: String): KClass<out Document> {
+        return Document.types.get(qName) ?: throw IllegalArgumentException("Document type '$qName' is not mapped to a local object type!")
+    }
+
     private fun toDocument(entity: DocumentEntity?): Document? {
-        return  if (entity != null) Document.fromJson(entity.json, entity.type) else null
+        return  if (entity != null) Document.fromJson(entity.json, type(entity.name.qualified)) else null
     }
 
     private fun toEntity(document: Document?): DocumentEntity? {
         if (document != null) {
             val text = ObjectMapper().writeValueAsString(document)
             val id = DocumentId(document)
-            return delegate.findOne(id) ?: DocumentEntity(id, document::class, text)
+            return delegate.findOne(id) ?: DocumentEntity(id, document.name(), text)
         }
         return null
     }
 
     override fun setApplicationContext(applicationContext: ApplicationContext?) {
-        Document.store = this
+        Document.repository = this
     }
 
     override fun exists(id: DocumentId?): Boolean {

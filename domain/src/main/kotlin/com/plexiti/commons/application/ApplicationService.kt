@@ -20,13 +20,13 @@ import org.springframework.transaction.annotation.Transactional
 class ApplicationService {
 
     @Autowired
-    lateinit var commandRepository: CommandRepository
+    var commandRepository: CommandRepository = Command.repository
 
     @Autowired
-    lateinit var eventRepository: EventRepository
+    var eventRepository: EventRepository = Event.repository
 
     @Autowired
-    lateinit var documentRepository: DocumentRepository
+    var documentRepository: DocumentRepository = Document.repository
 
     @Autowired
     private lateinit var route: ProducerTemplate
@@ -72,7 +72,7 @@ class ApplicationService {
     }
 
     private fun triggerCommand(event: Event) {
-        commandRepository.commandTypes.values.forEach {
+        Command.types.values.forEach {
             val instance = it.java.newInstance()
             var command = instance.trigger(event)
             if (command != null) {
@@ -83,7 +83,7 @@ class ApplicationService {
     }
 
     private fun finishCommand(event: Event) {
-         commandRepository.commandTypes.values.forEach {
+        Command.types.values.forEach {
              val instance = it.java.newInstance()
              val finishKey = instance.correlation(event)
              if (finishKey != null) {
