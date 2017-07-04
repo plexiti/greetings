@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.plexiti.commons.adapters.db.EventRepository
 import com.plexiti.commons.application.Command
+import com.plexiti.commons.application.CommandEntity
 import com.plexiti.commons.application.CommandId
 import com.plexiti.commons.domain.EventEntity.EventAggregate
 import com.plexiti.commons.domain.EventStatus.*
@@ -37,11 +38,6 @@ open class Event(aggregate: Aggregate<*>? = null) : Message {
 
     lateinit var aggregate: EventAggregate
 
-    @JsonIgnore
-    lateinit var internals: EventEntity
-        @JsonIgnore get
-        @JsonIgnore set
-
     companion object {
 
         internal var types = scanPackageForAssignableClasses("com.plexiti", Event::class.java)
@@ -53,8 +49,8 @@ open class Event(aggregate: Aggregate<*>? = null) : Message {
 
         fun <E: Event> raise(event: E): E {
             val e = repository.save(event)
-            e.internals.raisedDuring = executingCommand.get()?.id
-            executingCommand.get()?.internals?.finish(e)
+            e.internals().raisedDuring = executingCommand.get()?.id
+            executingCommand.get()?.internals()?.finish(e)
             return event
         }
 
@@ -73,19 +69,23 @@ open class Event(aggregate: Aggregate<*>? = null) : Message {
 
     }
 
+    open fun internals(): EventEntity {
+        return repository.toEntity(this)!!
+    }
+
     open fun construct() {}
 
     open fun flowCommand(name: Name): Command? {
-        if (internals.flowId != null) {
-            return Command.repository.findFirstByNameAndFlowIdOrderByIssuedAtDesc(name, internals.flowId!!)
+        if (internals().flowId != null) {
+            return Command.repository.findFirstByNameAndFlowIdOrderByIssuedAtDesc(name, internals().flowId!!)
         } else {
             throw IllegalStateException()
         }
     }
 
     open fun flowEvent(name: Name): Event? {
-        if (internals.flowId != null) {
-            return Event.repository.findFirstByNameAndFlowIdOrderByRaisedAtDesc(name, internals.flowId!!)
+        if (internals().flowId != null) {
+            return Event.repository.findFirstByNameAndFlowIdOrderByRaisedAtDesc(name, internals().flowId!!)
         } else {
             throw IllegalStateException()
         }

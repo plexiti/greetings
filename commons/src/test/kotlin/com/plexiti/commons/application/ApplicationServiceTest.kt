@@ -43,16 +43,16 @@ class ApplicationServiceTest {
 
         val event = Event.repository.findAll().iterator().next()
 
-        assertThat(event.internals.status).isEqualTo(EventStatus.consumed)
-        assertThat(event.internals.raisedAt).isNotNull()
-        assertThat(event.internals.forwardedAt).isNull()
-        assertThat(event.internals.consumedAt).isNotNull()
+        assertThat(event.internals().status).isEqualTo(EventStatus.consumed)
+        assertThat(event.internals().raisedAt).isNotNull()
+        assertThat(event.internals().forwardedAt).isNull()
+        assertThat(event.internals().consumedAt).isNotNull()
 
         val command = Command.repository.findAll().iterator().next()
-        assertThat(command.internals.status).isEqualTo(CommandStatus.issued)
-        assertThat(command.internals.issuedAt).isNotNull()
-        assertThat(command.internals.forwardedAt).isNull()
-        assertThat(command.internals.triggeredBy).isEqualTo(event.id)
+        assertThat(command.internals().status).isEqualTo(CommandStatus.issued)
+        assertThat(command.internals().issuedAt).isNotNull()
+        assertThat(command.internals().forwardedAt).isNull()
+        assertThat(command.internals().triggeredBy).isEqualTo(event.id)
 
     }
 
@@ -61,13 +61,13 @@ class ApplicationServiceTest {
 
         Event.raise(ApplicationInternalEvent(aggregate))
         val event = Event.repository.findAll().iterator().next()
-        event.internals.forward()
+        event.internals().forward()
 
         applicationService.consumeEvent(event.toJson())
-        assertThat(event.internals.status).isEqualTo(EventStatus.consumed)
-        assertThat(event.internals.raisedAt).isNotNull()
-        assertThat(event.internals.forwardedAt).isNotNull()
-        assertThat(event.internals.consumedAt).isNotNull()
+        assertThat(event.internals().status).isEqualTo(EventStatus.consumed)
+        assertThat(event.internals().raisedAt).isNotNull()
+        assertThat(event.internals().forwardedAt).isNotNull()
+        assertThat(event.internals().consumedAt).isNotNull()
 
         assertThat(Command.repository.findAll()).isEmpty()
 

@@ -35,11 +35,6 @@ open class Command: Message {
     lateinit var issuedAt: Date
         protected set
 
-    @JsonIgnore
-    lateinit var internals: CommandEntity
-        @JsonIgnore get
-        @JsonIgnore set
-
     companion object {
 
         internal var types = scanPackageForAssignableClasses("com.plexiti", Command::class.java)
@@ -70,19 +65,23 @@ open class Command: Message {
 
     }
 
+    open fun internals(): CommandEntity {
+        return repository.toEntity(this)!!
+    }
+
     open fun construct() {}
 
     open fun flowCommand(name: Name): Command? {
-        if (internals.flowId != null) {
-            return Command.repository.findFirstByNameAndFlowIdOrderByIssuedAtDesc(name, internals.flowId!!)
+        if (internals().flowId != null) {
+            return Command.repository.findFirstByNameAndFlowIdOrderByIssuedAtDesc(name, internals().flowId!!)
         } else {
             throw IllegalStateException()
         }
     }
 
     open fun flowEvent(name: Name): Event? {
-        if (internals.flowId != null) {
-            return Event.repository.findFirstByNameAndFlowIdOrderByRaisedAtDesc(name, internals.flowId!!)
+        if (internals().flowId != null) {
+            return Event.repository.findFirstByNameAndFlowIdOrderByRaisedAtDesc(name, internals().flowId!!)
         } else {
             throw IllegalStateException()
         }
@@ -93,7 +92,7 @@ open class Command: Message {
     }
 
     open fun correlation(event: Event): Correlation? {
-        return Correlation.create(event.internals.raisedDuring?.value)
+        return Correlation.create(event.internals().raisedDuring?.value)
     }
 
     open fun trigger(event: Event): Command? {

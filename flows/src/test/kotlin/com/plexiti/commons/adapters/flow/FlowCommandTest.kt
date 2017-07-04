@@ -1,7 +1,6 @@
 package com.plexiti.commons.adapters.flow
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.plexiti.commons.application.Command
 import com.plexiti.commons.application.FlowMessage
 import com.plexiti.commons.domain.MessageType
 import org.assertj.core.api.Assertions.*
@@ -21,17 +20,18 @@ import org.mockito.ArgumentCaptor
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
 @Deployment(resources = arrayOf("com/plexiti/commons/adapters/flow/FlowCommandIssuer.bpmn"))
-class FlowCommandIssuerTest {
+class FlowCommandTest {
 
     var rule = ProcessEngineRule() @Rule get
-    val behavior = FlowCommandIssuer()
+    val issuer = FlowCommandIssuer()
+    val handler = FlowHandler()
     val json = ArgumentCaptor.forClass(String::class.java)
 
     @Before
     fun init() {
-        Mocks.register("command", behavior)
-        behavior.queue = "test"
-        behavior.rabbitTemplate = mock(RabbitTemplate::class.java)
+        Mocks.register("command", issuer)
+        issuer.queue = "test"
+        issuer.rabbitTemplate = mock(RabbitTemplate::class.java)
     }
 
     @Test
@@ -45,20 +45,23 @@ class FlowCommandIssuerTest {
         rule.processEngine
             .runtimeService.startProcessInstanceByKey("FlowCommandIssuer", "aBusinessKey")
 
-        verify(behavior.rabbitTemplate, times(1)).convertAndSend(eq(behavior.queue), json.capture())
+        verify(issuer.rabbitTemplate, times(1)).convertAndSend(eq(issuer.queue), json.capture())
 
-        val message = ObjectMapper().readValue(json.value, FlowMessage::class.java)
-        val command = message.command!!
+        val request = ObjectMapper().readValue(json.value, FlowMessage::class.java)
+
+        val command = request.command!!
         assertThat(command.type).isEqualTo(MessageType.Command)
         assertThat(command.name.qualified).isEqualTo("Flow_Test")
         assertThat(command.id).isNotNull()
         assertThat(command.issuedAt).isNotNull()
-        assertThat(message.tokenId).isNotNull()
+        assertThat(request.tokenId).isNotNull()
 
         val pi = rule.processEngine.runtimeService.createProcessInstanceQuery().singleResult()
         assertThat(pi).isNotNull()
 
-        rule.processEngine.runtimeService.signal(message.tokenId!!.value)
+        val response = FlowMessage(command, request.flowId, request.tokenId)
+
+        handler.command(response)
 
         ProcessEngineAssertions.assertThat(pi).hasPassed("SuccessFulEndEvent")
 

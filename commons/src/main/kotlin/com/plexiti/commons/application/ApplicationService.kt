@@ -38,7 +38,7 @@ class ApplicationService {
             val event = eventRepository.findOne(eventId) ?: eventRepository.save(Event.fromJson(json))
             triggerCommand(event)
             finishCommand(event)
-            event.internals.consume()
+            event.internals().consume()
         }
     }
 
@@ -48,11 +48,11 @@ class ApplicationService {
         if (commandId != null) {
             val command = commandRepository.findOne(commandId) ?: commandRepository.save(Command.fromJson(json))
             Event.executingCommand.set(command)
-            command.internals.start()
+            command.internals().start()
             try {
                 executeCommand(command)
             } catch (problem: Problem) {
-                command.internals.finish(problem)
+                command.internals().finish(problem)
             }
             Event.executingCommand.set(null)
         }
@@ -64,7 +64,7 @@ class ApplicationService {
             val result = route.requestBody("direct:${command.name.name}", command)
             if (result is Document) {
                 documentRepository.save(result)
-                command.internals.finish(result)
+                command.internals().finish(result)
             }
         } catch (e: CamelExecutionException) {
             throw e.exchange.exception
@@ -77,7 +77,7 @@ class ApplicationService {
             var command = instance.trigger(event)
             if (command != null) {
                 command = Command.issue(command)
-                command.internals.triggeredBy = event.id
+                command.internals().triggeredBy = event.id
             }
         }
     }
@@ -89,7 +89,7 @@ class ApplicationService {
              if (finishKey != null) {
                  val command = commandRepository.findByCorrelationAndExecutionFinishedAtIsNull(finishKey)
                  if (command != null) {
-                     command.internals.finish(event)
+                     command.internals().finish(event)
                  }
              }
          }

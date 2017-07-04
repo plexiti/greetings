@@ -81,17 +81,17 @@ open class ApplicationServiceIntegration : DataJpaIntegration() {
 
         val event = eventRepository.findAll().iterator().next()
 
-        assertThat(event.internals.status).isEqualTo(EventStatus.consumed)
-        assertThat(event.internals.raisedAt).isNotNull()
-        assertThat(event.internals.forwardedAt).isNull()
-        assertThat(event.internals.consumedAt).isNotNull()
+        assertThat(event.internals().status).isEqualTo(EventStatus.consumed)
+        assertThat(event.internals().raisedAt).isNotNull()
+        assertThat(event.internals().forwardedAt).isNull()
+        assertThat(event.internals().consumedAt).isNotNull()
 
         val command = commandRepository.findAll().iterator().next()
 
-        assertThat(command.internals.status).isEqualTo(CommandStatus.issued)
-        assertThat(command.internals.issuedAt).isNotNull()
-        assertThat(command.internals.forwardedAt).isNull()
-        assertThat(command.internals.triggeredBy).isEqualTo(event.id)
+        assertThat(command.internals().status).isEqualTo(CommandStatus.issued)
+        assertThat(command.internals().issuedAt).isNotNull()
+        assertThat(command.internals().forwardedAt).isNull()
+        assertThat(command.internals().triggeredBy).isEqualTo(event.id)
 
     }
 
@@ -100,14 +100,14 @@ open class ApplicationServiceIntegration : DataJpaIntegration() {
 
         Event.raise(InternalITEvent(aggregate))
         val event = eventRepository.findAll().iterator().next()
-        event.internals.forward()
+        event.internals().forward()
 
         applicationService.consumeEvent(event.toJson())
 
-        assertThat(event.internals.status).isEqualTo(EventStatus.consumed)
-        assertThat(event.internals.raisedAt).isNotNull()
-        assertThat(event.internals.forwardedAt).isNotNull()
-        assertThat(event.internals.consumedAt).isNotNull()
+        assertThat(event.internals().status).isEqualTo(EventStatus.consumed)
+        assertThat(event.internals().raisedAt).isNotNull()
+        assertThat(event.internals().forwardedAt).isNotNull()
+        assertThat(event.internals().consumedAt).isNotNull()
 
         assertThat(commandRepository.findAll()).isEmpty()
 
@@ -121,19 +121,19 @@ open class ApplicationServiceIntegration : DataJpaIntegration() {
 
         val event = eventRepository.findAll().iterator().next()
 
-        assertThat(event.internals.status).isEqualTo(EventStatus.consumed)
-        assertThat(event.internals.raisedAt).isNotNull()
-        assertThat(event.internals.forwardedAt).isNull()
-        assertThat(event.internals.consumedAt).isNotNull()
+        assertThat(event.internals().status).isEqualTo(EventStatus.consumed)
+        assertThat(event.internals().raisedAt).isNotNull()
+        assertThat(event.internals().forwardedAt).isNull()
+        assertThat(event.internals().consumedAt).isNotNull()
 
         var command = commandRepository.findAll().iterator().next()
 
-        assertThat(command.internals.status).isEqualTo(CommandStatus.issued)
-        assertThat(command.internals.issuedAt).isNotNull()
-        assertThat(command.internals.forwardedAt).isNull()
-        assertThat(command.internals.triggeredBy).isEqualTo(event.id)
+        assertThat(command.internals().status).isEqualTo(CommandStatus.issued)
+        assertThat(command.internals().issuedAt).isNotNull()
+        assertThat(command.internals().forwardedAt).isNull()
+        assertThat(command.internals().triggeredBy).isEqualTo(event.id)
 
-        command.internals.forward()
+        command.internals().forward()
         applicationService.executeCommand(command.toJson())
 
         val events = eventRepository.findAll()
@@ -144,9 +144,9 @@ open class ApplicationServiceIntegration : DataJpaIntegration() {
 
         command = commandRepository.findAll().iterator().next()
 
-        assertThat(command.internals.status).isEqualTo(CommandStatus.processed)
-        assertThat(command.internals.execution.startedAt).isNotNull()
-        assertThat(command.internals.execution.finishedAt).isNotNull()
+        assertThat(command.internals().status).isEqualTo(CommandStatus.processed)
+        assertThat(command.internals().execution.startedAt).isNotNull()
+        assertThat(command.internals().execution.finishedAt).isNotNull()
 
     }
 
@@ -154,15 +154,15 @@ open class ApplicationServiceIntegration : DataJpaIntegration() {
     fun executeCommand_external() {
 
         val command = Command.issue(ExternalITCommand())
-        command.internals.forward()
+        command.internals().forward()
 
         val event = ExternalITEvent(aggregate)
 
         applicationService.consumeEvent(event.toJson())
 
-        assertThat(command.internals.status).isEqualTo(CommandStatus.processed)
-        assertThat(command.internals.execution.startedAt).isNull()
-        assertThat(command.internals.execution.finishedAt).isNotNull()
+        assertThat(command.internals().status).isEqualTo(CommandStatus.processed)
+        assertThat(command.internals().execution.startedAt).isNull()
+        assertThat(command.internals().execution.finishedAt).isNotNull()
 
     }
 
@@ -170,12 +170,12 @@ open class ApplicationServiceIntegration : DataJpaIntegration() {
     fun executeCommand_internal_withProblem() {
 
         val command = Command.issue(ProblemITCommand())
-        command.internals.forward()
+        command.internals().forward()
         applicationService.executeCommand(command.toJson())
 
-        assertThat(command.internals.status).isEqualTo(CommandStatus.processed)
-        assertThat(command.internals.execution.finishedAt).isNotNull()
-        assertThat(command.internals.problem?.code).isEqualTo(Problem::class.simpleName)
+        assertThat(command.internals().status).isEqualTo(CommandStatus.processed)
+        assertThat(command.internals().execution.finishedAt).isNotNull()
+        assertThat(command.internals().problem?.code).isEqualTo(Problem::class.simpleName)
 
     }
 
@@ -183,7 +183,7 @@ open class ApplicationServiceIntegration : DataJpaIntegration() {
     fun executeCommand_internal_withException() {
 
         val command = Command.issue(ExceptionITCommand())
-        command.internals.forward()
+        command.internals().forward()
         applicationService.executeCommand(command.toJson())
 
     }
@@ -192,13 +192,13 @@ open class ApplicationServiceIntegration : DataJpaIntegration() {
     fun executeCommand_internal_withResult() {
 
         val command = Command.issue(QueryITCommand())
-        command.internals.forward()
+        command.internals().forward()
         applicationService.executeCommand(command.toJson())
 
-        assertThat(command.internals.status).isEqualTo(CommandStatus.processed)
-        assertThat(command.internals.execution.finishedAt).isNotNull()
-        assertThat(command.internals.problem?.code).isNull()
-        assertThat(command.internals.finishedBy).isNull()
+        assertThat(command.internals().status).isEqualTo(CommandStatus.processed)
+        assertThat(command.internals().execution.finishedAt).isNotNull()
+        assertThat(command.internals().problem?.code).isNull()
+        assertThat(command.internals().finishedBy).isNull()
 
     }
 

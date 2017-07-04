@@ -7,6 +7,7 @@ import com.plexiti.commons.application.CommandId
 import com.plexiti.commons.domain.Name
 import com.plexiti.commons.domain.*
 import com.plexiti.commons.domain.EventRepository
+import com.plexiti.commons.domain.MessageType.Discriminator.event
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.ApplicationContext
@@ -32,16 +33,11 @@ class EventRepository : EventRepository<Event>, ApplicationContextAware {
         return Event.types.get(qName) ?: throw IllegalArgumentException("Event type '$qName' is not mapped to a local object type!")
     }
 
-    private fun toEvent(entity: EventEntity?): Event? {
-        if (entity != null) {
-            val event = Event.fromJson(entity.json, type(entity.name.qualified))
-            event.internals = entity
-            return event
-        }
-        return null
+    internal fun toEvent(entity: EventEntity?): Event? {
+        return if (entity != null) Event.fromJson(entity.json, type(entity.name.qualified)) else null
     }
 
-    private fun toEntity(event: Event?): EventEntity? {
+    internal fun toEntity(event: Event?): EventEntity? {
         return if (event != null) (delegate.findOne(event.id) ?: EventEntity(event)) else null
     }
 

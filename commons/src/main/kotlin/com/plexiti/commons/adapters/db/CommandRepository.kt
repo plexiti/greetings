@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.plexiti.commons.application.*
 import com.plexiti.commons.application.CommandRepository
+import com.plexiti.commons.domain.MessageType.Discriminator.command
 import com.plexiti.commons.domain.Name
 import org.apache.camel.builder.RouteBuilder
 import org.springframework.beans.factory.annotation.Autowired
@@ -32,16 +33,11 @@ class CommandRepository : CommandRepository<Command>, ApplicationContextAware, R
         return Command.types.get(qName) ?: throw IllegalArgumentException("Command type '$qName' is not mapped to a local object type!")
     }
 
-    private fun toCommand(entity: CommandEntity?): Command? {
-        if (entity != null) {
-            val command = Command.fromJson(entity.json, type(entity.name.qualified))
-            command.internals = entity
-            return command
-        }
-        return null
+    internal fun toCommand(entity: CommandEntity?): Command? {
+        return if (entity != null) Command.fromJson(entity.json, type(entity.name.qualified)) else null
     }
 
-    private fun toEntity(command: Command?): CommandEntity? {
+    internal fun toEntity(command: Command?): CommandEntity? {
         return if (command != null) (delegate.findOne(command.id) ?: CommandEntity(command)) else null
     }
 
