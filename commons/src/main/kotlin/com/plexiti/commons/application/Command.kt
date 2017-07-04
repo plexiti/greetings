@@ -128,7 +128,7 @@ open class Command(): Message {
         query = "select c from CommandEntity c where c.forwardedAt is null and type(c) = CommandEntity"
     ),
     NamedQuery(
-        name = "FlowCommandForwarder",
+        name = "FlowResultForwarder",
         query = "select c from CommandEntity c where c.execution.finishedAt is not null and c.processedAt is null"
     )
 )
@@ -169,7 +169,7 @@ open class CommandEntity(): AbstractMessageEntity<CommandId, CommandStatus>() {
         internal set
 
     @Embedded @AttributeOverride(name = "value", column = Column(name = "FLOW_ID", nullable = true))
-    var flowId: CommandId? = null
+    open var flowId: CommandId? = null
         internal set
 
     @Embedded @AttributeOverride(name="value", column = Column(name="TOKEN_ID", nullable = true))

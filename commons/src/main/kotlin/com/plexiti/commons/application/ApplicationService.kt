@@ -4,6 +4,8 @@ import com.plexiti.commons.adapters.db.CommandRepository
 import com.plexiti.commons.adapters.db.DocumentRepository
 import com.plexiti.commons.adapters.db.EventRepository
 import com.plexiti.commons.domain.Event
+import com.plexiti.commons.domain.MessageType
+import com.plexiti.commons.domain.MessageType.Discriminator.command
 import com.plexiti.commons.domain.Problem
 import org.apache.camel.CamelExecutionException
 import org.apache.camel.ProducerTemplate
@@ -40,6 +42,24 @@ class ApplicationService {
             finishCommand(event)
             event.internals().consume()
         }
+    }
+
+    @Transactional
+    fun handleFlow(json: String) {
+        val message = FlowMessage.fromJson(json)
+        Event.executingCommand.set(commandRepository.findOne(message.flowId))
+        when (message.type) {
+            MessageType.Event -> {
+                val event = Event.raise(message.event!!)
+                event.internals().flowId = message.flowId
+            }
+            MessageType.Command -> {
+                val command = Command.issue(message.command!!)
+                command.internals().flowId = message.flowId
+                command.internals().tokenId = message.tokenId
+            }
+        }
+        Event.executingCommand.set(null)
     }
 
     @Transactional

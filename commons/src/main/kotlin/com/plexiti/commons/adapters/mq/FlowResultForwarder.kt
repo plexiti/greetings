@@ -4,6 +4,7 @@ import com.plexiti.commons.adapters.db.CommandRepository
 import com.plexiti.commons.adapters.db.EventRepository
 import com.plexiti.commons.application.CommandEntity
 import com.plexiti.commons.application.FlowMessage
+import com.plexiti.commons.application.Result
 import org.apache.camel.Handler
 import org.apache.camel.builder.RouteBuilder
 import org.slf4j.LoggerFactory
@@ -21,7 +22,7 @@ import org.springframework.stereotype.Component
 @Component
 @Configuration
 @Profile("prod")
-class FlowCommandForwarder : RouteBuilder() {
+class FlowResultForwarder : RouteBuilder() {
 
     private val logger = LoggerFactory.getLogger(this::class.java)
 
@@ -43,7 +44,7 @@ class FlowCommandForwarder : RouteBuilder() {
     @Autowired
     private lateinit var rabbitTemplate: RabbitTemplate
 
-    val options = "consumer.namedQuery=${FlowCommandForwarder::class.simpleName}&consumeDelete=false"
+    val options = "consumer.namedQuery=${FlowResultForwarder::class.simpleName}&consumeDelete=false"
 
     override fun configure() {
         from("jpa:${CommandEntity::class.qualifiedName}?${options}")
@@ -52,8 +53,7 @@ class FlowCommandForwarder : RouteBuilder() {
 
     @Handler
     fun forward(command: CommandEntity) {
-        val message = FlowMessage(commands.findOne(command.id)!!, command.flowId!!, command.tokenId!!)
-        message.events = events.findByRaisedDuringOrderByRaisedAtDesc(command.id)
+        val message = FlowMessage(Result(commands.findOne(command.id)!!), command.flowId!!, command.tokenId!!)
         rabbitTemplate.convertAndSend(queue, message.toJson());
         logger.info("Forwarded ${message.toJson()}")
     }
