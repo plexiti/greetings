@@ -43,6 +43,21 @@ class FlowEventTest {
     @Test
     fun happyPath() {
 
+        rule.processEngine
+            .runtimeService.startProcessInstanceByKey("FlowEventTest", "aBusinessKey")
+
+        verify(raiser.rabbitTemplate, times(1)).convertAndSend(eq(raiser.queue), json.capture())
+
+        val request = ObjectMapper().readValue(json.value, FlowMessage::class.java)
+
+        val event = request.event!!
+        assertThat(event.type).isEqualTo(MessageType.Event)
+        assertThat(event.name.qualified).isEqualTo("Flow_Test")
+        assertThat(event.id).isNotNull()
+        assertThat(event.raisedAt).isNotNull()
+        assertThat(request.flowId).isNotNull()
+        assertThat(request.tokenId).isNull()
+
     }
 
 }

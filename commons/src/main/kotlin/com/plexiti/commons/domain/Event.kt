@@ -46,7 +46,7 @@ open class Event() : Message {
     lateinit var raisedAt: Date
         protected set
 
-    lateinit var aggregate: EventAggregate
+    var aggregate: EventAggregate? = null
 
     init {
         id = EventId(UUID.randomUUID().toString())
@@ -171,7 +171,7 @@ class EventEntity(): AbstractMessageEntity<EventId, EventStatus>() {
         this.name = event.name
         this.id = event.id
         this.raisedAt = event.raisedAt
-        this.aggregate = event.aggregate
+        this.aggregate = event.aggregate!!
         this.json = ObjectMapper().writeValueAsString(event)
         this.status = if (this.name.context == Name.default.context) raised else forwarded
     }

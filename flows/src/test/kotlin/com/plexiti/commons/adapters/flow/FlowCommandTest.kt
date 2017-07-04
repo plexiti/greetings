@@ -59,6 +59,7 @@ class FlowCommandTest {
         assertThat(command.name.qualified).isEqualTo("Flow_Test")
         assertThat(command.id).isNotNull()
         assertThat(command.issuedAt).isNotNull()
+        assertThat(request.flowId).isNotNull()
         assertThat(request.tokenId).isNotNull()
 
         val pi = rule.processEngine.runtimeService.createProcessInstanceQuery().singleResult()
