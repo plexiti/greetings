@@ -15,7 +15,7 @@ import org.springframework.test.context.junit4.SpringRunner
 @RunWith(SpringRunner::class)
 @ContextConfiguration
 @DataJpaTest
-abstract class AbstractDataJpaTest {
+abstract class DataJpaIntegration {
 
     @Configuration
     @EntityScan("com.plexiti")

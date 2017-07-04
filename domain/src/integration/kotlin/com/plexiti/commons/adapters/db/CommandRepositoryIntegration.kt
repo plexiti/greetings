@@ -1,6 +1,6 @@
 package com.plexiti.commons.adapters.db
 
-import com.plexiti.commons.AbstractDataJpaTest
+import com.plexiti.commons.DataJpaIntegration
 import com.plexiti.commons.application.Command
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
@@ -9,7 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
-class CommandRepositoryIT : AbstractDataJpaTest() {
+class CommandRepositoryIntegration : DataJpaIntegration() {
 
     @Autowired
     internal lateinit var commandRepository: CommandRepository

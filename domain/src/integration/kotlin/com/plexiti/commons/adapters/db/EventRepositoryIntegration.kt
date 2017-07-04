@@ -1,33 +1,26 @@
 package com.plexiti.commons.adapters.db
 
-import com.plexiti.commons.AbstractDataJpaTest
-import com.plexiti.commons.domain.Aggregate
 import com.plexiti.commons.domain.AggregateId
-import com.plexiti.commons.domain.Event
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Before
-import org.junit.Test
-import org.springframework.beans.factory.annotation.Autowired
-import java.util.*
 
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
-class EventRepositoryIT : com.plexiti.commons.AbstractDataJpaTest() {
+class EventRepositoryIntegration : com.plexiti.commons.DataJpaIntegration() {
 
     @org.springframework.beans.factory.annotation.Autowired
     internal lateinit var eventRepository: com.plexiti.commons.adapters.db.EventRepository
 
     class ServiceITAggregate : com.plexiti.commons.domain.Aggregate<AggregateId>()
     class ServiceITAggregateId(value: String = ""): com.plexiti.commons.domain.AggregateId(value)
-    class ServiceITEvent(aggregate: com.plexiti.commons.adapters.db.EventRepositoryIT.ServiceITAggregate? = null): com.plexiti.commons.domain.Event(aggregate)
+    class ServiceITEvent(aggregate: com.plexiti.commons.adapters.db.EventRepositoryIntegration.ServiceITAggregate? = null): com.plexiti.commons.domain.Event(aggregate)
 
-    lateinit var aggregate: com.plexiti.commons.adapters.db.EventRepositoryIT.ServiceITAggregate
+    lateinit var aggregate: com.plexiti.commons.adapters.db.EventRepositoryIntegration.ServiceITAggregate
 
     @org.junit.Before
     fun prepare() {
-        aggregate = com.plexiti.commons.adapters.db.EventRepositoryIT.ServiceITAggregate()
-        aggregate.id = com.plexiti.commons.adapters.db.EventRepositoryIT.ServiceITAggregateId(java.util.UUID.randomUUID().toString())
+        aggregate = com.plexiti.commons.adapters.db.EventRepositoryIntegration.ServiceITAggregate()
+        aggregate.id = com.plexiti.commons.adapters.db.EventRepositoryIntegration.ServiceITAggregateId(java.util.UUID.randomUUID().toString())
     }
 
     @org.junit.Test

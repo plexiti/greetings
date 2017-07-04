@@ -1,6 +1,6 @@
 package com.plexiti.commons.application
 
-import com.plexiti.commons.AbstractDataJpaTest
+import com.plexiti.commons.DataJpaIntegration
 import com.plexiti.commons.adapters.db.CommandRepository
 import com.plexiti.commons.adapters.db.EventRepository
 import com.plexiti.commons.domain.*
@@ -14,7 +14,7 @@ import kotlin.RuntimeException
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
-open class ApplicationServiceIT : AbstractDataJpaTest() {
+open class ApplicationServiceIntegration : DataJpaIntegration() {
 
     @Autowired
     lateinit var applicationService: ApplicationService
