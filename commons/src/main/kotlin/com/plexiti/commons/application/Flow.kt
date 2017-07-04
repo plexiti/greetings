@@ -58,18 +58,19 @@ class FlowEvent(): Event() {
 
 class FlowMessage() {
 
-    lateinit var message: Message
     lateinit var flowId: CommandId
+    var command: Command? = null
+    var event: Event? = null
     var tokenId: TokenId? = null
     var history: List<Message> = emptyList()
 
     constructor(event: Event, flowId: CommandId): this() {
-        this.message = event
+        this.event = event
         this.flowId = flowId
     }
 
     constructor(command: Command, flowId: CommandId, tokenId: TokenId? = null): this() {
-        this.message = command
+        this.command = command
         this.flowId = flowId
         this.tokenId = tokenId
     }

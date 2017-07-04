@@ -34,49 +34,52 @@ class FlowHandler {
     @RabbitListener(queues = arrayOf("\${com.plexiti.app.context}-flows-to-queue"))
     fun handle(json: String) {
         val message = FlowMessage.fromJson(json)
-        when(message.message.type) {
+        when(message.command?.type) {
             MessageType.Command -> command(message)
-            MessageType.Event -> event(message)
             MessageType.Flow -> flow(message)
+            else -> event(message)
         }
     }
 
     @Transactional
-    fun command(command: FlowMessage) {
-        val variables = Variables.createVariables().putValue(command.message.name.qualified, JSON(command.message))
-        command.history.forEach {
+    fun command(message: FlowMessage) {
+        val command = message.command!!
+        val variables = Variables.createVariables().putValue(command.name.qualified, JSON(command))
+        message.history.forEach {
             variables.put(it.name.qualified, JSON(it))
         }
-        runtimeService.signal(command.tokenId!!.value, variables)
+        runtimeService.signal(message.tokenId!!.value, variables)
     }
 
     @Transactional
-    fun event(event: FlowMessage) {
+    fun event(message: FlowMessage) {
+        val event = message.event!!
         try {
-            runtimeService.createMessageCorrelation(event.message.name.qualified)
-                .processInstanceBusinessKey(event.flowId.value)
-                .setVariable(event.message.name.qualified, JSON(event.message))
+            runtimeService.createMessageCorrelation(event.name.qualified)
+                .processInstanceBusinessKey(message.flowId.value)
+                .setVariable(event.name.qualified, JSON(event))
                 .correlateExclusively();
         } catch (e: MismatchingMessageCorrelationException) {
-            runtimeService.setVariable(event.flowId.value, event.message.name.qualified, JSON(event.message))
+            runtimeService.setVariable(message.flowId.value, event.name.qualified, JSON(event))
         }
     }
 
     @Transactional
-    fun flow(flow: FlowMessage) {
-        val trigger = if (!flow.history.isEmpty()) flow.history.first() else null
+    fun flow(message: FlowMessage) {
+        val command = message.command!!
+        val trigger = if (!message.history.isEmpty()) message.history.first() else null
         if (trigger != null) {
             runtimeService.startProcessInstanceByMessage(trigger.name.qualified,
-                flow.message.id.value,
+                command.id.value,
                 Variables.createVariables()
                     .putValue(trigger.name.qualified, JSON(trigger))
-                    .putValue(flow.message.name.qualified, JSON(flow.message))
+                    .putValue(command.name.qualified, JSON(message.command))
             )
         } else {
-            runtimeService.startProcessInstanceByKey(flow.message.name.qualified,
-                flow.message.id.value,
+            runtimeService.startProcessInstanceByKey(command.name.qualified,
+                command.id.value,
                 Variables.createVariables()
-                    .putValue(flow.message.name.qualified, JSON(flow.message)))
+                    .putValue(command.name.qualified, JSON(command)))
         }
     }
 
