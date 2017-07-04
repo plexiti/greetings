@@ -53,7 +53,7 @@ class FlowCommandForwarder : RouteBuilder() {
     @Handler
     fun forward(command: CommandEntity) {
         val message = FlowMessage(commands.findOne(command.id)!!, command.flowId!!, command.tokenId!!)
-        message.history = events.findByRaisedDuringOrderByRaisedAtDesc(command.id)
+        message.events = events.findByRaisedDuringOrderByRaisedAtDesc(command.id)
         rabbitTemplate.convertAndSend(queue, message.toJson());
         logger.info("Forwarded ${message.toJson()}")
     }

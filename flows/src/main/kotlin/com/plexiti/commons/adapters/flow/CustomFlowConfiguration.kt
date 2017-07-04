@@ -10,7 +10,6 @@ import org.camunda.bpm.engine.impl.util.xml.Element
 import org.camunda.bpm.spring.boot.starter.configuration.Ordering
 import org.camunda.bpm.spring.boot.starter.configuration.impl.AbstractCamundaConfiguration
 import org.camunda.spin.plugin.impl.SpinProcessEnginePlugin
-import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Component

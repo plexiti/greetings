@@ -5,7 +5,7 @@ import com.plexiti.commons.domain.MessageType
 import org.camunda.bpm.engine.MismatchingMessageCorrelationException
 import org.camunda.bpm.engine.RuntimeService
 import org.camunda.bpm.engine.variable.Variables
-import org.camunda.spin.Spin.*
+import org.camunda.spin.json.SpinJsonNode.JSON
 import org.springframework.amqp.core.Queue
 import org.springframework.amqp.rabbit.annotation.RabbitListener
 import org.springframework.beans.factory.annotation.Autowired
@@ -44,9 +44,9 @@ class FlowHandler {
     @Transactional
     fun command(message: FlowMessage) {
         val command = message.command!!
-        val variables = Variables.createVariables().putValue(command.name.qualified, JSON(command))
-        message.history.forEach {
-            variables.put(it.name.qualified, JSON(it))
+        val variables = Variables.createVariables().putValue(command.name.qualified, JSON(command.toJson()))
+        message.events.forEach {
+            variables.put(it.name.qualified, JSON(command.toJson()))
         }
         runtimeService.signal(message.tokenId!!.value, variables)
     }
@@ -57,29 +57,29 @@ class FlowHandler {
         try {
             runtimeService.createMessageCorrelation(event.name.qualified)
                 .processInstanceBusinessKey(message.flowId.value)
-                .setVariable(event.name.qualified, JSON(event))
+                .setVariable(event.name.qualified, JSON(event.toJson()))
                 .correlateExclusively();
         } catch (e: MismatchingMessageCorrelationException) {
-            runtimeService.setVariable(message.flowId.value, event.name.qualified, JSON(event))
+            runtimeService.setVariable(message.flowId.value, event.name.qualified, JSON(event.toJson()))
         }
     }
 
     @Transactional
     fun flow(message: FlowMessage) {
         val command = message.command!!
-        val trigger = if (!message.history.isEmpty()) message.history.first() else null
+        val trigger = if (!message.events.isEmpty()) message.events.first() else null
         if (trigger != null) {
             runtimeService.startProcessInstanceByMessage(trigger.name.qualified,
                 command.id.value,
                 Variables.createVariables()
-                    .putValue(trigger.name.qualified, JSON(trigger))
-                    .putValue(command.name.qualified, JSON(message.command))
+                    .putValue(trigger.name.qualified, JSON(trigger.toJson()))
+                    .putValue(command.name.qualified, JSON(command.toJson()))
             )
         } else {
             runtimeService.startProcessInstanceByKey(command.name.qualified,
                 command.id.value,
                 Variables.createVariables()
-                    .putValue(command.name.qualified, JSON(command)))
+                    .putValue(command.name.qualified, JSON(command.toJson())))
         }
     }
 

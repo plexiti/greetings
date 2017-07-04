@@ -32,6 +32,7 @@ class FlowCommandTest {
         Mocks.register("command", issuer)
         issuer.queue = "test"
         issuer.rabbitTemplate = mock(RabbitTemplate::class.java)
+        handler.runtimeService = rule.runtimeService
     }
 
     @Test
@@ -40,7 +41,7 @@ class FlowCommandTest {
     }
 
     @Test
-    fun leave() {
+    fun happyPath() {
 
         rule.processEngine
             .runtimeService.startProcessInstanceByKey("FlowCommandIssuer", "aBusinessKey")
