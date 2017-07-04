@@ -1,5 +1,5 @@
-include 'domain'
-include 'flow'
+include 'commons'
+include 'flows'
 include 'greetings'
 
 rootProject.name='greetings-root'

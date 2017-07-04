@@ -52,7 +52,7 @@ compileTestKotlin {
 
 dependencies {
 
-    compile project(':domain')
+    compile project(':commons')
 
     compile("org.springframework.boot:spring-boot-starter:${springBootVersion}")
 

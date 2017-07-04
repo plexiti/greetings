@@ -8,7 +8,7 @@
     <bpmn:serviceTask id="Task_0hydme9" camunda:delegateExpression="#{command}">
       <bpmn:extensionElements>
         <camunda:properties>
-          <camunda:property name="command" value="Flow/Test" />
+          <camunda:property name="command" value="Flow_Test" />
         </camunda:properties>
       </bpmn:extensionElements>
       <bpmn:incoming>SequenceFlow_1oebcm7</bpmn:incoming>

@@ -74,8 +74,8 @@ class FlowMessage() {
         this.tokenId = tokenId
     }
 
-    fun toJson() {
-        ObjectMapper().writeValueAsString(this)
+    fun toJson(): String {
+        return ObjectMapper().writeValueAsString(this)
     }
 
     companion object {
