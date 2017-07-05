@@ -4,8 +4,7 @@ import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.plexiti.commons.application.*
-import com.plexiti.commons.application.CommandRepository
-import com.plexiti.commons.domain.MessageType.Discriminator.command
+import com.plexiti.commons.application.CommandStore
 import com.plexiti.commons.domain.Name
 import org.apache.camel.builder.RouteBuilder
 import org.springframework.beans.factory.annotation.Autowired
@@ -21,24 +20,24 @@ import kotlin.reflect.KClass
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
 @Component @NoRepositoryBean
-class CommandRepository : CommandRepository<Command>, ApplicationContextAware, RouteBuilder() {
+class CommandStore : CommandStore<Command>, ApplicationContextAware, RouteBuilder() {
 
     @Value("\${com.plexiti.app.context}")
     private var context = Name.default.context
 
     @Autowired
-    private var delegate: CommandEntityRepository = InMemoryCommandEntityRepository()
+    private var delegate: StoredCommandStore = InMemoryStoredCommandStore()
 
     internal fun type(qName: Name): KClass<out Command> {
         return Command.types.get(qName) ?: throw IllegalArgumentException("Command type '$qName' is not mapped to a local object type!")
     }
 
-    internal fun toCommand(entity: CommandEntity?): Command? {
-        return if (entity != null) Command.fromJson(entity.json, type(entity.name)) else null
+    internal fun toCommand(stored: StoredCommand?): Command? {
+        return if (stored != null) Command.fromJson(stored.json, type(stored.name)) else null
     }
 
-    internal fun toEntity(command: Command?): CommandEntity? {
-        return if (command != null) (delegate.findOne(command.id) ?: CommandEntity(command)) else null
+    internal fun toEntity(command: Command?): StoredCommand? {
+        return if (command != null) (delegate.findOne(command.id) ?: StoredCommand(command)) else null
     }
 
     override fun setApplicationContext(applicationContext: ApplicationContext) {
@@ -134,16 +133,16 @@ class CommandRepository : CommandRepository<Command>, ApplicationContextAware, R
 }
 
 @Repository
-internal interface CommandEntityRepository: CommandRepository<CommandEntity>
+internal interface StoredCommandStore : CommandStore<StoredCommand>
 
 @NoRepositoryBean
-class InMemoryCommandEntityRepository: InMemoryEntityCrudRepository<CommandEntity, CommandId>(), CommandEntityRepository {
+class InMemoryStoredCommandStore : InMemoryEntityCrudRepository<StoredCommand, CommandId>(), StoredCommandStore {
 
-    override fun findByCorrelationAndExecutionFinishedAtIsNull(correlation: Correlation): CommandEntity? {
+    override fun findByCorrelationAndExecutionFinishedAtIsNull(correlation: Correlation): StoredCommand? {
         return findAll().find { correlation == it.correlation && it.execution.finishedAt == null }
     }
 
-    override fun findFirstByNameAndFlowIdOrderByIssuedAtDesc(name: Name, flowId: CommandId): CommandEntity? {
+    override fun findFirstByNameAndFlowIdOrderByIssuedAtDesc(name: Name, flowId: CommandId): StoredCommand? {
         return findAll().sortedByDescending { it.issuedAt }.first { it.name == name && it.flowId == flowId }
     }
 

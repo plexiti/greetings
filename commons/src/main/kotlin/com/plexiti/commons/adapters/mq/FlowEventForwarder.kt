@@ -1,8 +1,8 @@
 package com.plexiti.commons.adapters.mq
 
-import com.plexiti.commons.adapters.db.EventRepository
-import com.plexiti.commons.application.FlowMessage
-import com.plexiti.commons.domain.EventEntity
+import com.plexiti.commons.adapters.db.EventStore
+import com.plexiti.commons.application.FlowIO
+import com.plexiti.commons.domain.StoredEvent
 import org.apache.camel.Handler
 import org.apache.camel.builder.RouteBuilder
 import org.slf4j.LoggerFactory
@@ -34,7 +34,7 @@ class FlowEventForwarder : RouteBuilder() {
     private lateinit var queue: String
 
     @Autowired
-    private lateinit var repository: EventRepository
+    private lateinit var repository: EventStore
 
     @Autowired
     private lateinit var rabbitTemplate: RabbitTemplate
@@ -42,13 +42,13 @@ class FlowEventForwarder : RouteBuilder() {
     val options = "consumer.namedQuery=${FlowEventForwarder::class.simpleName}&consumeDelete=false"
 
     override fun configure() {
-        from("jpa:${EventEntity::class.qualifiedName}?${options}")
+        from("jpa:${StoredEvent::class.qualifiedName}?${options}")
             .bean(this)
     }
 
     @Handler
-    fun forward(event: EventEntity) {
-        val message = FlowMessage(repository.findOne(event.id)!!, event.flowId!!)
+    fun forward(event: StoredEvent) {
+        val message = FlowIO(repository.findOne(event.id)!!, event.flowId!!)
         rabbitTemplate.convertAndSend(queue, message.toJson());
         logger.info("Forwarded ${message.toJson()}")
     }

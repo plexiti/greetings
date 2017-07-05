@@ -37,7 +37,7 @@ class FlowEventRaiser: JavaDelegate {
     internal lateinit var rabbit: RabbitTemplate
 
     override fun execute(execution: DelegateExecution) {
-        val event = FlowMessage(
+        val event = FlowIO(
             Event(Name(property("event", execution.bpmnModelElementInstance))),
             CommandId(execution.processBusinessKey))
         rabbit.convertAndSend(queue, event.toJson());

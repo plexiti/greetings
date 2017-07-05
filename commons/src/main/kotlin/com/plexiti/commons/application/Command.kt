@@ -1,10 +1,12 @@
 package com.plexiti.commons.application
 
 import com.fasterxml.jackson.annotation.JsonFormat
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonValue
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
-import com.plexiti.commons.adapters.db.CommandRepository
+import com.plexiti.commons.adapters.db.CommandStore
 import com.plexiti.commons.application.CommandStatus.*
 import com.plexiti.commons.domain.*
 import com.plexiti.utils.scanPackageForAssignableClasses
@@ -49,7 +51,7 @@ open class Command(): Message {
             .map { it.value.java.newInstance() }
             .associate { Pair( it::class, it.name) }
 
-        internal var repository = CommandRepository()
+        internal var repository = CommandStore()
 
         fun <C: Command> issue(command: C): C {
             return repository.save(command)
@@ -70,7 +72,7 @@ open class Command(): Message {
 
     }
 
-    open fun internals(): CommandEntity {
+    open fun internals(): StoredCommand {
         return repository.toEntity(this)!!
     }
 
@@ -129,14 +131,14 @@ open class Command(): Message {
 @NamedQueries(
     NamedQuery(
         name = "CommandForwarder",
-        query = "select c from CommandEntity c where c.forwardedAt is null and type(c) = CommandEntity"
+        query = "select c from StoredCommand c where c.forwardedAt is null and type(c) = StoredCommand"
     ),
     NamedQuery(
         name = "FlowResultForwarder",
-        query = "select c from CommandEntity c where c.execution.finishedAt is not null and c.processedAt is null"
+        query = "select c from StoredCommand c where c.execution.finishedAt is not null and c.processedAt is null"
     )
 )
-open class CommandEntity(): AbstractMessageEntity<CommandId, CommandStatus>() {
+open class StoredCommand(): StoredMessage<CommandId, CommandStatus>() {
 
     constructor(command: Command) : this() {
         this.name = command.name
@@ -180,8 +182,8 @@ open class CommandEntity(): AbstractMessageEntity<CommandId, CommandStatus>() {
     var tokenId: TokenId? = null
         internal set
 
-    @Embedded @AttributeOverride(name="value", column = Column(name="DOCUMENT_ID", nullable = true))
-    var documentId: DocumentId? = null
+    @Embedded @AttributeOverride(name="value", column = Column(name="VALUE_ID", nullable = true))
+    var valueId: ValueId? = null
         internal set
 
     @Embedded
@@ -216,9 +218,9 @@ open class CommandEntity(): AbstractMessageEntity<CommandId, CommandStatus>() {
             problem = result
             execution.finishedAt = result.occuredAt
             finishedBy = null
-        } else if (result is Document) {
+        } else if (result is Value) {
             execution.finishedAt = Date()
-            documentId = DocumentId(result)
+            valueId = ValueId(result)
         }
         if (tokenId != null) {
             status = finished
@@ -280,8 +282,25 @@ class Correlation : Serializable {
 
 }
 
+@Embeddable
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
+@JsonIgnoreProperties(ignoreUnknown = true)
+class Execution() {
+
+    @Column(name = "STARTED_AT", nullable = true)
+    @Temporal(TemporalType.TIMESTAMP)
+    var startedAt: Date? = null
+        internal set
+
+    @Column(name = "FINISHED_AT", nullable = true)
+    @Temporal(TemporalType.TIMESTAMP)
+    var finishedAt: Date? = null
+        internal set
+
+}
+
 @NoRepositoryBean
-interface CommandRepository<C>: CrudRepository<C, CommandId> {
+interface CommandStore<C>: CrudRepository<C, CommandId> {
 
     fun findByCorrelationAndExecutionFinishedAtIsNull(correlation: Correlation): C?
 

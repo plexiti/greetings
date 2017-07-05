@@ -30,11 +30,11 @@ class FlowToHandler {
 
     @RabbitListener(queues = arrayOf("\${com.plexiti.app.context}-flows-to-queue"))
     fun handle(json: String) {
-        val message = FlowMessage.fromJson(json)
+        val message = FlowIO.fromJson(json)
         when(message.type) {
             MessageType.Flow -> flow.start(message, JSON(json))
             MessageType.Event -> flow.correlate(message, JSON(json))
-            MessageType.Result -> flow.complete(message, JSON(json))
+            MessageType.Document -> flow.complete(message, JSON(json))
         }
     }
 

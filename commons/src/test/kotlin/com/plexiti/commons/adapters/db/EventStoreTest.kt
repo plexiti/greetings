@@ -9,7 +9,7 @@ import java.util.*
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
-class EventRepositoryTest {
+class EventStoreTest {
 
     class TestAggregate: Aggregate<AggregateId>()
     class TestAggregateId(value: String = ""): AggregateId(value)

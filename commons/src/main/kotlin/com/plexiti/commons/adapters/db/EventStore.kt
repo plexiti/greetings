@@ -6,8 +6,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode
 import com.plexiti.commons.application.CommandId
 import com.plexiti.commons.domain.Name
 import com.plexiti.commons.domain.*
-import com.plexiti.commons.domain.EventRepository
-import com.plexiti.commons.domain.MessageType.Discriminator.event
+import com.plexiti.commons.domain.EventStore
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.ApplicationContext
@@ -21,24 +20,24 @@ import kotlin.reflect.KClass
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
 @Component @NoRepositoryBean
-class EventRepository : EventRepository<Event>, ApplicationContextAware {
+class EventStore : EventStore<Event>, ApplicationContextAware {
 
     @Value("\${com.plexiti.app.context}")
     private var context = Name.default.context
 
     @Autowired
-    private var delegate: EventEntityRepository = InMemoryEventEntityRepository()
+    private var delegate: StoredEventStore = InMemoryStoredEventStore()
 
     internal fun type(qName: Name): KClass<out Event> {
         return Event.types.get(qName) ?: throw IllegalArgumentException("Event type '$qName' is not mapped to a local object type!")
     }
 
-    internal fun toEvent(entity: EventEntity?): Event? {
-        return if (entity != null) Event.fromJson(entity.json, type(entity.name)) else null
+    internal fun toEvent(stored: StoredEvent?): Event? {
+        return if (stored != null) Event.fromJson(stored.json, type(stored.name)) else null
     }
 
-    internal fun toEntity(event: Event?): EventEntity? {
-        return if (event != null) (delegate.findOne(event.id) ?: EventEntity(event)) else null
+    internal fun toEntity(event: Event?): StoredEvent? {
+        return if (event != null) (delegate.findOne(event.id) ?: StoredEvent(event)) else null
     }
 
     override fun setApplicationContext(applicationContext: ApplicationContext) {
@@ -120,20 +119,20 @@ class EventRepository : EventRepository<Event>, ApplicationContextAware {
 }
 
 @Repository
-internal interface EventEntityRepository: EventRepository<EventEntity>
+internal interface StoredEventStore : EventStore<StoredEvent>
 
 @NoRepositoryBean
-class InMemoryEventEntityRepository: InMemoryEntityCrudRepository<EventEntity, EventId>(), EventEntityRepository {
+class InMemoryStoredEventStore : InMemoryEntityCrudRepository<StoredEvent, EventId>(), StoredEventStore {
 
-    override fun findByAggregateId(id: String): List<EventEntity> {
+    override fun findByAggregateId(id: String): List<StoredEvent> {
         return findAll().filter { id == it.aggregate.id }
     }
 
-    override fun findFirstByNameAndFlowIdOrderByRaisedAtDesc(name: Name, flowId: CommandId): EventEntity? {
+    override fun findFirstByNameAndFlowIdOrderByRaisedAtDesc(name: Name, flowId: CommandId): StoredEvent? {
         return findAll().sortedByDescending { it.raisedAt }.first { it.name == name && it.flowId == flowId }
     }
 
-    override fun findByRaisedDuringOrderByRaisedAtDesc(raisedDuring: CommandId): List<EventEntity> {
+    override fun findByRaisedDuringOrderByRaisedAtDesc(raisedDuring: CommandId): List<StoredEvent> {
         return findAll().sortedByDescending { it.raisedAt }.filter { it.raisedDuring == raisedDuring }
     }
 

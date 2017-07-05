@@ -1,9 +1,9 @@
 package com.plexiti.commons.adapters.mq
 
-import com.plexiti.commons.adapters.db.CommandRepository
-import com.plexiti.commons.adapters.db.EventRepository
-import com.plexiti.commons.application.FlowEntity
-import com.plexiti.commons.application.FlowMessage
+import com.plexiti.commons.adapters.db.CommandStore
+import com.plexiti.commons.adapters.db.EventStore
+import com.plexiti.commons.application.StoredFlow
+import com.plexiti.commons.application.FlowIO
 import org.apache.camel.Handler
 import org.apache.camel.builder.RouteBuilder
 import org.slf4j.LoggerFactory
@@ -35,10 +35,10 @@ class FlowForwarder : RouteBuilder() {
     private lateinit var queue: String
 
     @Autowired
-    private lateinit var commands: CommandRepository
+    private lateinit var commands: CommandStore
 
     @Autowired
-    private lateinit var events: EventRepository
+    private lateinit var events: EventStore
 
     @Autowired
     private lateinit var rabbitTemplate: RabbitTemplate
@@ -46,13 +46,13 @@ class FlowForwarder : RouteBuilder() {
     val options = "consumer.namedQuery=${FlowForwarder::class.simpleName}&consumeDelete=false"
 
     override fun configure() {
-        from("jpa:${FlowEntity::class.qualifiedName}?${options}")
+        from("jpa:${StoredFlow::class.qualifiedName}?${options}")
             .bean(this)
     }
 
     @Handler
-    fun forward(flow: FlowEntity) {
-        val message = FlowMessage(commands.findOne(flow.id)!!, flow.id)
+    fun forward(flow: StoredFlow) {
+        val message = FlowIO(commands.findOne(flow.id)!!, flow.id)
         val event = if (flow.triggeredBy != null) events.findOne(flow.triggeredBy) else null
         if (event != null)
             message.events = listOf(event)

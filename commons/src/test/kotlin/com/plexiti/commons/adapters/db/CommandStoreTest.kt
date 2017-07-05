@@ -8,7 +8,7 @@ import org.junit.Test
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
-class CommandRepositoryTest {
+class CommandStoreTest {
 
     class TestCommand(): Command()
 

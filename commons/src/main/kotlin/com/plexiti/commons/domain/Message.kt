@@ -19,7 +19,7 @@ interface Message {
 }
 
 @MappedSuperclass
-abstract class AbstractMessageEntity<ID: MessageId, S: MessageStatus>: Aggregate<ID>(), Message {
+abstract class StoredMessage<ID: MessageId, S: MessageStatus>: Aggregate<ID>(), Message {
 
     @Embedded
     override var name = Name(name = this::class.simpleName!!)
@@ -53,7 +53,7 @@ interface MessageStatus
 
 enum class MessageType {
 
-    Event, Command, Flow, Result;
+    Command, Event, Document, Flow;
 
     companion object Discriminator {
 

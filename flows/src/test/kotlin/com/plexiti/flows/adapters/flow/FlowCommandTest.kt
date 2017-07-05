@@ -1,9 +1,9 @@
 package com.plexiti.flows.adapters.flow
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.plexiti.commons.domain.Document
-import com.plexiti.commons.application.FlowMessage
-import com.plexiti.commons.application.Result
+import com.plexiti.commons.domain.Value
+import com.plexiti.commons.application.FlowIO
+import com.plexiti.commons.application.Document
 import com.plexiti.commons.domain.MessageType
 import com.plexiti.commons.domain.Name
 import com.plexiti.commons.domain.Problem
@@ -56,7 +56,7 @@ class FlowCommandTest {
 
         verify(issuer.rabbit, times(1)).convertAndSend(eq(issuer.queue), json.capture())
 
-        val request = ObjectMapper().readValue(json.value, FlowMessage::class.java)
+        val request = ObjectMapper().readValue(json.value, FlowIO::class.java)
 
         val command = request.command!!
         assertThat(command.type).isEqualTo(MessageType.Command)
@@ -69,7 +69,7 @@ class FlowCommandTest {
         val pi = rule.processEngine.runtimeService.createProcessInstanceQuery().singleResult()
         assertThat(pi).isNotNull()
 
-        val response = FlowMessage(Result(command), request.flowId, request.tokenId)
+        val response = FlowIO(Document(command), request.flowId, request.tokenId)
 
         handler.handle(response.toJson())
 
@@ -87,11 +87,11 @@ class FlowCommandTest {
 
         verify(issuer.rabbit, times(1)).convertAndSend(eq(issuer.queue), json.capture())
 
-        val request = ObjectMapper().readValue(json.value, FlowMessage::class.java)
+        val request = ObjectMapper().readValue(json.value, FlowIO::class.java)
         val command = request.command!!
-        val result = Result(command)
+        val result = Document(command)
         result.problem = Problem("SomeError", "someMessage")
-        val response = FlowMessage(result, request.flowId, request.tokenId)
+        val response = FlowIO(result, request.flowId, request.tokenId)
 
         val pi = rule.processEngine.runtimeService.createProcessInstanceQuery().singleResult()
 
@@ -111,15 +111,15 @@ class FlowCommandTest {
 
         verify(issuer.rabbit, times(1)).convertAndSend(eq(issuer.queue), json.capture())
 
-        val request = ObjectMapper().readValue(json.value, FlowMessage::class.java)
+        val request = ObjectMapper().readValue(json.value, FlowIO::class.java)
         val command = request.command!!
-        val result = Result(command)
-        result.document = object: Document {
+        val result = Document(command)
+        result.value = object: Value {
             override val name: Name
                 get() = Name("Flow_Document")
             val someProperty =  "someValue"
         }
-        val response = FlowMessage(result, request.flowId, request.tokenId)
+        val response = FlowIO(result, request.flowId, request.tokenId)
 
         val pi = rule.processEngine.runtimeService.createProcessInstanceQuery().singleResult()
 

@@ -6,21 +6,21 @@ import org.assertj.core.api.Assertions.assertThat
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
-class EventRepositoryIntegration : com.plexiti.commons.DataJpaIntegration() {
+class EventStoreIntegration : com.plexiti.commons.DataJpaIntegration() {
 
     @org.springframework.beans.factory.annotation.Autowired
-    internal lateinit var eventRepository: com.plexiti.commons.adapters.db.EventRepository
+    internal lateinit var eventRepository: com.plexiti.commons.adapters.db.EventStore
 
     class ServiceITAggregate : com.plexiti.commons.domain.Aggregate<AggregateId>()
     class ServiceITAggregateId(value: String = ""): com.plexiti.commons.domain.AggregateId(value)
-    class ServiceITEvent(aggregate: com.plexiti.commons.adapters.db.EventRepositoryIntegration.ServiceITAggregate? = null): com.plexiti.commons.domain.Event(aggregate)
+    class ServiceITEvent(aggregate: com.plexiti.commons.adapters.db.EventStoreIntegration.ServiceITAggregate? = null): com.plexiti.commons.domain.Event(aggregate)
 
-    lateinit var aggregate: com.plexiti.commons.adapters.db.EventRepositoryIntegration.ServiceITAggregate
+    lateinit var aggregate: com.plexiti.commons.adapters.db.EventStoreIntegration.ServiceITAggregate
 
     @org.junit.Before
     fun prepare() {
-        aggregate = com.plexiti.commons.adapters.db.EventRepositoryIntegration.ServiceITAggregate()
-        aggregate.id = com.plexiti.commons.adapters.db.EventRepositoryIntegration.ServiceITAggregateId(java.util.UUID.randomUUID().toString())
+        aggregate = com.plexiti.commons.adapters.db.EventStoreIntegration.ServiceITAggregate()
+        aggregate.id = com.plexiti.commons.adapters.db.EventStoreIntegration.ServiceITAggregateId(java.util.UUID.randomUUID().toString())
     }
 
     @org.junit.Test

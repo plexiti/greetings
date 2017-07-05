@@ -37,7 +37,7 @@ class FlowCommandIssuer : AbstractBpmnActivityBehavior() {
     internal lateinit var rabbit: RabbitTemplate
 
     override fun execute(execution: ActivityExecution) {
-        val command = FlowMessage(
+        val command = FlowIO(
             Command(Name(property("command", execution.bpmnModelElementInstance))),
             CommandId(execution.processBusinessKey),
             TokenId(execution.id))

@@ -9,10 +9,10 @@ import org.springframework.beans.factory.annotation.Autowired
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
-class CommandRepositoryIntegration : DataJpaIntegration() {
+class CommandStoreIntegration : DataJpaIntegration() {
 
     @Autowired
-    internal lateinit var commandRepository: CommandRepository
+    internal lateinit var commandRepository: CommandStore
 
     class ITCommand(): Command()
 

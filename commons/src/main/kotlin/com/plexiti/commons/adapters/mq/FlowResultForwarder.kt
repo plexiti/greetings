@@ -1,10 +1,10 @@
 package com.plexiti.commons.adapters.mq
 
-import com.plexiti.commons.adapters.db.CommandRepository
-import com.plexiti.commons.adapters.db.EventRepository
-import com.plexiti.commons.application.CommandEntity
-import com.plexiti.commons.application.FlowMessage
-import com.plexiti.commons.application.Result
+import com.plexiti.commons.adapters.db.CommandStore
+import com.plexiti.commons.adapters.db.EventStore
+import com.plexiti.commons.application.StoredCommand
+import com.plexiti.commons.application.FlowIO
+import com.plexiti.commons.application.Document
 import org.apache.camel.Handler
 import org.apache.camel.builder.RouteBuilder
 import org.slf4j.LoggerFactory
@@ -36,10 +36,10 @@ class FlowResultForwarder : RouteBuilder() {
     private lateinit var queue: String
 
     @Autowired
-    private lateinit var commands: CommandRepository
+    private lateinit var commands: CommandStore
 
     @Autowired
-    private lateinit var events: EventRepository
+    private lateinit var events: EventStore
 
     @Autowired
     private lateinit var rabbitTemplate: RabbitTemplate
@@ -47,13 +47,13 @@ class FlowResultForwarder : RouteBuilder() {
     val options = "consumer.namedQuery=${FlowResultForwarder::class.simpleName}&consumeDelete=false"
 
     override fun configure() {
-        from("jpa:${CommandEntity::class.qualifiedName}?${options}")
+        from("jpa:${StoredCommand::class.qualifiedName}?${options}")
             .bean(this)
     }
 
     @Handler
-    fun forward(command: CommandEntity) {
-        val message = FlowMessage(Result(commands.findOne(command.id)!!), command.flowId!!, command.tokenId!!)
+    fun forward(storedCommand: StoredCommand) {
+        val message = FlowIO(Document(commands.findOne(storedCommand.id)!!), storedCommand.flowId!!, storedCommand.tokenId!!)
         rabbitTemplate.convertAndSend(queue, message.toJson());
         logger.info("Forwarded ${message.toJson()}")
     }

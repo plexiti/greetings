@@ -1,13 +1,9 @@
 package com.plexiti.commons.adapters.mq
 
-import com.plexiti.commons.application.Command
-import com.plexiti.commons.domain.Event
-import com.plexiti.commons.domain.EventEntity
-import com.plexiti.commons.domain.Name
+import com.plexiti.commons.domain.StoredEvent
 import org.apache.camel.Handler
 import org.apache.camel.builder.RouteBuilder
 import org.slf4j.LoggerFactory
-import org.springframework.amqp.core.Queue
 import org.springframework.context.annotation.Configuration
 import org.springframework.stereotype.Component
 import org.springframework.amqp.core.TopicExchange
@@ -15,9 +11,6 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.amqp.rabbit.core.RabbitTemplate
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.config.BeanFactoryPostProcessor
-import org.springframework.beans.factory.support.BeanDefinitionBuilder
-import org.springframework.beans.factory.support.BeanDefinitionRegistry
 import org.springframework.context.annotation.Profile
 
 
@@ -46,12 +39,12 @@ class EventForwarder : RouteBuilder() {
     val options = "consumer.namedQuery=${EventForwarder::class.simpleName}&consumeDelete=false"
 
     override fun configure() {
-        from("jpa:${EventEntity::class.qualifiedName}?${options}")
+        from("jpa:${StoredEvent::class.qualifiedName}?${options}")
             .bean(this)
     }
 
     @Handler
-    fun publish(event: EventEntity) {
+    fun publish(event: StoredEvent) {
         rabbitTemplate.convertAndSend(topic, context, event.json);
         logger.info("Forwarded ${event.json}")
     }

@@ -3,10 +3,10 @@ package com.plexiti.commons.domain
 import com.fasterxml.jackson.annotation.JsonFormat
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
-import com.plexiti.commons.adapters.db.EventRepository
+import com.plexiti.commons.adapters.db.EventStore
 import com.plexiti.commons.application.Command
 import com.plexiti.commons.application.CommandId
-import com.plexiti.commons.domain.EventEntity.EventAggregate
+import com.plexiti.commons.domain.StoredEvent.EventAggregate
 import com.plexiti.commons.domain.EventStatus.*
 import com.plexiti.utils.scanPackageForAssignableClasses
 import org.apache.camel.component.jpa.Consumed
@@ -61,7 +61,7 @@ open class Event() : Message {
             .map { it.value.java.newInstance() }
             .associate { Pair( it::class, it.name) }
 
-        internal var repository = EventRepository()
+        internal var repository = EventStore()
         internal val executingCommand = ThreadLocal<Command?>()
 
         fun <E: Event> raise(event: E): E {
@@ -86,7 +86,7 @@ open class Event() : Message {
 
     }
 
-    open fun internals(): EventEntity {
+    open fun internals(): StoredEvent {
         return repository.toEntity(this)!!
     }
 
@@ -131,14 +131,14 @@ open class Event() : Message {
 @NamedQueries(
     NamedQuery(
         name = "EventForwarder",
-        query = "select e from EventEntity e where e.forwardedAt is null"
+        query = "select e from StoredEvent e where e.forwardedAt is null"
     ),
     NamedQuery(
         name = "FlowEventForwarder",
-        query = "select e from EventEntity e where e.consumedAt is not null and e.processedAt is null"
+        query = "select e from StoredEvent e where e.consumedAt is not null and e.processedAt is null"
     )
 )
-class EventEntity(): AbstractMessageEntity<EventId, EventStatus>() {
+class StoredEvent(): StoredMessage<EventId, EventStatus>() {
 
     @Transient
     override val type = MessageType.Event
@@ -233,7 +233,7 @@ class EventEntity(): AbstractMessageEntity<EventId, EventStatus>() {
 class EventId(value: String = ""): MessageId(value)
 
 @NoRepositoryBean
-interface EventRepository<E>: CrudRepository<E, EventId> {
+interface EventStore<E>: CrudRepository<E, EventId> {
 
     fun findByAggregateId(id: String): List<E>
 

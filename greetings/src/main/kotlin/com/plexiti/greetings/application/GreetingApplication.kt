@@ -1,7 +1,7 @@
 package com.plexiti.greetings.application;
 
 import com.plexiti.commons.application.Command
-import com.plexiti.commons.domain.Document
+import com.plexiti.commons.domain.Value
 import com.plexiti.greetings.domain.Greeting
 import com.plexiti.greetings.domain.Greeting.CallAnsweredAutomatically
 import com.plexiti.greetings.domain.GreetingService
@@ -47,7 +47,7 @@ class GreetingApplication {
 
     }
 
-    data class CallerIdentified(val known: Boolean): Document
+    data class CallerIdentified(val known: Boolean): Value
 
     fun identifyCaller(command: IdentifyCaller): CallerIdentified {
         return CallerIdentified(greetingService.greetingRepository.findByGreeting(command.greeting)!!.isKnown())

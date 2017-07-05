@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.plexiti.commons.domain.*
-import java.util.*
 import javax.persistence.*
 
 /**
@@ -26,10 +25,10 @@ class Flow(): Command() {
 @NamedQueries(
     NamedQuery(
         name = "FlowForwarder",
-        query = "select f from FlowEntity f where f.forwardedAt is null"
+        query = "select f from StoredFlow f where f.forwardedAt is null"
     )
 )
-class FlowEntity(): CommandEntity() {
+class StoredFlow(): StoredCommand() {
 
     @Transient
     override val type = MessageType.Flow
@@ -40,13 +39,13 @@ open class TokenId(value: String = ""): AggregateId(value)
 
 @JsonInclude(NON_EMPTY)
 @JsonIgnoreProperties(ignoreUnknown = true)
-class FlowMessage() {
+class FlowIO() {
 
     lateinit var type: MessageType
 
     var command: Command? = null
     var event: Event? = null
-    var result: Result? = null
+    var document: Document? = null
 
     lateinit var flowId: CommandId
     var tokenId: TokenId? = null
@@ -66,9 +65,9 @@ class FlowMessage() {
         this.tokenId = tokenId
     }
 
-    constructor(result: Result, flowId: CommandId, tokenId: TokenId? = null): this() {
-        this.type = result.type
-        this.result = result
+    constructor(document: Document, flowId: CommandId, tokenId: TokenId? = null): this() {
+        this.type = document.type
+        this.document = document
         this.flowId = flowId
         this.tokenId = tokenId
     }
@@ -79,8 +78,8 @@ class FlowMessage() {
 
     companion object {
 
-        fun fromJson(json: String): FlowMessage {
-            return ObjectMapper().readValue(json, FlowMessage::class.java)
+        fun fromJson(json: String): FlowIO {
+            return ObjectMapper().readValue(json, FlowIO::class.java)
         }
 
     }

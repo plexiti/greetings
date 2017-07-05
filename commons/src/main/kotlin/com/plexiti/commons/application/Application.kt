@@ -1,9 +1,9 @@
 package com.plexiti.commons.application
 
-import com.plexiti.commons.adapters.db.CommandRepository
-import com.plexiti.commons.adapters.db.DocumentRepository
-import com.plexiti.commons.adapters.db.EventRepository
-import com.plexiti.commons.domain.Document
+import com.plexiti.commons.adapters.db.CommandStore
+import com.plexiti.commons.adapters.db.ValueStore
+import com.plexiti.commons.adapters.db.EventStore
+import com.plexiti.commons.domain.Value
 import com.plexiti.commons.domain.Event
 import com.plexiti.commons.domain.MessageType
 import com.plexiti.commons.domain.Problem
@@ -22,13 +22,13 @@ import org.springframework.transaction.annotation.Transactional
 class Application {
 
     @Autowired
-    var commandRepository: CommandRepository = Command.repository
+    var commandRepository: CommandStore = Command.repository
 
     @Autowired
-    var eventRepository: EventRepository = Event.repository
+    var eventRepository: EventStore = Event.repository
 
     @Autowired
-    var documentRepository: DocumentRepository = Document.repository
+    var valueRepository: ValueStore = Value.repository
 
     @Autowired
     private lateinit var route: ProducerTemplate
@@ -46,7 +46,7 @@ class Application {
 
     @Transactional
     fun handle(json: String) {
-        val message = FlowMessage.fromJson(json)
+        val message = FlowIO.fromJson(json)
         Event.executingCommand.set(commandRepository.findOne(message.flowId))
         when (message.type) {
             MessageType.Event -> {
@@ -82,8 +82,8 @@ class Application {
     private fun execute(command: Command) {
         try {
             val result = route.requestBody("direct:${command.name.name}", command)
-            if (result is Document) {
-                documentRepository.save(result)
+            if (result is Value) {
+                valueRepository.save(result)
                 command.internals().finish(result)
             }
         } catch (e: CamelExecutionException) {

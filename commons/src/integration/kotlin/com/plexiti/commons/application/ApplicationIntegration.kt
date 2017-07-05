@@ -1,8 +1,8 @@
 package com.plexiti.commons.application
 
 import com.plexiti.commons.DataJpaIntegration
-import com.plexiti.commons.adapters.db.CommandRepository
-import com.plexiti.commons.adapters.db.EventRepository
+import com.plexiti.commons.adapters.db.CommandStore
+import com.plexiti.commons.adapters.db.EventStore
 import com.plexiti.commons.domain.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
@@ -19,10 +19,10 @@ open class ApplicationIntegration : DataJpaIntegration() {
     lateinit var application: Application
 
     @Autowired
-    lateinit var eventRepository: EventRepository
+    lateinit var eventRepository: EventStore
 
     @Autowired
-    lateinit var commandRepository: CommandRepository
+    lateinit var commandRepository: CommandStore
 
     lateinit var aggregate: ITAggregate
 
@@ -46,7 +46,7 @@ open class ApplicationIntegration : DataJpaIntegration() {
 
     class QueryITCommand: Command()
 
-    class QueryITResult: Document {
+    class QueryITResult: Value {
         val anything = "Something"
     }
 
@@ -215,7 +215,7 @@ open class ApplicationIntegration : DataJpaIntegration() {
         throw RuntimeException()
     }
 
-    fun queryITCommand(command: QueryITCommand): Document {
+    fun queryITCommand(command: QueryITCommand): Value {
         return QueryITResult()
     }
 

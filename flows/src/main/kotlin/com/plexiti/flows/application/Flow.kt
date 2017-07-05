@@ -1,6 +1,6 @@
 package com.plexiti.flows.application
 
-import com.plexiti.commons.application.FlowMessage
+import com.plexiti.commons.application.FlowIO
 import org.camunda.bpm.engine.MismatchingMessageCorrelationException
 import org.camunda.bpm.engine.RuntimeService
 import org.camunda.bpm.engine.variable.Variables
@@ -19,9 +19,9 @@ class FlowApplication {
     lateinit var runtimeService: RuntimeService
 
     @Transactional
-    fun start(message: FlowMessage, json: SpinJsonNode) {
-        val command = message.command!!
-        val trigger = if (!message.events.isEmpty()) message.events.first() else null
+    fun start(io: FlowIO, json: SpinJsonNode) {
+        val command = io.command!!
+        val trigger = if (!io.events.isEmpty()) io.events.first() else null
         if (trigger != null) {
             runtimeService.startProcessInstanceByMessage(trigger.name.qualified,
                 command.id.value,
@@ -38,38 +38,38 @@ class FlowApplication {
     }
 
     @Transactional
-    fun complete(message: FlowMessage, json: SpinJsonNode) {
-        val result = message.result
+    fun complete(io: FlowIO, json: SpinJsonNode) {
+        val result = io.document
         val command = result!!.command
-        val variables = Variables.createVariables().putValue(command.name.qualified, json.prop("result"))
+        val variables = Variables.createVariables().putValue(command.name.qualified, json.prop("document"))
         if (result.problem != null) {
-            variables.putValue(result.problem!!.code, json.prop("result").prop("problem"))
-            runtimeService.signal(message.tokenId!!.value, result.problem!!.code, result.problem!!.message, variables)
+            variables.putValue(result.problem!!.code, json.prop("document").prop("problem"))
+            runtimeService.signal(io.tokenId!!.value, result.problem!!.code, result.problem!!.message, variables)
         } else {
-            if (result.document != null) {
-                val document = json.prop("result").prop("document")
+            if (result.value != null) {
+                val document = json.prop("document").prop("value")
                 variables.put(document.prop("name").stringValue(), document)
             }
             var idx = 0
             result.events?.forEach {
-                val event = json.prop("result").prop("events").elements()[idx++]
+                val event = json.prop("document").prop("events").elements()[idx++]
                 variables.put(it.name.qualified, event)
             }
-            runtimeService.signal(message.tokenId!!.value, variables)
+            runtimeService.signal(io.tokenId!!.value, variables)
         }
     }
 
     @Transactional
-    fun correlate(message: FlowMessage, json: SpinJsonNode) {
-        val event = message.event!!
+    fun correlate(io: FlowIO, json: SpinJsonNode) {
+        val event = io.event!!
         try {
             runtimeService.createMessageCorrelation(event.name.qualified)
-                .processInstanceBusinessKey(message.flowId.value)
+                .processInstanceBusinessKey(io.flowId.value)
                 .setVariable(event.name.qualified, json.prop("event"))
                 .correlateExclusively();
         } catch (e: MismatchingMessageCorrelationException) {
             val tokenId = runtimeService.createProcessInstanceQuery()
-                .processInstanceBusinessKey(message.flowId.value).singleResult()?.id
+                .processInstanceBusinessKey(io.flowId.value).singleResult()?.id
             if (tokenId != null) {
                 runtimeService.setVariable(tokenId, event.name.qualified, json.prop("event"))
             }

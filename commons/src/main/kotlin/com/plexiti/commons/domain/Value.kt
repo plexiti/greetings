@@ -1,12 +1,10 @@
 package com.plexiti.commons.domain
 
-import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.plexiti.commons.adapters.db.DocumentRepository
-import com.plexiti.commons.domain.*
+import com.plexiti.commons.adapters.db.ValueStore
 import com.plexiti.utils.hash
 import com.plexiti.utils.scanPackageForAssignableClasses
 import org.springframework.data.repository.CrudRepository
@@ -20,20 +18,20 @@ import kotlin.reflect.KClass
  */
 @JsonInclude(NON_EMPTY)
 @JsonIgnoreProperties(ignoreUnknown = true)
-interface Document {
+interface Value {
 
     val name: Name
         get() = Name(name = this::class.java.simpleName)
 
     companion object {
 
-        internal var types = scanPackageForAssignableClasses("com.plexiti", Document::class.java)
-            .map { it.newInstance() as Document }
+        internal var types = scanPackageForAssignableClasses("com.plexiti", Value::class.java)
+            .map { it.newInstance() as Value }
             .associate { Pair(it.name.qualified, it::class) }
 
-        internal var repository = DocumentRepository()
+        internal var repository = ValueStore()
 
-        fun <D: Document> fromJson(json: String, type: KClass<D>): D {
+        fun <D: Value> fromJson(json: String, type: KClass<D>): D {
             return ObjectMapper().readValue(json, type.java)
         }
 
@@ -46,8 +44,8 @@ interface Document {
 }
 
 @Entity
-@Table(name="DOCUMENTS")
-open class DocumentEntity(): Aggregate<DocumentId>() {
+@Table(name="VALUES")
+open class StoredValue(): Aggregate<ValueId>() {
 
     @Column(name = "CREATED_AT", nullable = false)
     @Temporal(TemporalType.TIMESTAMP)
@@ -63,7 +61,7 @@ open class DocumentEntity(): Aggregate<DocumentId>() {
     lateinit var json: String
         protected set
 
-    constructor(id: DocumentId, name: Name, json: String): this() {
+    constructor(id: ValueId, name: Name, json: String): this() {
         this.id = id
         this.name = name
         this.json = json
@@ -71,13 +69,13 @@ open class DocumentEntity(): Aggregate<DocumentId>() {
 
 }
 
-open class DocumentId(value: String = ""): MessageId(value) {
+class DefaultValue : Value
 
-    constructor(document: Document): this() {
-        value = hash(document.toJson())
-    }
+open class ValueId(value: String = ""): MessageId(value) {
+
+    constructor(value: Value): this(hash(value.toJson()))
 
 }
 
 @NoRepositoryBean
-interface DocumentRepository<D>: CrudRepository<D, DocumentId>
+interface ValueStore<D>: CrudRepository<D, ValueId>

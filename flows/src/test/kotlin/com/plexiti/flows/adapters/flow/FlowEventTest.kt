@@ -1,7 +1,7 @@
 package com.plexiti.flows.adapters.flow
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.plexiti.commons.application.FlowMessage
+import com.plexiti.commons.application.FlowIO
 import com.plexiti.commons.domain.MessageType
 import org.assertj.core.api.Assertions.*
 import org.camunda.bpm.engine.test.Deployment
@@ -45,7 +45,7 @@ class FlowEventTest {
 
         verify(raiser.rabbit, times(1)).convertAndSend(eq(raiser.queue), json.capture())
 
-        val request = ObjectMapper().readValue(json.value, FlowMessage::class.java)
+        val request = ObjectMapper().readValue(json.value, FlowIO::class.java)
 
         val event = request.event!!
         assertThat(event.type).isEqualTo(MessageType.Event)
