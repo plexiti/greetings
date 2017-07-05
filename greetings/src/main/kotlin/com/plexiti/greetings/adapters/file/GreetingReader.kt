@@ -1,10 +1,12 @@
 package com.plexiti.greetings.adapters.file
 
+import com.plexiti.commons.application.Application
 import com.plexiti.commons.application.Command
 import com.plexiti.greetings.application.GreetingApplication.*
 import com.plexiti.greetings.domain.Greeting
 import org.apache.camel.Handler
 import org.apache.camel.builder.RouteBuilder
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import java.io.File

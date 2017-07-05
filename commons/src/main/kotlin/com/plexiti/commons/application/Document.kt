@@ -30,8 +30,8 @@ class Document(): Message {
         this.id = command.id
         this.command = command
         this.events = Event.store.findByRaisedDuringOrderByRaisedAtDesc(command.id)
-        if (command.internals().valueId != null) {
-            this.value = Value.store.findOne(command.internals().valueId)
+        if (command.internals().hash != null) {
+            this.value = Value.store.findOne(command.internals().hash)
         }
         this.problem = command.internals().problem
     }

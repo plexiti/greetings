@@ -29,8 +29,8 @@ class GreetingApplication {
 
     }
 
-    fun answerCaller(command: AnswerCaller): Greeting {
-        return greetingService.answer(command.caller)
+    fun answerCaller(command: AnswerCaller): GreetingResource {
+        return GreetingResource(greetingService.answer(command.caller))
     }
 
     class IdentifyCaller(): Command() {

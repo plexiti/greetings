@@ -6,8 +6,6 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.plexiti.commons.adapters.db.ValueStore
 import com.plexiti.utils.hash
-import com.plexiti.utils.scanPackageForClassNames
-import com.plexiti.utils.scanPackageForNamedClasses
 import org.springframework.data.repository.CrudRepository
 import org.springframework.data.repository.NoRepositoryBean
 import java.util.*
@@ -42,7 +40,7 @@ interface Value: Named {
 
 @Entity
 @Table(name="VALUES")
-open class StoredValue(): Aggregate<ValueId>() {
+open class StoredValue(): Aggregate<Hash>() {
 
     @Column(name = "CREATED_AT", nullable = false)
     @Temporal(TemporalType.TIMESTAMP)
@@ -58,7 +56,7 @@ open class StoredValue(): Aggregate<ValueId>() {
     lateinit var json: String
         protected set
 
-    constructor(id: ValueId, name: Name, json: String): this() {
+    constructor(id: Hash, name: Name, json: String): this() {
         this.id = id
         this.name = name
         this.json = json
@@ -68,14 +66,17 @@ open class StoredValue(): Aggregate<ValueId>() {
 
 class DefaultValue : Value
 
-open class ValueId(value: String = ""): MessageId(value) {
+class Hash(value: String = ""): AggregateId(value) {
+
+    @Column(name="HASH", length = 40, nullable = false)
+    override var value = value
 
     constructor(value: Value): this(hash(value.toJson()))
 
 }
 
 @NoRepositoryBean
-interface ValueStore<D>: CrudRepository<D, ValueId>
+interface ValueStore<D>: CrudRepository<D, Hash>
 
 interface Named {
     val name: Name

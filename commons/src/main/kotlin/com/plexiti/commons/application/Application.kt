@@ -63,23 +63,26 @@ class Application {
     }
 
     @Transactional
-    fun execute(json: String) {
+    fun execute(json: String): Any? {
         val commandId = commandStore.commandId(json)
         if (commandId != null) {
             val command = commandStore.findOne(commandId) ?: commandStore.save(Command.fromJson(json))
             Event.executingCommand.set(command)
             command.internals().start()
             try {
-                execute(command)
+                return execute(command)
             } catch (problem: Problem) {
                 command.internals().finish(problem)
+                return problem
+            } finally {
+                Event.executingCommand.set(null)
             }
-            Event.executingCommand.set(null)
         }
+        throw IllegalArgumentException()
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    fun execute(command: Command): Any? {
+    private fun execute(command: Command): Any? {
         try {
             val result = route.requestBody("direct:${command.name.name}", command)
             if (result is Value) {

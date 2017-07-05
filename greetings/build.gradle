@@ -150,11 +150,12 @@ task buildDocker(type: Docker) {
 
 }
 
-assemble.finalizedBy(buildDocker)
-
 flyway {
 
     url = "jdbc:h2:file:./build/greetings"
     user = "sa"
 
 }
+
+assemble.finalizedBy(buildDocker)
+check.dependsOn('cucumber')

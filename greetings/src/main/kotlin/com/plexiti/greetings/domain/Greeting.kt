@@ -21,7 +21,7 @@ import javax.persistence.Table
  */
 @Entity
 @Table(name="GREETINGS")
-class Greeting: Aggregate<GreetingId>(), Value {
+class Greeting: Aggregate<GreetingId>() {
 
     @Column(name="CALLER")
     lateinit var caller: String

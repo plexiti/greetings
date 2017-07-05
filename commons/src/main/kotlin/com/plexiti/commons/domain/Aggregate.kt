@@ -23,7 +23,7 @@ abstract class Aggregate<ID: AggregateId>: AbstractEntity<ID>() {
 @MappedSuperclass
 abstract class AbstractEntity<ID: Serializable> {
 
-    @EmbeddedId lateinit var id: ID
+    @EmbeddedId open lateinit var id: ID
 
     override fun hashCode(): Int {
         return id.hashCode()
@@ -43,7 +43,7 @@ abstract class AbstractEntity<ID: Serializable> {
 abstract class AggregateId(value: String): Serializable {
 
     @Column(name = "ID", length = 36, nullable = false)
-    var value: String = value
+    open var value: String = value
         @JsonValue get
         @JsonValue protected set
 

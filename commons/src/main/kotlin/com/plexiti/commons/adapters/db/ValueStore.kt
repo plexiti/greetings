@@ -47,7 +47,7 @@ class ValueStore : ValueStore<Value>, ApplicationContextAware {
     private fun toEntity(value: Value?): StoredValue? {
         if (value != null) {
             val text = ObjectMapper().writeValueAsString(value)
-            val id = ValueId(value)
+            val id = Hash(value)
             return delegate.findOne(id) ?: StoredValue(id, value.name, text)
         }
         return null
@@ -58,16 +58,16 @@ class ValueStore : ValueStore<Value>, ApplicationContextAware {
         Name.context = context; init()
     }
 
-    override fun exists(id: ValueId?): Boolean {
+    override fun exists(id: Hash?): Boolean {
         return delegate.exists(id)
     }
 
-    override fun findOne(id: ValueId?): Value? {
+    override fun findOne(id: Hash?): Value? {
         return toValue(delegate.findOne(id))
     }
 
-    fun valueId(json: String?): ValueId? {
-        return if (json != null) ValueId(hash(json)) else null
+    fun valueId(json: String?): Hash? {
+        return if (json != null) Hash(hash(json)) else null
     }
 
     fun findOne(json: String): Value? {
@@ -78,7 +78,7 @@ class ValueStore : ValueStore<Value>, ApplicationContextAware {
         return delegate.findAll().mapTo(ArrayList(), { toValue(it)!! })
     }
 
-    override fun findAll(ids: MutableIterable<ValueId>?): MutableIterable<Value> {
+    override fun findAll(ids: MutableIterable<Hash>?): MutableIterable<Value> {
         return delegate.findAll(ids).mapTo(ArrayList(), { toValue(it)!! })
     }
 
@@ -103,7 +103,7 @@ class ValueStore : ValueStore<Value>, ApplicationContextAware {
         delegate.delete(toEntity(value))
     }
 
-    override fun delete(id: ValueId?) {
+    override fun delete(id: Hash?) {
         delegate.delete(id)
     }
 
@@ -117,4 +117,4 @@ class ValueStore : ValueStore<Value>, ApplicationContextAware {
 internal interface StoredValueStore : ValueStore<StoredValue>
 
 @NoRepositoryBean
-class InMemoryStoredValueStore : InMemoryEntityCrudRepository<StoredValue, ValueId>(), StoredValueStore
+class InMemoryStoredValueStore : InMemoryEntityCrudRepository<StoredValue, Hash>(), StoredValueStore

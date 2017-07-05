@@ -9,9 +9,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode
 import com.plexiti.commons.adapters.db.CommandStore
 import com.plexiti.commons.application.CommandStatus.*
 import com.plexiti.commons.domain.*
-import com.plexiti.utils.scanPackageForAssignableClasses
-import com.plexiti.utils.scanPackageForClassNames
-import com.plexiti.utils.scanPackageForNamedClasses
 import org.apache.camel.component.jpa.Consumed
 import org.springframework.data.repository.CrudRepository
 import org.springframework.data.repository.NoRepositoryBean
@@ -176,7 +173,7 @@ open class StoredCommand(): StoredMessage<CommandId, CommandStatus>() {
         internal set
 
     @Embedded @AttributeOverride(name="value", column = Column(name="VALUE_ID", nullable = true))
-    var valueId: ValueId? = null
+    var hash: Hash? = null
         internal set
 
     @Embedded
@@ -213,7 +210,7 @@ open class StoredCommand(): StoredMessage<CommandId, CommandStatus>() {
             finishedBy = null
         } else if (result is Value) {
             execution.finishedAt = Date()
-            valueId = ValueId(result)
+            hash = Hash(result)
         }
         if (tokenId != null) {
             status = finished

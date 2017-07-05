@@ -1,8 +1,9 @@
 package com.plexiti.greetings.adapters
 
+import com.plexiti.commons.adapters.db.CommandStore
+import com.plexiti.greetings.application.GreetingApplication
 import com.plexiti.greetings.domain.GreetingRepository
-import com.plexiti.greetings.adapters.rest.GreetingController
-import com.plexiti.greetings.adapters.rest.GreetingController.*
+import com.plexiti.greetings.application.GreetingResource
 import cucumber.api.java.en.And
 import cucumber.api.java.en.Given
 import cucumber.api.java.en.Then
@@ -30,10 +31,13 @@ class GreetingResourceSteps {
     lateinit var greetingRepository: GreetingRepository
 
     @Autowired
+    lateinit var commandStore: CommandStore
+
+    @Autowired
     lateinit var restTemplate: TestRestTemplate
 
     var caller: String? = null
-    var response: ResponseEntity<GreetingController.GreetingResource>? = null
+    var response: ResponseEntity<GreetingResource>? = null
 
     @Given("I use the caller (.*)")
     fun useCaller(caller: String) {
@@ -52,7 +56,7 @@ class GreetingResourceSteps {
 
     @And("The response should contain the message (.*)")
     fun theResponseShouldContainTheMessage(message: String) {
-        assertThat(response!!.body.name).isEqualTo(message)
+        assertThat(response!!.body.greeting).isEqualTo(message)
     }
 
     @When("I place a greeting in the hot folder")
@@ -65,6 +69,13 @@ class GreetingResourceSteps {
         writer.flush()
         writer.close()
         Thread.sleep(1000)
+    }
+
+    @Then("A command with the caller (.*) should be stored")
+    fun theCommandShouldBeStoredInTheDatabase(caller: String) {
+        val all = commandStore.findAll()
+        val actual = all.filter { it is GreetingApplication.AnswerCaller && it.caller == caller }
+        assertThat(actual).hasSize(1);
     }
 
     @Then("A greeting with the (.*) should be stored")
