@@ -53,7 +53,7 @@ interface MessageStatus
 
 enum class MessageType {
 
-    Event, Command, Flow, Result, Document;
+    Event, Command, Flow, Result;
 
     companion object Discriminator {
 

@@ -3,6 +3,7 @@ package com.plexiti.commons.application
 import com.plexiti.commons.adapters.db.CommandRepository
 import com.plexiti.commons.adapters.db.DocumentRepository
 import com.plexiti.commons.adapters.db.EventRepository
+import com.plexiti.commons.domain.Document
 import com.plexiti.commons.domain.Event
 import com.plexiti.commons.domain.MessageType
 import com.plexiti.commons.domain.Problem

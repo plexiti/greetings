@@ -27,7 +27,7 @@
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="SequenceFlow_0rkm0x9" sourceRef="BoundaryEvent_1slghsf" targetRef="FailureEndEvent" />
   </bpmn:process>
-  <bpmn:error id="Error_0jd6w58" name="Error_368mr9p" errorCode="someError" />
+  <bpmn:error id="Error_0jd6w58" name="Error_368mr9p" errorCode="SomeError" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="FlowCommandTest">
       <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">

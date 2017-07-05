@@ -26,8 +26,8 @@ class GreetingReader : RouteBuilder() {
             if (file.exists()) {
                 from("${file.toURI()}?${options}")
                 .bean(object {
-                    @Handler fun handle(caller: String): Greeting {
-                        return AnswerCaller(caller) as Greeting
+                    @Handler fun handle(caller: String) {
+                        Command.issue(AnswerCaller(caller))
                     }
                 })
             }

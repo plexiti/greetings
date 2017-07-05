@@ -24,7 +24,6 @@ class FlowHandlerTest {
     var rule = ProcessEngineRule() @Rule get
     val handler = FlowToHandler()
     val application = FlowApplication()
-    val json = ArgumentCaptor.forClass(String::class.java)
 
     @Before
     fun init() {

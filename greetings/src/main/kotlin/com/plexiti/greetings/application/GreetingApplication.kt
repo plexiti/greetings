@@ -1,7 +1,7 @@
 package com.plexiti.greetings.application;
 
 import com.plexiti.commons.application.Command
-import com.plexiti.commons.application.Document
+import com.plexiti.commons.domain.Document
 import com.plexiti.greetings.domain.Greeting
 import com.plexiti.greetings.domain.Greeting.CallAnsweredAutomatically
 import com.plexiti.greetings.domain.GreetingService

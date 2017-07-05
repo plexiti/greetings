@@ -1,7 +1,7 @@
 package com.plexiti.flows.adapters.flow
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.plexiti.commons.application.Document
+import com.plexiti.commons.domain.Document
 import com.plexiti.commons.application.FlowMessage
 import com.plexiti.commons.application.Result
 import com.plexiti.commons.domain.MessageType
@@ -13,6 +13,7 @@ import org.camunda.bpm.engine.test.Deployment
 import org.camunda.bpm.engine.test.ProcessEngineRule
 import org.camunda.bpm.engine.test.assertions.ProcessEngineAssertions
 import org.camunda.bpm.engine.test.mock.Mocks
+import org.camunda.spin.json.SpinJsonNode
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -89,7 +90,7 @@ class FlowCommandTest {
         val request = ObjectMapper().readValue(json.value, FlowMessage::class.java)
         val command = request.command!!
         val result = Result(command)
-        result.problem = Problem("someError", "someMessage")
+        result.problem = Problem("SomeError", "someMessage")
         val response = FlowMessage(result, request.flowId, request.tokenId)
 
         val pi = rule.processEngine.runtimeService.createProcessInstanceQuery().singleResult()
@@ -98,7 +99,7 @@ class FlowCommandTest {
 
         ProcessEngineAssertions.assertThat(pi)
             .hasPassed("FailureEndEvent")
-            .hasVariables("Flow_Test", "someError")
+            .hasVariables("Flow_Test", "SomeError")
 
     }
 
@@ -127,6 +128,11 @@ class FlowCommandTest {
         ProcessEngineAssertions.assertThat(pi)
             .hasPassed("SuccessFulEndEvent")
             .hasVariables("Flow_Test", "Flow_Document")
+            .variables().hasEntrySatisfying("Flow_Document", { value ->
+                assertThat((value as SpinJsonNode).prop("someProperty").stringValue())
+                    .isEqualTo("someValue")
+            })
+
 
     }
 

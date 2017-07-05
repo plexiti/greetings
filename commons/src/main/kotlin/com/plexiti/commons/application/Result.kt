@@ -29,7 +29,7 @@ class Result(): Message {
 
     var events: List<Event>? = null
 
-    @JsonDeserialize(`as` = DocumentImpl::class)
+    @JsonDeserialize(`as` = DefaultDocument::class)
     var document: Document? = null
 
     var problem: Problem? = null
@@ -69,3 +69,4 @@ class Execution() {
 
 }
 
+class DefaultDocument : Document

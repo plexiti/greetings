@@ -2,6 +2,7 @@ package com.plexiti.greetings.domain
 
 import com.plexiti.commons.domain.Aggregate
 import com.plexiti.commons.domain.AggregateId
+import com.plexiti.commons.domain.Document
 import com.plexiti.commons.domain.Event
 import com.plexiti.commons.domain.Event.Companion.raise
 import com.plexiti.greetings.domain.Greeting.CallAnsweredAutomatically
@@ -20,7 +21,7 @@ import javax.persistence.Table
  */
 @Entity
 @Table(name="GREETINGS")
-class Greeting: Aggregate<GreetingId>() {
+class Greeting: Aggregate<GreetingId>(), Document {
 
     @Column(name="CALLER")
     lateinit var caller: String

@@ -1,6 +1,9 @@
-package com.plexiti.commons.application
+package com.plexiti.commons.domain
 
 import com.fasterxml.jackson.annotation.JsonIgnore
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.annotation.JsonInclude
+import com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.plexiti.commons.adapters.db.DocumentRepository
 import com.plexiti.commons.domain.*
@@ -15,15 +18,11 @@ import kotlin.reflect.KClass
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
-interface Document: Message {
+@JsonInclude(NON_EMPTY)
+@JsonIgnoreProperties(ignoreUnknown = true)
+interface Document {
 
-    override val id: DocumentId
-        @JsonIgnore get() = DocumentId(toJson())
-
-    override val type: MessageType
-        @JsonIgnore get() = MessageType.Document
-
-    override val name: Name
+    val name: Name
         get() = Name(name = this::class.java.simpleName)
 
     companion object {
@@ -45,8 +44,6 @@ interface Document: Message {
     }
 
 }
-
-class DocumentImpl: Document
 
 @Entity
 @Table(name="DOCUMENTS")

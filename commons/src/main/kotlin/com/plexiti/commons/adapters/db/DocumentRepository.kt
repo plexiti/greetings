@@ -2,7 +2,10 @@ package com.plexiti.commons.adapters.db
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.plexiti.commons.application.*
-import com.plexiti.commons.application.DocumentRepository
+import com.plexiti.commons.domain.Document
+import com.plexiti.commons.domain.DocumentEntity
+import com.plexiti.commons.domain.DocumentId
+import com.plexiti.commons.domain.DocumentRepository
 import com.plexiti.utils.hash
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationContext
