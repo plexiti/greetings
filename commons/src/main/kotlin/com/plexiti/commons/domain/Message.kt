@@ -69,7 +69,7 @@ enum class MessageType {
 class Name() {
 
     @Column(name="CONTEXT", length = 64, nullable = false)
-    var context = "Default"
+    var context = Name.context
         @JsonIgnore get
         @JsonIgnore internal set (context) {
             field = context; qualified
@@ -100,7 +100,7 @@ class Name() {
         this.qualified = qualified
     }
 
-    constructor(context: String = default.context, name: String): this() {
+    constructor(context: String = Name.context, name: String): this() {
         this.context = context
         this.name = name
     }
@@ -117,7 +117,7 @@ class Name() {
     }
 
     companion object {
-        var default = Name()
+        var context = "Default"
     }
 
 }

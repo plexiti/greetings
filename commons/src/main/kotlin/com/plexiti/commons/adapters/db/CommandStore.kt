@@ -23,13 +23,13 @@ import kotlin.reflect.KClass
 class CommandStore : CommandStore<Command>, ApplicationContextAware, RouteBuilder() {
 
     @Value("\${com.plexiti.app.context}")
-    private var context = Name.default.context
+    private var context = Name.context
 
     @Autowired
     private var delegate: StoredCommandStore = InMemoryStoredCommandStore()
 
     internal fun type(qName: Name): KClass<out Command> {
-        return Command.types.get(qName) ?: throw IllegalArgumentException("Command type '$qName' is not mapped to a local object type!")
+        return Command.types.get(qName) ?: throw IllegalArgumentException("Command type '${qName.qualified}' is not mapped to a local object type!")
     }
 
     internal fun toCommand(stored: StoredCommand?): Command? {
@@ -41,13 +41,13 @@ class CommandStore : CommandStore<Command>, ApplicationContextAware, RouteBuilde
     }
 
     override fun setApplicationContext(applicationContext: ApplicationContext) {
-        Name.default.context = context
-        Command.repository = this
+        Name.context = context
+        Command.store = this
     }
 
     override fun configure() {
         Command.types.entries.forEach {
-            if (it.key.context == Name.default.context) {
+            if (it.key.context == Name.context) {
                 val commandName = it.key.name
                 val methodName = commandName.substring(0, 1).toLowerCase() + commandName.substring(1)
                 val className = it.value.qualifiedName!!

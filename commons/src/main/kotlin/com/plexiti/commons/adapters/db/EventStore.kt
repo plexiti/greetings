@@ -23,7 +23,7 @@ import kotlin.reflect.KClass
 class EventStore : EventStore<Event>, ApplicationContextAware {
 
     @Value("\${com.plexiti.app.context}")
-    private var context = Name.default.context
+    private var context = Name.context
 
     @Autowired
     private var delegate: StoredEventStore = InMemoryStoredEventStore()
@@ -41,8 +41,8 @@ class EventStore : EventStore<Event>, ApplicationContextAware {
     }
 
     override fun setApplicationContext(applicationContext: ApplicationContext) {
-        Name.default.context = context
-        Event.repository = this
+        Name.context = context
+        Event.store = this
     }
 
     override fun exists(id: EventId?): Boolean {

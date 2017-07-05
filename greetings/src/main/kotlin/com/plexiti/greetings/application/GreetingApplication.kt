@@ -47,7 +47,7 @@ class GreetingApplication {
 
     }
 
-    data class CallerIdentified(val known: Boolean): Value
+    data class CallerIdentified(val known: Boolean? = null): Value
 
     fun identifyCaller(command: IdentifyCaller): CallerIdentified {
         return CallerIdentified(greetingService.greetingRepository.findByGreeting(command.greeting)!!.isKnown())

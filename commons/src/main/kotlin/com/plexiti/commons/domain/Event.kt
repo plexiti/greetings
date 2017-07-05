@@ -61,11 +61,11 @@ open class Event() : Message {
             .map { it.value.java.newInstance() }
             .associate { Pair( it::class, it.name) }
 
-        internal var repository = EventStore()
+        var store = EventStore()
         internal val executingCommand = ThreadLocal<Command?>()
 
         fun <E: Event> raise(event: E): E {
-            val e = repository.save(event)
+            val e = store.save(event)
             e.internals().raisedDuring = executingCommand.get()?.id
             executingCommand.get()?.internals()?.finish(e)
             return event
@@ -74,7 +74,7 @@ open class Event() : Message {
         fun fromJson(json: String): Event {
             val node = ObjectMapper().readValue(json, ObjectNode::class.java)
             val name = node.get("name").textValue()
-            val type = repository.type(Name(name))
+            val type = store.type(Name(name))
             return fromJson(json, type)
         }
 
@@ -87,14 +87,14 @@ open class Event() : Message {
     }
 
     open fun internals(): StoredEvent {
-        return repository.toEntity(this)!!
+        return store.toEntity(this)!!
     }
 
     open fun construct() {}
 
     open fun <C: Command> command(type: KClass<out C>): C? {
         if (internals().flowId != null) {
-            return Command.repository.findFirstByNameAndFlowIdOrderByIssuedAtDesc(Command.names[type]!!, internals().flowId!!) as C?
+            return Command.store.findFirstByNameAndFlowIdOrderByIssuedAtDesc(Command.names[type]!!, internals().flowId!!) as C?
         } else {
             throw IllegalStateException()
         }
@@ -102,7 +102,7 @@ open class Event() : Message {
 
     open fun <E: Event> event(type: KClass<out E>): E? {
         if (internals().flowId != null) {
-            return Event.repository.findFirstByNameAndFlowIdOrderByRaisedAtDesc(Event.names[type]!!, internals().flowId!!) as E?
+            return Event.store.findFirstByNameAndFlowIdOrderByRaisedAtDesc(Event.names[type]!!, internals().flowId!!) as E?
         } else {
             throw IllegalStateException()
         }
@@ -176,7 +176,7 @@ class StoredEvent(): StoredMessage<EventId, EventStatus>() {
         this.raisedAt = event.raisedAt
         this.aggregate = event.aggregate!!
         this.json = ObjectMapper().writeValueAsString(event)
-        this.status = if (this.name.context == Name.default.context) raised else forwarded
+        this.status = if (this.name.context == Name.context) raised else forwarded
     }
 
     fun forward() {

@@ -51,16 +51,16 @@ open class Command(): Message {
             .map { it.value.java.newInstance() }
             .associate { Pair( it::class, it.name) }
 
-        internal var repository = CommandStore()
+        var store = CommandStore()
 
         fun <C: Command> issue(command: C): C {
-            return repository.save(command)
+            return store.save(command)
         }
 
         fun fromJson(json: String): Command {
             val node = ObjectMapper().readValue(json, ObjectNode::class.java)
             val name = node.get("name").textValue()
-            val type = repository.type(Name(name))
+            val type = store.type(Name(name))
             return fromJson(json, type)
         }
 
@@ -73,14 +73,14 @@ open class Command(): Message {
     }
 
     open fun internals(): StoredCommand {
-        return repository.toEntity(this)!!
+        return store.toEntity(this)!!
     }
 
     open fun construct() {}
 
     open fun <C: Command> command(type: KClass<out C>): C? {
         if (internals().flowId != null) {
-            return Command.repository.findFirstByNameAndFlowIdOrderByIssuedAtDesc(Command.names[type]!!, internals().flowId!!) as C?
+            return Command.store.findFirstByNameAndFlowIdOrderByIssuedAtDesc(Command.names[type]!!, internals().flowId!!) as C?
         } else {
             throw IllegalStateException()
         }
@@ -88,7 +88,7 @@ open class Command(): Message {
 
     open fun <E: Event> event(type: KClass<out E>): E? {
         if (internals().flowId != null) {
-            return Event.repository.findFirstByNameAndFlowIdOrderByRaisedAtDesc(Event.names[type]!!, internals().flowId!!) as E?
+            return Event.store.findFirstByNameAndFlowIdOrderByRaisedAtDesc(Event.names[type]!!, internals().flowId!!) as E?
         } else {
             throw IllegalStateException()
         }
@@ -146,7 +146,7 @@ open class StoredCommand(): StoredMessage<CommandId, CommandStatus>() {
         this.issuedAt = command.issuedAt
         this.correlation = command.correlation()
         this.json = ObjectMapper().writeValueAsString(command)
-        this.status = if (this.name.context == Name.default.context) issued else forwarded
+        this.status = if (this.name.context == Name.context) issued else forwarded
     }
 
     @Transient

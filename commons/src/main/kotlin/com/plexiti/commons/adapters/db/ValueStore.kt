@@ -41,7 +41,7 @@ class ValueStore : ValueStore<Value>, ApplicationContextAware {
     }
 
     override fun setApplicationContext(applicationContext: ApplicationContext?) {
-        Value.repository = this
+        Value.store = this
     }
 
     override fun exists(id: ValueId?): Boolean {

@@ -29,7 +29,7 @@ interface Value {
             .map { it.newInstance() as Value }
             .associate { Pair(it.name.qualified, it::class) }
 
-        internal var repository = ValueStore()
+        internal var store = ValueStore()
 
         fun <D: Value> fromJson(json: String, type: KClass<D>): D {
             return ObjectMapper().readValue(json, type.java)

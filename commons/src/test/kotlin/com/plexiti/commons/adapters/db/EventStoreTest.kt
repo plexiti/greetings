@@ -21,12 +21,12 @@ class EventStoreTest {
     fun prepare() {
         aggregate = TestAggregate()
         aggregate.id = TestAggregateId(UUID.randomUUID().toString())
-        Event.repository.deleteAll()
+        Event.store.deleteAll()
     }
 
     @Test
     fun empty () {
-        assertThat(Event.repository.findAll()).isEmpty()
+        assertThat(Event.store.findAll()).isEmpty()
     }
 
     @Test
@@ -37,21 +37,21 @@ class EventStoreTest {
     @Test
     fun findOne() {
         val event = Event.raise(TestEvent(aggregate))
-        val e = Event.repository.findOne(event.id)
+        val e = Event.store.findOne(event.id)
         assertThat(e)
             .isEqualTo(event)
     }
 
     @Test
     fun findOne_Null() {
-        val e = Event.repository.findOne(EventId("anId"))
+        val e = Event.store.findOne(EventId("anId"))
         assertThat(e).isNull()
     }
 
     @Test
     fun findOne_Json() {
         val expected = Event.raise(TestEvent(aggregate))
-        val actual = Event.repository.findOne(expected.toJson())
+        val actual = Event.store.findOne(expected.toJson())
         assertThat(actual).isEqualTo(expected)
     }
 

@@ -2,31 +2,21 @@ package com.plexiti.greetings.domain
 
 import com.plexiti.commons.domain.Event
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.Before
 import org.junit.Test
 
 class GreetingTest {
 
+    @Before
+    fun init() {
+        Event.store.deleteAll()
+    }
+
 	@Test
 	fun testGreetingCreated() {
-
-        val greeting = Greeting.create(caller = "Martin");
-
-        val greetingCreatedEvent = Event.findByAggregate(greeting)[0]
-        assertThat(greetingCreatedEvent).returns("greetingCreated", { it.name })
-
+        Greeting.create(caller = "Martin");
+        assertThat(Event.store.findAll().first())
+            .returns("GreetingCreated", { it.name.name })
 	}
-
-    @Test
-    fun testGreetingIdentified() {
-
-        val greeting = Greeting.create(caller = "Martin");
-        greeting.contact()
-
-        assertThat(greeting)
-            .returns(1, { it.contacts })
-        assertThat(Event.findByAggregate(greeting))
-            .hasSize(2)
-
-    }
 
 }

@@ -14,12 +14,12 @@ class CommandStoreTest {
 
     @Before
     fun prepare() {
-        Command.repository.deleteAll()
+        Command.store.deleteAll()
     }
 
     @Test
     fun empty () {
-        assertThat(Command.repository.findAll()).isEmpty()
+        assertThat(Command.store.findAll()).isEmpty()
     }
 
     @Test
@@ -30,7 +30,7 @@ class CommandStoreTest {
     @Test
     fun find() {
         val command =  Command.issue(TestCommand())
-        val e = Command.repository.findOne(command.id)
+        val e = Command.store.findOne(command.id)
         assertThat(e)
             .isEqualTo(command)
     }
@@ -38,7 +38,7 @@ class CommandStoreTest {
     @Test
     fun findOne_Json() {
         val expected = Command.issue(TestCommand())
-        val actual = Command.repository.findOne(expected.toJson())
+        val actual = Command.store.findOne(expected.toJson())
         assertThat(actual).isEqualTo(expected)
     }
 

@@ -29,9 +29,9 @@ class Document(): Message {
         this.name = command.name
         this.id = command.id
         this.command = command
-        this.events = Event.repository.findByRaisedDuringOrderByRaisedAtDesc(command.id)
+        this.events = Event.store.findByRaisedDuringOrderByRaisedAtDesc(command.id)
         if (command.internals().valueId != null) {
-            this.value = Value.repository.findOne(command.internals().valueId)
+            this.value = Value.store.findOne(command.internals().valueId)
         }
         this.problem = command.internals().problem
     }

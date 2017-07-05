@@ -31,8 +31,8 @@ class ApplicationTest {
     fun prepare() {
         aggregate = TestAggregate()
         aggregate.id = TestAggregateId(UUID.randomUUID().toString())
-        Event.repository.deleteAll()
-        Command.repository.deleteAll()
+        Event.store.deleteAll()
+        Command.store.deleteAll()
     }
 
     @Test
@@ -41,14 +41,14 @@ class ApplicationTest {
         val external = ApplicationExternalEvent(aggregate)
         application.consume(external.toJson())
 
-        val event = Event.repository.findAll().iterator().next()
+        val event = Event.store.findAll().iterator().next()
 
         assertThat(event.internals().status).isEqualTo(EventStatus.consumed)
         assertThat(event.internals().raisedAt).isNotNull()
         assertThat(event.internals().forwardedAt).isNull()
         assertThat(event.internals().consumedAt).isNotNull()
 
-        val command = Command.repository.findAll().iterator().next()
+        val command = Command.store.findAll().iterator().next()
         assertThat(command.internals().status).isEqualTo(CommandStatus.issued)
         assertThat(command.internals().issuedAt).isNotNull()
         assertThat(command.internals().forwardedAt).isNull()
@@ -60,7 +60,7 @@ class ApplicationTest {
     fun consumeEvent_Internal() {
 
         Event.raise(ApplicationInternalEvent(aggregate))
-        val event = Event.repository.findAll().iterator().next()
+        val event = Event.store.findAll().iterator().next()
         event.internals().forward()
 
         application.consume(event.toJson())
@@ -69,7 +69,7 @@ class ApplicationTest {
         assertThat(event.internals().forwardedAt).isNotNull()
         assertThat(event.internals().consumedAt).isNotNull()
 
-        assertThat(Command.repository.findAll()).isEmpty()
+        assertThat(Command.store.findAll()).isEmpty()
 
     }
 

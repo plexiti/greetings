@@ -22,22 +22,22 @@ import org.springframework.transaction.annotation.Transactional
 class Application {
 
     @Autowired
-    var commandRepository: CommandStore = Command.repository
+    var commandStore: CommandStore = Command.store
 
     @Autowired
-    var eventRepository: EventStore = Event.repository
+    var eventStore: EventStore = Event.store
 
     @Autowired
-    var valueRepository: ValueStore = Value.repository
+    var valueStore: ValueStore = Value.store
 
     @Autowired
     private lateinit var route: ProducerTemplate
 
     @Transactional
     fun consume(json: String) {
-        val eventId = eventRepository.eventId(json)
+        val eventId = eventStore.eventId(json)
         if (eventId != null) {
-            val event = eventRepository.findOne(eventId) ?: eventRepository.save(Event.fromJson(json))
+            val event = eventStore.findOne(eventId) ?: eventStore.save(Event.fromJson(json))
             triggerBy(event)
             correlate(event)
             event.internals().consume()
@@ -47,7 +47,7 @@ class Application {
     @Transactional
     fun handle(json: String) {
         val message = FlowIO.fromJson(json)
-        Event.executingCommand.set(commandRepository.findOne(message.flowId))
+        Event.executingCommand.set(commandStore.findOne(message.flowId))
         when (message.type) {
             MessageType.Event -> {
                 val event = Event.raise(message.event!!)
@@ -64,9 +64,9 @@ class Application {
 
     @Transactional
     fun execute(json: String) {
-        val commandId = commandRepository.commandId(json)
+        val commandId = commandStore.commandId(json)
         if (commandId != null) {
-            val command = commandRepository.findOne(commandId) ?: commandRepository.save(Command.fromJson(json))
+            val command = commandStore.findOne(commandId) ?: commandStore.save(Command.fromJson(json))
             Event.executingCommand.set(command)
             command.internals().start()
             try {
@@ -79,13 +79,15 @@ class Application {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    private fun execute(command: Command) {
+    fun execute(command: Command): Any? {
         try {
             val result = route.requestBody("direct:${command.name.name}", command)
             if (result is Value) {
-                valueRepository.save(result)
+                valueStore.save(result)
                 command.internals().finish(result)
+                return result
             }
+            return Unit
         } catch (e: CamelExecutionException) {
             throw e.exchange.exception
         }
@@ -107,7 +109,7 @@ class Application {
              val instance = it.java.newInstance()
              val correlation = instance.correlation(event)
              if (correlation != null) {
-                 val command = commandRepository.findByCorrelationAndExecutionFinishedAtIsNull(correlation)
+                 val command = commandStore.findByCorrelationAndExecutionFinishedAtIsNull(correlation)
                  if (command != null) {
                      command.internals().finish(event)
                      event.internals().flowId = if (command is Flow) command.id else command.internals().flowId
