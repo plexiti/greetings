@@ -65,24 +65,31 @@ class Application {
     @Transactional
     fun execute(json: String): Any? {
         val commandId = commandStore.commandId(json)
-        if (commandId != null) {
-            val command = commandStore.findOne(commandId) ?: commandStore.save(Command.fromJson(json))
-            Event.executingCommand.set(command)
-            command.internals().start()
-            try {
-                return execute(command)
-            } catch (problem: Problem) {
-                command.internals().finish(problem)
-                return problem
-            } finally {
-                Event.executingCommand.set(null)
-            }
+        val command = commandStore.findOne(commandId) ?: commandStore.save(Command.fromJson(json))
+        return execute(command)
+    }
+
+    @Transactional
+    fun process(command: Command): Any? {
+        return execute(Command.issue(command))
+    }
+
+    @Transactional
+    fun execute(command: Command): Any? {
+        Event.executingCommand.set(command)
+        command.internals().start()
+        try {
+            return run(command)
+        } catch (problem: Problem) {
+            command.internals().finish(problem)
+            return problem
+        } finally {
+            Event.executingCommand.set(null)
         }
-        throw IllegalArgumentException()
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    private fun execute(command: Command): Any? {
+    private fun run(command: Command): Any? {
         try {
             val result = route.requestBody("direct:${command.name.name}", command)
             if (result is Value) {
@@ -90,7 +97,7 @@ class Application {
                 command.internals().finish(result)
                 return result
             }
-            return Unit
+            return eventStore.findOne(command.internals().finishedBy)
         } catch (e: CamelExecutionException) {
             throw e.exchange.exception
         }

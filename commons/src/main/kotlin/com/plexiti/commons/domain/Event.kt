@@ -25,12 +25,16 @@ open class Event() : Message {
 
     constructor(aggregate: Aggregate<*>? = null): this() {
         if (aggregate != null) {
-            this.aggregate = EventAggregate(aggregate)
+            init(aggregate)
         }
     }
 
     constructor(name: Name): this() {
         this.name = name
+    }
+
+    protected fun init(aggregate: Aggregate<*>) {
+        this.aggregate = EventAggregate(aggregate)
     }
 
     override val type = MessageType.Event

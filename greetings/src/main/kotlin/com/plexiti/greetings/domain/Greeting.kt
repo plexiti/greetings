@@ -1,9 +1,6 @@
 package com.plexiti.greetings.domain
 
-import com.plexiti.commons.domain.Aggregate
-import com.plexiti.commons.domain.AggregateId
-import com.plexiti.commons.domain.Value
-import com.plexiti.commons.domain.Event
+import com.plexiti.commons.domain.*
 import com.plexiti.commons.domain.Event.Companion.raise
 import com.plexiti.greetings.domain.Greeting.CallAnsweredAutomatically
 import org.springframework.beans.factory.annotation.Autowired
@@ -40,10 +37,16 @@ class Greeting: Aggregate<GreetingId>() {
         val greeting = greeting?.greeting
     }
 
-    class CallAnsweredAutomatically(greeting: Greeting? = null): Event(greeting) {
+    class CallAnsweredAutomatically(): Event() {
 
-        val caller = greeting?.caller
-        val greeting = greeting?.greeting
+        lateinit var caller: String
+        lateinit var greeting: String
+
+        constructor(greeting: Greeting): this() {
+            init(greeting)
+            this.caller = greeting.caller
+            this.greeting = greeting.greeting
+        }
 
     }
 
