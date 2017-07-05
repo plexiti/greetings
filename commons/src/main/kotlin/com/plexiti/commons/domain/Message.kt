@@ -10,10 +10,10 @@ import javax.persistence.*
  */
 @JsonInclude(NON_EMPTY)
 @JsonIgnoreProperties(ignoreUnknown = true)
-interface Message {
+interface Message: Named {
 
     val id: MessageId
-    val name: Name
+    override val name: Name
     val type: MessageType
 
 }

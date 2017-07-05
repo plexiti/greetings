@@ -9,6 +9,8 @@ import com.plexiti.commons.application.CommandId
 import com.plexiti.commons.domain.StoredEvent.EventAggregate
 import com.plexiti.commons.domain.EventStatus.*
 import com.plexiti.utils.scanPackageForAssignableClasses
+import com.plexiti.utils.scanPackageForClassNames
+import com.plexiti.utils.scanPackageForNamedClasses
 import org.apache.camel.component.jpa.Consumed
 import org.springframework.data.repository.CrudRepository
 import org.springframework.data.repository.NoRepositoryBean
@@ -53,15 +55,8 @@ open class Event() : Message {
 
     companion object {
 
-        internal var types = scanPackageForAssignableClasses("com.plexiti", Event::class.java)
-            .map { it.newInstance() as Event }
-            .associate { Pair(it.name, it::class) }
-
-        internal var names = types
-            .map { it.value.java.newInstance() }
-            .associate { Pair( it::class, it.name) }
-
         var store = EventStore()
+
         internal val executingCommand = ThreadLocal<Command?>()
 
         fun <E: Event> raise(event: E): E {
@@ -94,7 +89,7 @@ open class Event() : Message {
 
     open fun <C: Command> command(type: KClass<out C>): C? {
         if (internals().flowId != null) {
-            return Command.store.findFirstByNameAndFlowIdOrderByIssuedAtDesc(Command.names[type]!!, internals().flowId!!) as C?
+            return Command.store.findFirstByNameAndFlowIdOrderByIssuedAtDesc(Command.store.names[type]!!, internals().flowId!!) as C?
         } else {
             throw IllegalStateException()
         }
@@ -102,7 +97,7 @@ open class Event() : Message {
 
     open fun <E: Event> event(type: KClass<out E>): E? {
         if (internals().flowId != null) {
-            return Event.store.findFirstByNameAndFlowIdOrderByRaisedAtDesc(Event.names[type]!!, internals().flowId!!) as E?
+            return Event.store.findFirstByNameAndFlowIdOrderByRaisedAtDesc(Event.store.names[type]!!, internals().flowId!!) as E?
         } else {
             throw IllegalStateException()
         }

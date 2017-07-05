@@ -1,11 +1,11 @@
 package com.plexiti.commons.adapters.db
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.plexiti.commons.domain.Value
-import com.plexiti.commons.domain.StoredValue
-import com.plexiti.commons.domain.ValueId
+import com.plexiti.commons.domain.*
 import com.plexiti.commons.domain.ValueStore
 import com.plexiti.utils.hash
+import com.plexiti.utils.scanPackageForClassNames
+import com.plexiti.utils.scanPackageForNamedClasses
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
@@ -20,15 +20,28 @@ import kotlin.reflect.KClass
 @Component @NoRepositoryBean
 class ValueStore : ValueStore<Value>, ApplicationContextAware {
 
+    init { init() }
+
+    private fun init() {
+        types = scanPackageForNamedClasses("com.plexiti", Value::class)
+        names = scanPackageForClassNames("com.plexiti", Value::class)
+    }
+
+    @org.springframework.beans.factory.annotation.Value("\${com.plexiti.app.context}")
+    private var context = Name.context
+
     @Autowired
     private var delegate: StoredValueStore = InMemoryStoredValueStore()
 
-    internal fun type(qName: String): KClass<out Value> {
-        return Value.types.get(qName) ?: throw IllegalArgumentException("Value type '$qName' is not mapped to a local object type!")
+    lateinit internal var types: Map<Name, KClass<out Value>>
+    lateinit internal var names: Map<KClass<out Value>, Name>
+
+    internal fun type(qName: Name): KClass<out Value> {
+        return types.get(qName) ?: throw IllegalArgumentException("Value type '$qName' is not mapped to a local object type!")
     }
 
     private fun toValue(stored: StoredValue?): Value? {
-        return  if (stored != null) Value.fromJson(stored.json, type(stored.name.qualified)) else null
+        return  if (stored != null) Value.fromJson(stored.json, type(stored.name)) else null
     }
 
     private fun toEntity(value: Value?): StoredValue? {
@@ -42,6 +55,7 @@ class ValueStore : ValueStore<Value>, ApplicationContextAware {
 
     override fun setApplicationContext(applicationContext: ApplicationContext?) {
         Value.store = this
+        Name.context = context; init()
     }
 
     override fun exists(id: ValueId?): Boolean {

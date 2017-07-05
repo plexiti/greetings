@@ -6,7 +6,8 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.plexiti.commons.adapters.db.ValueStore
 import com.plexiti.utils.hash
-import com.plexiti.utils.scanPackageForAssignableClasses
+import com.plexiti.utils.scanPackageForClassNames
+import com.plexiti.utils.scanPackageForNamedClasses
 import org.springframework.data.repository.CrudRepository
 import org.springframework.data.repository.NoRepositoryBean
 import java.util.*
@@ -18,18 +19,14 @@ import kotlin.reflect.KClass
  */
 @JsonInclude(NON_EMPTY)
 @JsonIgnoreProperties(ignoreUnknown = true)
-interface Value {
+interface Value: Named {
 
-    val name: Name
+    override val name: Name
         get() = Name(name = this::class.java.simpleName)
 
     companion object {
 
-        internal var types = scanPackageForAssignableClasses("com.plexiti", Value::class.java)
-            .map { it.newInstance() as Value }
-            .associate { Pair(it.name.qualified, it::class) }
-
-        internal var store = ValueStore()
+        var store = ValueStore()
 
         fun <D: Value> fromJson(json: String, type: KClass<D>): D {
             return ObjectMapper().readValue(json, type.java)
@@ -79,3 +76,7 @@ open class ValueId(value: String = ""): MessageId(value) {
 
 @NoRepositoryBean
 interface ValueStore<D>: CrudRepository<D, ValueId>
+
+interface Named {
+    val name: Name
+}

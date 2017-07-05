@@ -7,6 +7,8 @@ import com.plexiti.commons.application.CommandId
 import com.plexiti.commons.domain.Name
 import com.plexiti.commons.domain.*
 import com.plexiti.commons.domain.EventStore
+import com.plexiti.utils.scanPackageForClassNames
+import com.plexiti.utils.scanPackageForNamedClasses
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.ApplicationContext
@@ -22,14 +24,24 @@ import kotlin.reflect.KClass
 @Component @NoRepositoryBean
 class EventStore : EventStore<Event>, ApplicationContextAware {
 
+    init { init() }
+
+    private fun init() {
+        types = scanPackageForNamedClasses("com.plexiti", Event::class)
+        names = scanPackageForClassNames("com.plexiti", Event::class)
+    }
+
     @Value("\${com.plexiti.app.context}")
     private var context = Name.context
 
     @Autowired
     private var delegate: StoredEventStore = InMemoryStoredEventStore()
 
+    lateinit internal var types: Map<Name, KClass<out Event>>
+    lateinit internal var names: Map<KClass<out Event>, Name>
+
     internal fun type(qName: Name): KClass<out Event> {
-        return Event.types.get(qName) ?: throw IllegalArgumentException("Event type '$qName' is not mapped to a local object type!")
+        return types.get(qName) ?: throw IllegalArgumentException("Event type '$qName' is not mapped to a local object type!")
     }
 
     internal fun toEvent(stored: StoredEvent?): Event? {
@@ -40,9 +52,9 @@ class EventStore : EventStore<Event>, ApplicationContextAware {
         return if (event != null) (delegate.findOne(event.id) ?: StoredEvent(event)) else null
     }
 
-    override fun setApplicationContext(applicationContext: ApplicationContext) {
-        Name.context = context
+    override fun setApplicationContext(applicationContext: ApplicationContext?) {
         Event.store = this
+        Name.context = context; init()
     }
 
     override fun exists(id: EventId?): Boolean {

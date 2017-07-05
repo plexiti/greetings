@@ -10,6 +10,8 @@ import com.plexiti.commons.adapters.db.CommandStore
 import com.plexiti.commons.application.CommandStatus.*
 import com.plexiti.commons.domain.*
 import com.plexiti.utils.scanPackageForAssignableClasses
+import com.plexiti.utils.scanPackageForClassNames
+import com.plexiti.utils.scanPackageForNamedClasses
 import org.apache.camel.component.jpa.Consumed
 import org.springframework.data.repository.CrudRepository
 import org.springframework.data.repository.NoRepositoryBean
@@ -42,15 +44,6 @@ open class Command(): Message {
 
     companion object {
 
-        internal var types = scanPackageForAssignableClasses("com.plexiti", Command::class.java)
-            .filter { it != Flow::class.java }
-            .map { it.newInstance() as Command }
-            .associate { Pair(it.name, it::class) }
-
-        internal var names = types
-            .map { it.value.java.newInstance() }
-            .associate { Pair( it::class, it.name) }
-
         var store = CommandStore()
 
         fun <C: Command> issue(command: C): C {
@@ -80,7 +73,7 @@ open class Command(): Message {
 
     open fun <C: Command> command(type: KClass<out C>): C? {
         if (internals().flowId != null) {
-            return Command.store.findFirstByNameAndFlowIdOrderByIssuedAtDesc(Command.names[type]!!, internals().flowId!!) as C?
+            return Command.store.findFirstByNameAndFlowIdOrderByIssuedAtDesc(Command.store.names[type]!!, internals().flowId!!) as C?
         } else {
             throw IllegalStateException()
         }
@@ -88,7 +81,7 @@ open class Command(): Message {
 
     open fun <E: Event> event(type: KClass<out E>): E? {
         if (internals().flowId != null) {
-            return Event.store.findFirstByNameAndFlowIdOrderByRaisedAtDesc(Event.names[type]!!, internals().flowId!!) as E?
+            return Event.store.findFirstByNameAndFlowIdOrderByRaisedAtDesc(Event.store.names[type]!!, internals().flowId!!) as E?
         } else {
             throw IllegalStateException()
         }

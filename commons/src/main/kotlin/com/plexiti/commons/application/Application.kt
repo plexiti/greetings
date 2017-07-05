@@ -94,7 +94,7 @@ class Application {
     }
 
     private fun triggerBy(event: Event) {
-        Command.types.values.forEach {
+        Command.store.types.values.forEach {
             val instance = it.java.newInstance()
             var command = instance.trigger(event)
             if (command != null) {
@@ -105,7 +105,7 @@ class Application {
     }
 
     private fun correlate(event: Event) {
-        Command.types.values.forEach {
+        Command.store.types.values.forEach {
              val instance = it.java.newInstance()
              val correlation = instance.correlation(event)
              if (correlation != null) {
