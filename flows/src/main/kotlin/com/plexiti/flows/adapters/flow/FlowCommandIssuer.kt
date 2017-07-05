@@ -4,7 +4,6 @@ import com.plexiti.commons.application.*
 import com.plexiti.commons.domain.Name
 import com.plexiti.flows.util.property
 import org.camunda.bpm.engine.delegate.BpmnError
-import org.camunda.bpm.engine.delegate.DelegateExecution
 import org.camunda.bpm.engine.impl.bpmn.behavior.AbstractBpmnActivityBehavior
 import org.camunda.bpm.engine.impl.pvm.delegate.ActivityExecution
 import org.slf4j.LoggerFactory

@@ -7,6 +7,7 @@ import com.plexiti.commons.application.Result
 import com.plexiti.commons.domain.MessageType
 import com.plexiti.commons.domain.Name
 import com.plexiti.commons.domain.Problem
+import com.plexiti.flows.application.FlowApplication
 import org.assertj.core.api.Assertions.*
 import org.camunda.bpm.engine.test.Deployment
 import org.camunda.bpm.engine.test.ProcessEngineRule
@@ -29,6 +30,7 @@ class FlowCommandTest {
     var rule = ProcessEngineRule() @Rule get
     val issuer = FlowCommandIssuer()
     val handler = FlowToHandler()
+    val application = FlowApplication()
     val json = ArgumentCaptor.forClass(String::class.java)
 
     @Before
@@ -36,7 +38,8 @@ class FlowCommandTest {
         Mocks.register("command", issuer)
         issuer.queue = "test"
         issuer.rabbit = mock(RabbitTemplate::class.java)
-        handler.runtimeService = rule.runtimeService
+        handler.flow = application
+        application.runtimeService = rule.runtimeService
     }
 
     @Test

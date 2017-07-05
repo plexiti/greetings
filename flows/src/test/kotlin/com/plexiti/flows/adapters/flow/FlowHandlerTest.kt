@@ -3,6 +3,7 @@ package com.plexiti.flows.adapters.flow
 import com.plexiti.commons.application.*
 import com.plexiti.commons.domain.Event
 import com.plexiti.commons.domain.Name
+import com.plexiti.flows.application.FlowApplication
 import org.assertj.core.api.Assertions.*
 import org.camunda.bpm.engine.test.Deployment
 import org.camunda.bpm.engine.test.ProcessEngineRule
@@ -22,11 +23,13 @@ class FlowHandlerTest {
 
     var rule = ProcessEngineRule() @Rule get
     val handler = FlowToHandler()
+    val application = FlowApplication()
     val json = ArgumentCaptor.forClass(String::class.java)
 
     @Before
     fun init() {
-        handler.runtimeService = rule.runtimeService
+        handler.flow = application
+        application.runtimeService = rule.runtimeService
     }
 
     @Test
