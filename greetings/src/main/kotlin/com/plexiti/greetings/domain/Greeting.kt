@@ -46,14 +46,15 @@ class Greeting: Aggregate<GreetingId>() {
 
     }
 
-    class CallerContactedPersonally(greeting: Greeting? = null): Event(greeting) {
-        val caller = greeting?.caller
-    }
+    class CallerContactedPersonally: Event() {
 
-    class CallerIdentified(greeting: Greeting? = null): Event(greeting) {
-        val caller = greeting?.caller
-        val contacts = greeting?.contacts ?: 0
-        val known = contacts > 1
+        lateinit var caller: String
+
+        override fun construct() {
+            val event = event(Greeting.CallAnsweredAutomatically::class)!!
+            caller = event.caller!!
+        }
+
     }
 
     companion object {
@@ -71,7 +72,10 @@ class Greeting: Aggregate<GreetingId>() {
 
     fun contact() {
         contacts++
-        raise(CallerIdentified(this))
+    }
+
+    fun isKnown(): Boolean {
+        return contacts > 1
     }
 
 }
@@ -94,6 +98,7 @@ class GreetingService {
     fun answer(caller: String): Greeting {
         val answer = String.format("Hello World, %s", caller)
         val greeting = greetingRepository.findByGreeting(answer) ?: Greeting.create(caller, answer)
+        greeting.contact()
         greetingRepository.save(greeting)
         raise(CallAnsweredAutomatically(greeting))
         return greeting

@@ -10,24 +10,34 @@
       <bpmn:outgoing>SequenceFlow_1u7bc6h</bpmn:outgoing>
     </bpmn:exclusiveGateway>
     <bpmn:sequenceFlow id="SequenceFlow_0t2sazc" name="No" sourceRef="ExclusiveGateway_1287gp6" targetRef="Task_1ns2cbp">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[${not callerIdentified.prop("known").boolValue()}]]></bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[${not Greeting_CallerIdentified.prop("known").boolValue()}]]></bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="SequenceFlow_1u7bc6h" name="Yes" sourceRef="ExclusiveGateway_1287gp6" targetRef="EndEvent_08nldf6">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[${callerIdentified.prop("known").boolValue()}]]></bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[${Greeting_CallerIdentified.prop("known").boolValue()}]]></bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:startEvent id="StartEvent_1" name="Call answered automatically">
       <bpmn:outgoing>SequenceFlow_0b1r62p</bpmn:outgoing>
       <bpmn:messageEventDefinition messageRef="Message_1fe34o5" />
     </bpmn:startEvent>
     <bpmn:endEvent id="EndEvent_1gos6bm" name="Caller contacted personally">
+      <bpmn:extensionElements>
+        <camunda:properties>
+          <camunda:property name="event" value="Greeting_CallerContactedPersonally" />
+        </camunda:properties>
+      </bpmn:extensionElements>
       <bpmn:incoming>SequenceFlow_0i64uki</bpmn:incoming>
-      <bpmn:messageEventDefinition camunda:delegateExpression="${callerContactedPersonallyEvent}" />
+      <bpmn:messageEventDefinition camunda:delegateExpression="${event}" />
     </bpmn:endEvent>
     <bpmn:userTask id="Task_1ns2cbp" name="Contact new caller personally" camunda:asyncAfter="true">
       <bpmn:incoming>SequenceFlow_0t2sazc</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_0i64uki</bpmn:outgoing>
     </bpmn:userTask>
-    <bpmn:serviceTask id="Task_0ax56ye" name="Determine whether we know the caller " camunda:delegateExpression="${identifyCallerCommand}">
+    <bpmn:serviceTask id="Task_0ax56ye" name="Determine whether we know the caller " camunda:delegateExpression="${command}">
+      <bpmn:extensionElements>
+        <camunda:properties>
+          <camunda:property name="command" value="Greeting_IdentifyCaller" />
+        </camunda:properties>
+      </bpmn:extensionElements>
       <bpmn:incoming>SequenceFlow_0b1r62p</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_07lg1ak</bpmn:outgoing>
     </bpmn:serviceTask>
@@ -35,7 +45,7 @@
       <bpmn:incoming>SequenceFlow_1u7bc6h</bpmn:incoming>
     </bpmn:endEvent>
   </bpmn:process>
-  <bpmn:message id="Message_1fe34o5" name="callAnsweredAutomatically" />
+  <bpmn:message id="Message_1fe34o5" name="Greeting_CallAnsweredAutomatically" />
   <bpmn:message id="Message_0wvxflj" name="KnownCallerGreeted" />
   <bpmn:message id="Message_1qm84bp" name="NewCallerGreeted" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">

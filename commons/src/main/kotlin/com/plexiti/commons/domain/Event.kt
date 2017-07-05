@@ -57,6 +57,10 @@ open class Event() : Message {
             .map { it.newInstance() as Event }
             .associate { Pair(it.name, it::class) }
 
+        internal var names = types
+            .map { it.value.java.newInstance() }
+            .associate { Pair( it::class, it.name) }
+
         internal var repository = EventRepository()
         internal val executingCommand = ThreadLocal<Command?>()
 
@@ -88,21 +92,22 @@ open class Event() : Message {
 
     open fun construct() {}
 
-    open fun command(name: Name): Command? {
+    open fun <C: Command> command(type: KClass<out C>): C? {
         if (internals().flowId != null) {
-            return Command.repository.findFirstByNameAndFlowIdOrderByIssuedAtDesc(name, internals().flowId!!)
+            return Command.repository.findFirstByNameAndFlowIdOrderByIssuedAtDesc(Command.names[type]!!, internals().flowId!!) as C?
         } else {
             throw IllegalStateException()
         }
     }
 
-    open fun event(name: Name): Event? {
+    open fun <E: Event> event(type: KClass<out E>): E? {
         if (internals().flowId != null) {
-            return Event.repository.findFirstByNameAndFlowIdOrderByRaisedAtDesc(name, internals().flowId!!)
+            return Event.repository.findFirstByNameAndFlowIdOrderByRaisedAtDesc(Event.names[type]!!, internals().flowId!!) as E?
         } else {
             throw IllegalStateException()
         }
     }
+
 
     override fun hashCode(): Int {
         return id.hashCode()

@@ -26,7 +26,7 @@ class GreetingController {
         if ("0xCAFEBABE".equals(caller, ignoreCase = true)) {
             return ResponseEntity<Any>(HttpStatus.I_AM_A_TEAPOT)
         }
-        val greeting = AnswerCaller(caller).sync() as Greeting
+        val greeting = AnswerCaller(caller) as Greeting
         return ResponseEntity(GreetingResource(greeting), HttpStatus.OK)
     }
 

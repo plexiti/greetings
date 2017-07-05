@@ -45,6 +45,10 @@ open class Command(): Message {
             .map { it.newInstance() as Command }
             .associate { Pair(it.name, it::class) }
 
+        internal var names = types
+            .map { it.value.java.newInstance() }
+            .associate { Pair( it::class, it.name) }
+
         internal var repository = CommandRepository()
 
         fun <C: Command> issue(command: C): C {
@@ -72,17 +76,17 @@ open class Command(): Message {
 
     open fun construct() {}
 
-    open fun flowCommand(name: Name): Command? {
+    open fun <C: Command> command(type: KClass<out C>): C? {
         if (internals().flowId != null) {
-            return Command.repository.findFirstByNameAndFlowIdOrderByIssuedAtDesc(name, internals().flowId!!)
+            return Command.repository.findFirstByNameAndFlowIdOrderByIssuedAtDesc(Command.names[type]!!, internals().flowId!!) as C?
         } else {
             throw IllegalStateException()
         }
     }
 
-    open fun flowEvent(name: Name): Event? {
+    open fun <E: Event> event(type: KClass<out E>): E? {
         if (internals().flowId != null) {
-            return Event.repository.findFirstByNameAndFlowIdOrderByRaisedAtDesc(name, internals().flowId!!)
+            return Event.repository.findFirstByNameAndFlowIdOrderByRaisedAtDesc(Event.names[type]!!, internals().flowId!!) as E?
         } else {
             throw IllegalStateException()
         }

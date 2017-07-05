@@ -1,8 +1,9 @@
 package com.plexiti.greetings.application;
 
 import com.plexiti.commons.application.Command
-import com.plexiti.commons.application.CommandExecutor
+import com.plexiti.commons.application.Document
 import com.plexiti.greetings.domain.Greeting
+import com.plexiti.greetings.domain.Greeting.CallAnsweredAutomatically
 import com.plexiti.greetings.domain.GreetingService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -11,8 +12,9 @@ import org.springframework.transaction.annotation.Transactional
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
-@Service @Transactional
-class GreetingApplication: CommandExecutor() {
+@Service
+@Transactional
+class GreetingApplication {
 
     @Autowired
     lateinit var greetingService: GreetingService
@@ -35,14 +37,20 @@ class GreetingApplication: CommandExecutor() {
 
         lateinit var greeting: String
 
+        override fun construct() {
+            greeting = event(CallAnsweredAutomatically::class)!!.greeting!!
+        }
+
         constructor(greeting: String): this() {
             this.greeting = greeting
         }
 
     }
 
-    fun identifyCaller(command: IdentifyCaller) {
-        greetingService.greetingRepository.findByGreeting(command.greeting)!!.contact()
+    data class CallerIdentified(val known: Boolean): Document
+
+    fun identifyCaller(command: IdentifyCaller): CallerIdentified {
+        return CallerIdentified(greetingService.greetingRepository.findByGreeting(command.greeting)!!.isKnown())
     }
 
 }
