@@ -1,10 +1,7 @@
 package com.plexiti.commons.adapters.mq
 
-import com.plexiti.commons.application.ApplicationService
-import org.springframework.amqp.core.Binding
-import org.springframework.amqp.core.BindingBuilder
+import com.plexiti.commons.application.Application
 import org.springframework.amqp.core.Queue
-import org.springframework.amqp.core.TopicExchange
 import org.springframework.amqp.rabbit.annotation.RabbitListener
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
@@ -22,18 +19,18 @@ import javax.transaction.Transactional
 @Component
 @Configuration
 @Profile("prod")
-class FlowConsumer {
+class FlowFromHandler {
 
     @Value("\${com.plexiti.app.context}")
     private lateinit var context: String;
 
     @Autowired
-    private lateinit var applicationService: ApplicationService
+    private lateinit var application: Application
 
     @RabbitListener(queues = arrayOf("\${com.plexiti.app.context}-flows-from-queue"))
     @Transactional
     fun handle(@Payload json: String) {
-        applicationService.handleFlow(json)
+        application.handle(json)
     }
 
     @Bean

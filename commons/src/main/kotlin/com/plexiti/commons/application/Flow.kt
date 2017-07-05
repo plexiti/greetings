@@ -38,16 +38,6 @@ class FlowEntity(): CommandEntity() {
 
 open class TokenId(value: String = ""): AggregateId(value)
 
-class FlowEvent(): Event() {
-
-    constructor(name: Name): this() {
-        this.id = EventId(UUID.randomUUID().toString())
-        this.name = name
-        this.raisedAt = Date()
-    }
-
-}
-
 @JsonInclude(NON_EMPTY)
 @JsonIgnoreProperties(ignoreUnknown = true)
 class FlowMessage() {

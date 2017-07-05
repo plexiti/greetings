@@ -1,4 +1,4 @@
-package com.plexiti.commons.adapters.flow
+package com.plexiti.flows.adapters.flow
 
 import com.plexiti.commons.application.*
 import com.plexiti.commons.domain.Event
@@ -17,11 +17,11 @@ import java.util.*
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
-@Deployment(resources = arrayOf("com/plexiti/commons/adapters/flow/FlowHandlerTest.bpmn"))
+@Deployment(resources = arrayOf("com/plexiti/flows/adapters/flow/FlowHandlerTest.bpmn"))
 class FlowHandlerTest {
 
     var rule = ProcessEngineRule() @Rule get
-    val handler = FlowHandler()
+    val handler = FlowToHandler()
     val json = ArgumentCaptor.forClass(String::class.java)
 
     @Before

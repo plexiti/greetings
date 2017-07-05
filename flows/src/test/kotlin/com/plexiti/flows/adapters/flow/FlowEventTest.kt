@@ -1,14 +1,11 @@
-package com.plexiti.commons.adapters.flow
+package com.plexiti.flows.adapters.flow
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.plexiti.commons.application.FlowMessage
-import com.plexiti.commons.application.Result
 import com.plexiti.commons.domain.MessageType
-import com.plexiti.commons.domain.Problem
 import org.assertj.core.api.Assertions.*
 import org.camunda.bpm.engine.test.Deployment
 import org.camunda.bpm.engine.test.ProcessEngineRule
-import org.camunda.bpm.engine.test.assertions.ProcessEngineAssertions
 import org.camunda.bpm.engine.test.mock.Mocks
 import org.junit.Before
 import org.junit.Rule
@@ -21,7 +18,7 @@ import org.mockito.ArgumentCaptor
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
-@Deployment(resources = arrayOf("com/plexiti/commons/adapters/flow/FlowEventTest.bpmn"))
+@Deployment(resources = arrayOf("com/plexiti/flows/adapters/flow/FlowEventTest.bpmn"))
 class FlowEventTest {
 
     var rule = ProcessEngineRule() @Rule get
@@ -32,7 +29,7 @@ class FlowEventTest {
     fun init() {
         Mocks.register("event", raiser)
         raiser.queue = "test"
-        raiser.rabbitTemplate = mock(RabbitTemplate::class.java)
+        raiser.rabbit = mock(RabbitTemplate::class.java)
     }
 
     @Test
@@ -46,7 +43,7 @@ class FlowEventTest {
         rule.processEngine
             .runtimeService.startProcessInstanceByKey("FlowEventTest", "aBusinessKey")
 
-        verify(raiser.rabbitTemplate, times(1)).convertAndSend(eq(raiser.queue), json.capture())
+        verify(raiser.rabbit, times(1)).convertAndSend(eq(raiser.queue), json.capture())
 
         val request = ObjectMapper().readValue(json.value, FlowMessage::class.java)
 

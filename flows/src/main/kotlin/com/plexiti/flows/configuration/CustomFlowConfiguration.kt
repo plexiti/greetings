@@ -1,4 +1,4 @@
-package com.plexiti.commons.adapters.flow
+package com.plexiti.flows.configuration
 
 import org.camunda.bpm.engine.ProcessEngineConfiguration
 import org.camunda.bpm.engine.impl.bpmn.parser.AbstractBpmnParseListener

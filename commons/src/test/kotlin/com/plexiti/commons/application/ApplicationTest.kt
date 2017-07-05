@@ -9,10 +9,10 @@ import java.util.*
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
-class ApplicationServiceTest {
+class ApplicationTest {
 
-    val applicationService: ApplicationService = ApplicationService()
-    lateinit var aggregate: ApplicationServiceTest.TestAggregate
+    val application: Application = Application()
+    lateinit var aggregate: ApplicationTest.TestAggregate
 
     class ApplicationInternalEvent(aggregate: TestAggregate? = null) : Event(aggregate)
     class ApplicationExternalEvent(aggregate: TestAggregate? = null) : Event(aggregate) {
@@ -39,7 +39,7 @@ class ApplicationServiceTest {
     fun consumeEvent_External() {
 
         val external = ApplicationExternalEvent(aggregate)
-        applicationService.consumeEvent(external.toJson())
+        application.consume(external.toJson())
 
         val event = Event.repository.findAll().iterator().next()
 
@@ -63,7 +63,7 @@ class ApplicationServiceTest {
         val event = Event.repository.findAll().iterator().next()
         event.internals().forward()
 
-        applicationService.consumeEvent(event.toJson())
+        application.consume(event.toJson())
         assertThat(event.internals().status).isEqualTo(EventStatus.consumed)
         assertThat(event.internals().raisedAt).isNotNull()
         assertThat(event.internals().forwardedAt).isNotNull()

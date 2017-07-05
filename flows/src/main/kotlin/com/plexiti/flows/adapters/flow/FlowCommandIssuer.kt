@@ -1,12 +1,12 @@
-package com.plexiti.commons.adapters.flow
+package com.plexiti.flows.adapters.flow
 
 import com.plexiti.commons.application.*
 import com.plexiti.commons.domain.Name
+import com.plexiti.flows.util.property
 import org.camunda.bpm.engine.delegate.BpmnError
 import org.camunda.bpm.engine.delegate.DelegateExecution
 import org.camunda.bpm.engine.impl.bpmn.behavior.AbstractBpmnActivityBehavior
 import org.camunda.bpm.engine.impl.pvm.delegate.ActivityExecution
-import org.camunda.spin.json.SpinJsonNode
 import org.slf4j.LoggerFactory
 import org.springframework.amqp.rabbit.core.RabbitTemplate
 import org.springframework.beans.factory.annotation.Autowired
@@ -35,30 +35,20 @@ class FlowCommandIssuer : AbstractBpmnActivityBehavior() {
     internal lateinit var queue: String
 
     @Autowired
-    internal lateinit var rabbitTemplate: RabbitTemplate
-
-    fun issue(command: FlowMessage) {
-        rabbitTemplate.convertAndSend(queue, command.toJson());
-        logger.info("Forwarded ${command.toJson()}")
-    }
+    internal lateinit var rabbit: RabbitTemplate
 
     override fun execute(execution: ActivityExecution) {
-        issue(FlowMessage(
-            Command(Name(commandName(execution))),
+        val command = FlowMessage(
+            Command(Name(property("command", execution.bpmnModelElementInstance))),
             CommandId(execution.processBusinessKey),
-            TokenId(execution.id)))
+            TokenId(execution.id))
+        val json = command.toJson()
+        rabbit.convertAndSend(queue, json);
+        logger.info("Transfered ${json}")
     }
 
     override fun signal(execution: ActivityExecution, signalName: String?, signalData: Any?) {
         if (signalName == null) leave(execution) else propagateBpmnError(BpmnError(signalName, signalData as String?), execution)
-    }
-
-    private fun commandName(execution: DelegateExecution): String {
-        return execution.bpmnModelElementInstance.domElement
-            .childElements.find { it.localName == "extensionElements" }
-            ?.childElements?.find { it.localName == "properties" }
-            ?.childElements?.find { it.localName == "property" && it.hasAttribute("name") && it.getAttribute("name") == "command" }
-            ?.getAttribute("value") ?: throw IllegalArgumentException("Command must be specified as <camunda:property name='command'/>)")
     }
 
 }

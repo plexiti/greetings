@@ -1,15 +1,10 @@
 package com.plexiti.commons.adapters.mq
 
-import com.plexiti.commons.application.ApplicationService
-import com.plexiti.commons.application.Command
-import com.plexiti.commons.domain.Name
+import com.plexiti.commons.application.Application
 import org.springframework.amqp.core.Queue
 import org.springframework.amqp.rabbit.annotation.RabbitListener
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.beans.factory.config.BeanFactoryPostProcessor
-import org.springframework.beans.factory.support.BeanDefinitionBuilder
-import org.springframework.beans.factory.support.BeanDefinitionRegistry
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
@@ -29,11 +24,11 @@ class CommandExecutor {
     private lateinit var context: String;
 
     @Autowired
-    private lateinit var applicationService: ApplicationService
+    private lateinit var application: Application
 
     @RabbitListener(queues = arrayOf("\${com.plexiti.app.context}-commands-queue"))
     fun executeCommand(@Payload json: String) {
-        applicationService.executeCommand(json)
+        application.execute(json)
     }
 
     @Bean

@@ -1,4 +1,4 @@
-package com.plexiti.commons.adapters.flow
+package com.plexiti.flows.adapters.flow
 
 import com.plexiti.commons.application.*
 import com.plexiti.commons.domain.MessageType
@@ -24,7 +24,7 @@ import org.springframework.transaction.annotation.Transactional
 @Component
 @Configuration
 @Profile("prod")
-class FlowHandler {
+class FlowToHandler {
 
     @Value("\${com.plexiti.app.context}")
     private lateinit var context: String;

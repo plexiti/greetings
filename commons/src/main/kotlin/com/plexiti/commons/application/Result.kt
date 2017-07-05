@@ -53,6 +53,8 @@ class Result(): Message {
 }
 
 @Embeddable
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
+@JsonIgnoreProperties(ignoreUnknown = true)
 class Execution() {
 
     @Column(name = "STARTED_AT", nullable = true)

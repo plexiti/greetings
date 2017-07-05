@@ -1,4 +1,4 @@
-package com.plexiti.commons.adapters.flow
+package com.plexiti.flows.adapters.flow
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.plexiti.commons.application.Document
@@ -23,19 +23,19 @@ import org.mockito.ArgumentCaptor
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
-@Deployment(resources = arrayOf("com/plexiti/commons/adapters/flow/FlowCommandTest.bpmn"))
+@Deployment(resources = arrayOf("com/plexiti/flows/adapters/flow/FlowCommandTest.bpmn"))
 class FlowCommandTest {
 
     var rule = ProcessEngineRule() @Rule get
     val issuer = FlowCommandIssuer()
-    val handler = FlowHandler()
+    val handler = FlowToHandler()
     val json = ArgumentCaptor.forClass(String::class.java)
 
     @Before
     fun init() {
         Mocks.register("command", issuer)
         issuer.queue = "test"
-        issuer.rabbitTemplate = mock(RabbitTemplate::class.java)
+        issuer.rabbit = mock(RabbitTemplate::class.java)
         handler.runtimeService = rule.runtimeService
     }
 
@@ -50,7 +50,7 @@ class FlowCommandTest {
         rule.processEngine
             .runtimeService.startProcessInstanceByKey("FlowCommandTest", "aBusinessKey")
 
-        verify(issuer.rabbitTemplate, times(1)).convertAndSend(eq(issuer.queue), json.capture())
+        verify(issuer.rabbit, times(1)).convertAndSend(eq(issuer.queue), json.capture())
 
         val request = ObjectMapper().readValue(json.value, FlowMessage::class.java)
 
@@ -81,7 +81,7 @@ class FlowCommandTest {
         rule.processEngine
             .runtimeService.startProcessInstanceByKey("FlowCommandTest", "aBusinessKey")
 
-        verify(issuer.rabbitTemplate, times(1)).convertAndSend(eq(issuer.queue), json.capture())
+        verify(issuer.rabbit, times(1)).convertAndSend(eq(issuer.queue), json.capture())
 
         val request = ObjectMapper().readValue(json.value, FlowMessage::class.java)
         val command = request.command!!
@@ -105,7 +105,7 @@ class FlowCommandTest {
         rule.processEngine
             .runtimeService.startProcessInstanceByKey("FlowCommandTest", "aBusinessKey")
 
-        verify(issuer.rabbitTemplate, times(1)).convertAndSend(eq(issuer.queue), json.capture())
+        verify(issuer.rabbit, times(1)).convertAndSend(eq(issuer.queue), json.capture())
 
         val request = ObjectMapper().readValue(json.value, FlowMessage::class.java)
         val command = request.command!!
