@@ -46,7 +46,7 @@ class EventForwarder : RouteBuilder() {
     @Handler
     fun publish(event: StoredEvent) {
         rabbitTemplate.convertAndSend(topic, context, event.json);
-        logger.info("Forwarded ${event.json}")
+        logger.info("Published ${event.json}")
     }
 
     @Bean

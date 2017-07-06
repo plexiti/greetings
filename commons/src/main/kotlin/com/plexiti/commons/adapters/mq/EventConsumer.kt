@@ -1,6 +1,7 @@
 package com.plexiti.commons.adapters.mq
 
 import com.plexiti.commons.application.Application
+import org.slf4j.LoggerFactory
 import org.springframework.amqp.core.Binding
 import org.springframework.amqp.core.BindingBuilder
 import org.springframework.amqp.core.Queue
@@ -13,7 +14,6 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
 import org.springframework.messaging.handler.annotation.Payload
 import org.springframework.stereotype.Component
-import javax.transaction.Transactional
 
 
 /**
@@ -24,6 +24,8 @@ import javax.transaction.Transactional
 @Profile("prod")
 class EventConsumer {
 
+    private val logger = LoggerFactory.getLogger(this::class.java)
+
     @Value("\${com.plexiti.app.context}")
     private lateinit var context: String;
 
@@ -31,9 +33,9 @@ class EventConsumer {
     private lateinit var application: Application
 
     @RabbitListener(queues = arrayOf("\${com.plexiti.app.context}-events-queue"))
-    @Transactional
-    fun handle(@Payload json: String) {
+    fun consume(@Payload json: String) {
         application.consume(json)
+        logger.info("Consumed ${json}")
     }
 
     @Bean

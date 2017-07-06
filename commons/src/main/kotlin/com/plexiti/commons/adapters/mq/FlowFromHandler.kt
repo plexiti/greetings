@@ -1,6 +1,7 @@
 package com.plexiti.commons.adapters.mq
 
 import com.plexiti.commons.application.Application
+import org.slf4j.LoggerFactory
 import org.springframework.amqp.core.Queue
 import org.springframework.amqp.rabbit.annotation.RabbitListener
 import org.springframework.beans.factory.annotation.Autowired
@@ -21,6 +22,8 @@ import javax.transaction.Transactional
 @Profile("prod")
 class FlowFromHandler {
 
+    private val logger = LoggerFactory.getLogger(this::class.java)
+
     @Value("\${com.plexiti.app.context}")
     private lateinit var context: String;
 
@@ -28,9 +31,9 @@ class FlowFromHandler {
     private lateinit var application: Application
 
     @RabbitListener(queues = arrayOf("\${com.plexiti.app.context}-flows-from-queue"))
-    @Transactional
     fun handle(@Payload json: String) {
         application.handle(json)
+        logger.info("Handled ${json}")
     }
 
     @Bean

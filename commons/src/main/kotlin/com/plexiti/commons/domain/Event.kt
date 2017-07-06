@@ -63,7 +63,7 @@ open class Event() : Message {
         fun <E: Event> raise(event: E): E {
             val e = store.save(event)
             e.internals().raisedByCommand = executingCommand.get()?.id
-            executingCommand.get()?.internals()?.finish(e)
+            executingCommand.get()?.internals()?.correlate(e)
             return event
         }
 
@@ -214,14 +214,12 @@ class StoredEvent(): StoredMessage<EventId, EventStatus>() {
     }
 
     @Consumed
-    fun transition(): EventStatus {
+    fun consumed() {
         when (status) {
             raised -> forward()
-            forwarded -> consume()
             consumed -> process()
-            processed -> throw IllegalStateException()
+            else -> throw IllegalStateException()
         }
-        return status
     }
     
 }

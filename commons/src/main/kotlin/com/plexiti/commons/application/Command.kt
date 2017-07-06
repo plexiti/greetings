@@ -191,6 +191,7 @@ open class StoredCommand(): StoredMessage<CommandId, CommandStatus>() {
 
     fun start() {
         this.status = started
+        this.execution = Execution()
         this.execution.startedAt = Date()
     }
 
@@ -199,7 +200,7 @@ open class StoredCommand(): StoredMessage<CommandId, CommandStatus>() {
         this.processedAt = Date()
     }
 
-    fun finish(result: Any) {
+    fun correlate(result: Any) {
         if (result is Event) {
             val event = result
             execution.finishedAt = event.raisedAt
@@ -212,7 +213,7 @@ open class StoredCommand(): StoredMessage<CommandId, CommandStatus>() {
             execution.finishedAt = Date()
             resultingIn = Hash(result)
         }
-        if (correlatedTo != null) {
+        if (issuedByFlow != null) {
             status = finished
         } else {
             status = processed
@@ -221,13 +222,12 @@ open class StoredCommand(): StoredMessage<CommandId, CommandStatus>() {
     }
 
     @Consumed
-    fun forwarded(): CommandStatus {
+    fun consumed(){
         when (status) {
             issued -> forward()
             finished -> process()
             else -> IllegalStateException()
         }
-        return status
     }
 
 }

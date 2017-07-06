@@ -1,6 +1,7 @@
 package com.plexiti.commons.adapters.mq
 
 import com.plexiti.commons.application.Application
+import org.slf4j.LoggerFactory
 import org.springframework.amqp.core.Queue
 import org.springframework.amqp.rabbit.annotation.RabbitListener
 import org.springframework.beans.factory.annotation.Autowired
@@ -20,6 +21,8 @@ import org.springframework.stereotype.Component
 @Profile("prod")
 class CommandExecutor {
 
+    private val logger = LoggerFactory.getLogger(this::class.java)
+
     @Value("\${com.plexiti.app.context}")
     private lateinit var context: String;
 
@@ -27,8 +30,9 @@ class CommandExecutor {
     private lateinit var application: Application
 
     @RabbitListener(queues = arrayOf("\${com.plexiti.app.context}-commands-queue"))
-    fun executeCommand(@Payload json: String) {
+    fun execute(@Payload json: String) {
         application.execute(json)
+        logger.info("Executed ${json}")
     }
 
     @Bean

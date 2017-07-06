@@ -39,8 +39,10 @@ class Application {
         if (eventId != null) {
             val event = eventStore.findOne(eventId) ?: eventStore.save(Event.fromJson(json))
             triggerBy(event)
-            correlate(event)
+            val correlatesToFlow = correlate(event)
             event.internals().consume()
+            if (!correlatesToFlow)
+                event.internals().process()
         }
     }
 
@@ -81,7 +83,7 @@ class Application {
         try {
             return run(command)
         } catch (problem: Problem) {
-            command.internals().finish(problem)
+            command.internals().correlate(problem)
             return problem
         } finally {
             Event.executingCommand.set(null)
@@ -94,7 +96,7 @@ class Application {
             val result = route.requestBody("direct:${command.name.name}", command)
             if (result is Value) {
                 valueStore.save(result)
-                command.internals().finish(result)
+                command.internals().correlate(result)
                 return result
             }
             return eventStore.findOne(command.internals().finishedWith)
@@ -114,18 +116,21 @@ class Application {
         }
     }
 
-    private fun correlate(event: Event) {
+    private fun correlate(event: Event): Boolean {
+        var correlatesToFlow = false
         Command.store.types.values.forEach {
              val instance = it.java.newInstance()
              val correlation = instance.correlation(event)
              if (correlation != null) {
                  val command = commandStore.findByCorrelatedBy_AndExecutionFinishedAt_IsNull(correlation)
                  if (command != null) {
-                     command.internals().finish(event)
-                     event.internals().raisedByFlow = if (command is Flow) command.id else command.internals().issuedByFlow
+                     command.internals().correlate(event)
+                     if (command is Flow)
+                         correlatesToFlow = true
                  }
              }
          }
+         return correlatesToFlow
     }
 
 }
