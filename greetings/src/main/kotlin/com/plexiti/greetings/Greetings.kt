@@ -15,11 +15,16 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories
 @EnableJpaRepositories(group)
 @EnableRabbit
 @ProcessApplication(name)
-class Greetings: SpringBootProcessApplication()
+class Greetings: SpringBootProcessApplication() {
+
+    companion object {
+        @JvmStatic fun main(args: Array<String>) {
+            SpringApplication.run(Greetings::class.java, *args)
+        }
+    }
+
+}
 
 const val name = "greetings";
 const val group = "com.plexiti";
 
-fun main(args: Array<String>) {
-    SpringApplication.run(Greetings::class.java, *args)
-}

@@ -8,9 +8,6 @@ import com.plexiti.commons.application.Command
 import com.plexiti.commons.application.CommandId
 import com.plexiti.commons.domain.StoredEvent.EventAggregate
 import com.plexiti.commons.domain.EventStatus.*
-import com.plexiti.utils.scanPackageForAssignableClasses
-import com.plexiti.utils.scanPackageForClassNames
-import com.plexiti.utils.scanPackageForNamedClasses
 import org.apache.camel.component.jpa.Consumed
 import org.springframework.data.repository.CrudRepository
 import org.springframework.data.repository.NoRepositoryBean
@@ -65,7 +62,7 @@ open class Event() : Message {
 
         fun <E: Event> raise(event: E): E {
             val e = store.save(event)
-            e.internals().raisedDuring = executingCommand.get()?.id
+            e.internals().raisedByCommand = executingCommand.get()?.id
             executingCommand.get()?.internals()?.finish(e)
             return event
         }
@@ -92,16 +89,16 @@ open class Event() : Message {
     open fun construct() {}
 
     open fun <C: Command> command(type: KClass<out C>): C? {
-        if (internals().flowId != null) {
-            return Command.store.findFirstByNameAndFlowIdOrderByIssuedAtDesc(Command.store.names[type]!!, internals().flowId!!) as C?
+        if (internals().raisedByFlow != null) {
+            return Command.store.findFirstByName_AndIssuedByFlow_OrderByIssuedAtDesc(Command.store.names[type]!!, internals().raisedByFlow!!) as C?
         } else {
             throw IllegalStateException()
         }
     }
 
     open fun <E: Event> event(type: KClass<out E>): E? {
-        if (internals().flowId != null) {
-            return Event.store.findFirstByNameAndFlowIdOrderByRaisedAtDesc(Event.store.names[type]!!, internals().flowId!!) as E?
+        if (internals().raisedByFlow != null) {
+            return Event.store.findFirstByName_AndRaisedByFlow_OrderByRaisedAtDesc(Event.store.names[type]!!, internals().raisedByFlow!!) as E?
         } else {
             throw IllegalStateException()
         }
@@ -148,8 +145,8 @@ class StoredEvent(): StoredMessage<EventId, EventStatus>() {
         internal set
 
     @Embedded
-    @AttributeOverride(name="value", column = Column(name="RAISED_DURING", nullable = true))
-    var raisedDuring: CommandId? = null
+    @AttributeOverride(name="value", column = Column(name="RAISED_BY_COMMAND", nullable = true, length = 36))
+    var raisedByCommand: CommandId? = null
         internal set
 
     @Temporal(TemporalType.TIMESTAMP)
@@ -165,8 +162,8 @@ class StoredEvent(): StoredMessage<EventId, EventStatus>() {
     @Embedded
     lateinit var aggregate: EventAggregate
 
-    @Embedded @AttributeOverride(name="value", column = Column(name="FLOW_ID", nullable = true))
-    var flowId: CommandId? = null
+    @Embedded @AttributeOverride(name="value", column = Column(name="RAISED_BY_FLOW", nullable = true, length = 36))
+    var raisedByFlow: CommandId? = null
         internal set
 
     constructor(event: Event): this() {
@@ -196,22 +193,22 @@ class StoredEvent(): StoredMessage<EventId, EventStatus>() {
     @Embeddable
     class EventAggregate() {
 
-        @Column(name = "AGG_ID", length = 36, nullable = false)
+        @Column(name = "AGGREGATE_ID", length = 36, nullable = false)
         lateinit var id: String
             protected set
 
-        @Column(name = "AGG_TYPE", length = 128, nullable = false)
-        lateinit var type: String
+        @Column(name = "AGGREGATE_NAME", length = 128, nullable = false)
+        lateinit var name: String
             protected set
 
-        @Column(name = "AGG_VERSION", nullable = false)
+        @Column(name = "AGGREGATE_VERSION", nullable = false)
         var version: Int = 0
             protected set
 
         constructor(aggregate: Aggregate<*>): this() {
             id = aggregate.id.value
-            type = aggregate::class.simpleName!!
-            version = if (aggregate.isNew()) 0 else aggregate.version!! + 1
+            name = aggregate::class.simpleName!!
+            version = aggregate.version + 1
         }
 
     }
@@ -236,9 +233,9 @@ interface EventStore<E>: CrudRepository<E, EventId> {
 
     fun findByAggregateId(id: String): List<E>
 
-    fun findFirstByNameAndFlowIdOrderByRaisedAtDesc(name: Name, flowId: CommandId): E?
+    fun findFirstByName_AndRaisedByFlow_OrderByRaisedAtDesc(name: Name, flowId: CommandId): E?
 
-    fun findByRaisedDuringOrderByRaisedAtDesc(raisedDuring: CommandId): List<E>
+    fun findByRaisedByCommand_OrderByRaisedAtDesc(raisedDuring: CommandId): List<E>
 
 }
 

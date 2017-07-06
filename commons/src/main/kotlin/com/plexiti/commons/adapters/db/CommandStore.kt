@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.plexiti.commons.application.*
 import com.plexiti.commons.application.CommandStore
-import com.plexiti.commons.domain.Event
 import com.plexiti.commons.domain.Name
 import com.plexiti.utils.scanPackageForClassNames
 import com.plexiti.utils.scanPackageForNamedClasses
@@ -97,12 +96,12 @@ class CommandStore : CommandStore<Command>, ApplicationContextAware, RouteBuilde
         return findOne(commandId(json))
     }
 
-    override fun findByCorrelationAndExecutionFinishedAtIsNull(correlation: Correlation): Command? {
-        return toCommand(delegate.findByCorrelationAndExecutionFinishedAtIsNull(correlation))
+    override fun findByCorrelatedBy_AndExecutionFinishedAt_IsNull(correlation: Correlation): Command? {
+        return toCommand(delegate.findByCorrelatedBy_AndExecutionFinishedAt_IsNull(correlation))
     }
 
-    override fun findFirstByNameAndFlowIdOrderByIssuedAtDesc(name: Name, flowId: CommandId): Command?{
-        return toCommand(delegate.findFirstByNameAndFlowIdOrderByIssuedAtDesc(name, flowId))
+    override fun findFirstByName_AndIssuedByFlow_OrderByIssuedAtDesc(name: Name, flowId: CommandId): Command?{
+        return toCommand(delegate.findFirstByName_AndIssuedByFlow_OrderByIssuedAtDesc(name, flowId))
     }
 
     override fun findAll(): MutableIterable<Command> {
@@ -150,12 +149,12 @@ internal interface StoredCommandStore : CommandStore<StoredCommand>
 @NoRepositoryBean
 class InMemoryStoredCommandStore : InMemoryEntityCrudRepository<StoredCommand, CommandId>(), StoredCommandStore {
 
-    override fun findByCorrelationAndExecutionFinishedAtIsNull(correlation: Correlation): StoredCommand? {
-        return findAll().find { correlation == it.correlation && it.execution.finishedAt == null }
+    override fun findByCorrelatedBy_AndExecutionFinishedAt_IsNull(correlation: Correlation): StoredCommand? {
+        return findAll().find { correlation == it.correlatedBy && it.execution.finishedAt == null }
     }
 
-    override fun findFirstByNameAndFlowIdOrderByIssuedAtDesc(name: Name, flowId: CommandId): StoredCommand? {
-        return findAll().sortedByDescending { it.issuedAt }.first { it.name == name && it.flowId == flowId }
+    override fun findFirstByName_AndIssuedByFlow_OrderByIssuedAtDesc(name: Name, flowId: CommandId): StoredCommand? {
+        return findAll().sortedByDescending { it.issuedAt }.first { it.name == name && it.issuedByFlow == flowId }
     }
 
 }

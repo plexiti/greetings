@@ -48,7 +48,7 @@ class FlowEventForwarder : RouteBuilder() {
 
     @Handler
     fun forward(event: StoredEvent) {
-        val message = FlowIO(repository.findOne(event.id)!!, event.flowId!!)
+        val message = FlowIO(repository.findOne(event.id)!!, event.raisedByFlow!!)
         rabbitTemplate.convertAndSend(queue, message.toJson());
         logger.info("Forwarded ${message.toJson()}")
     }

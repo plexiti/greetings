@@ -12,11 +12,8 @@ import javax.persistence.*
 abstract class Aggregate<ID: AggregateId>: AbstractEntity<ID>() {
 
     @Version
-    open val version: Int? = null;
-
-    fun isNew(): Boolean {
-        return version == null
-    }
+    @Column(name = "VERSION")
+    open val version = -1;
 
 }
 

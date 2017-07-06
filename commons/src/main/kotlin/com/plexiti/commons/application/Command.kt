@@ -69,16 +69,16 @@ open class Command(): Message {
     open fun construct() {}
 
     open fun <C: Command> command(type: KClass<out C>): C? {
-        if (internals().flowId != null) {
-            return Command.store.findFirstByNameAndFlowIdOrderByIssuedAtDesc(Command.store.names[type]!!, internals().flowId!!) as C?
+        if (internals().issuedByFlow != null) {
+            return Command.store.findFirstByName_AndIssuedByFlow_OrderByIssuedAtDesc(Command.store.names[type]!!, internals().issuedByFlow!!) as C?
         } else {
             throw IllegalStateException()
         }
     }
 
     open fun <E: Event> event(type: KClass<out E>): E? {
-        if (internals().flowId != null) {
-            return Event.store.findFirstByNameAndFlowIdOrderByRaisedAtDesc(Event.store.names[type]!!, internals().flowId!!) as E?
+        if (internals().issuedByFlow != null) {
+            return Event.store.findFirstByName_AndRaisedByFlow_OrderByRaisedAtDesc(Event.store.names[type]!!, internals().issuedByFlow!!) as E?
         } else {
             throw IllegalStateException()
         }
@@ -89,7 +89,7 @@ open class Command(): Message {
     }
 
     open fun correlation(event: Event): Correlation? {
-        return Correlation.create(event.internals().raisedDuring?.value)
+        return Correlation.create(event.internals().raisedByCommand?.value)
     }
 
     open fun trigger(event: Event): Command? {
@@ -116,7 +116,7 @@ open class Command(): Message {
 @Entity
 @Table(name="COMMANDS")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
-@DiscriminatorColumn(name = "type", discriminatorType = DiscriminatorType.STRING)
+@DiscriminatorColumn(name = "TYPE", discriminatorType = DiscriminatorType.STRING, length = 128)
 @DiscriminatorValue(MessageType.Discriminator.command)
 @NamedQueries(
     NamedQuery(
@@ -134,7 +134,7 @@ open class StoredCommand(): StoredMessage<CommandId, CommandStatus>() {
         this.name = command.name
         this.id = command.id
         this.issuedAt = command.issuedAt
-        this.correlation = command.correlation()
+        this.correlatedBy = command.correlation()
         this.json = ObjectMapper().writeValueAsString(command)
         this.status = if (this.name.context == Name.context) issued else forwarded
     }
@@ -147,33 +147,33 @@ open class StoredCommand(): StoredMessage<CommandId, CommandStatus>() {
     var issuedAt = Date()
         internal set
 
-    @Column(name = "COMPLETED_AT", nullable = true)
+    @Column(name = "PROCESSED_AT", nullable = true)
     @Temporal(TemporalType.TIMESTAMP)
     var processedAt: Date? = null
         internal set
 
-    @Embedded @AttributeOverride(name = "value", column = Column(name = "CORRELATION", length = 128, nullable = false))
-    lateinit var correlation: Correlation
+    @Embedded @AttributeOverride(name = "key", column = Column(name = "CORRELATED_BY_KEY", length = 128, nullable = false))
+    lateinit var correlatedBy: Correlation
         internal set
 
-    @Embedded @AttributeOverride(name = "value", column = Column(name = "TRIGGERED_BY", nullable = true))
+    @Embedded @AttributeOverride(name = "value", column = Column(name = "TRIGGERED_BY_EVENT", nullable = true, length=36))
     var triggeredBy: EventId? = null
         internal set
 
-    @Embedded @AttributeOverride(name="value", column = Column(name="FINISHED_BY", nullable = true))
-    var finishedBy: EventId? = null
+    @Embedded @AttributeOverride(name="value", column = Column(name="FINISHED_WITH_EVENT", nullable = true, length = 36))
+    var finishedWith: EventId? = null
         internal set
 
-    @Embedded @AttributeOverride(name = "value", column = Column(name = "FLOW_ID", nullable = true))
-    open var flowId: CommandId? = null
+    @Embedded @AttributeOverride(name = "value", column = Column(name = "ISSUED_BY_FLOW", nullable = true, length=36))
+    open var issuedByFlow: CommandId? = null
         internal set
 
-    @Embedded @AttributeOverride(name="value", column = Column(name="TOKEN_ID", nullable = true))
-    var tokenId: TokenId? = null
+    @Embedded @AttributeOverride(name="value", column = Column(name="CORRELATED_TO_TOKEN", nullable = true))
+    var correlatedTo: TokenId? = null
         internal set
 
-    @Embedded @AttributeOverride(name="value", column = Column(name="VALUE_ID", nullable = true))
-    var hash: Hash? = null
+    @Embedded @AttributeOverride(name="value", column = Column(name="RESULTING_IN_VALUE", nullable = true, length = 40))
+    var resultingIn: Hash? = null
         internal set
 
     @Embedded
@@ -203,16 +203,16 @@ open class StoredCommand(): StoredMessage<CommandId, CommandStatus>() {
         if (result is Event) {
             val event = result
             execution.finishedAt = event.raisedAt
-            finishedBy = event.id
+            finishedWith = event.id
         } else if (result is Problem) {
             problem = result
             execution.finishedAt = result.occuredAt
-            finishedBy = null
+            finishedWith = null
         } else if (result is Value) {
             execution.finishedAt = Date()
-            hash = Hash(result)
+            resultingIn = Hash(result)
         }
-        if (tokenId != null) {
+        if (correlatedTo != null) {
             status = finished
         } else {
             status = processed
@@ -238,27 +238,27 @@ open class CommandId(value: String = ""): MessageId(value)
 class Correlation : Serializable {
 
     @Column(name = "KEY", length = 128, nullable = false)
-    lateinit var value: String
+    lateinit var key: String
         @JsonValue get
         @JsonValue private set
 
     override fun toString(): String {
-        return value
+        return key
     }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is Correlation) return false
-        if (value != other.value) return false
+        if (key != other.key) return false
         return true
     }
 
     override fun hashCode(): Int {
-        return value.hashCode()
+        return key.hashCode()
     }
 
     internal fun value(value: String): Correlation {
-        this.value = value
+        this.key = value
         return this
     }
 
@@ -292,9 +292,9 @@ class Execution() {
 @NoRepositoryBean
 interface CommandStore<C>: CrudRepository<C, CommandId> {
 
-    fun findByCorrelationAndExecutionFinishedAtIsNull(correlation: Correlation): C?
+    fun findByCorrelatedBy_AndExecutionFinishedAt_IsNull(correlation: Correlation): C?
 
-    fun findFirstByNameAndFlowIdOrderByIssuedAtDesc(name: Name, flowId: CommandId): C?
+    fun findFirstByName_AndIssuedByFlow_OrderByIssuedAtDesc(name: Name, flowId: CommandId): C?
 
 }
 

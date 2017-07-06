@@ -91,12 +91,12 @@ class EventStore : EventStore<Event>, ApplicationContextAware {
         return delegate.findByAggregateId(id).map { toEvent(it)!! }
     }
 
-    override fun findFirstByNameAndFlowIdOrderByRaisedAtDesc(name: Name, flowId: CommandId): Event? {
-        return toEvent(delegate.findFirstByNameAndFlowIdOrderByRaisedAtDesc(name, flowId))
+    override fun findFirstByName_AndRaisedByFlow_OrderByRaisedAtDesc(name: Name, flowId: CommandId): Event? {
+        return toEvent(delegate.findFirstByName_AndRaisedByFlow_OrderByRaisedAtDesc(name, flowId))
     }
 
-    override fun findByRaisedDuringOrderByRaisedAtDesc(raisedDuring: CommandId): List<Event> {
-        return delegate.findByRaisedDuringOrderByRaisedAtDesc(raisedDuring).map { toEvent(it)!! }
+    override fun findByRaisedByCommand_OrderByRaisedAtDesc(raisedDuring: CommandId): List<Event> {
+        return delegate.findByRaisedByCommand_OrderByRaisedAtDesc(raisedDuring).map { toEvent(it)!! }
     }
 
     override fun <S : Event?> save(event: S): S {
@@ -140,12 +140,12 @@ class InMemoryStoredEventStore : InMemoryEntityCrudRepository<StoredEvent, Event
         return findAll().filter { id == it.aggregate.id }
     }
 
-    override fun findFirstByNameAndFlowIdOrderByRaisedAtDesc(name: Name, flowId: CommandId): StoredEvent? {
-        return findAll().sortedByDescending { it.raisedAt }.first { it.name == name && it.flowId == flowId }
+    override fun findFirstByName_AndRaisedByFlow_OrderByRaisedAtDesc(name: Name, flowId: CommandId): StoredEvent? {
+        return findAll().sortedByDescending { it.raisedAt }.first { it.name == name && it.raisedByFlow == flowId }
     }
 
-    override fun findByRaisedDuringOrderByRaisedAtDesc(raisedDuring: CommandId): List<StoredEvent> {
-        return findAll().sortedByDescending { it.raisedAt }.filter { it.raisedDuring == raisedDuring }
+    override fun findByRaisedByCommand_OrderByRaisedAtDesc(raisedDuring: CommandId): List<StoredEvent> {
+        return findAll().sortedByDescending { it.raisedAt }.filter { it.raisedByCommand == raisedDuring }
     }
 
 }

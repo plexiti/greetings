@@ -8,6 +8,7 @@ import com.plexiti.commons.adapters.db.ValueStore
 import com.plexiti.utils.hash
 import org.springframework.data.repository.CrudRepository
 import org.springframework.data.repository.NoRepositoryBean
+import java.io.Serializable
 import java.util.*
 import javax.persistence.*
 import kotlin.reflect.KClass
@@ -40,7 +41,7 @@ interface Value: Named {
 
 @Entity
 @Table(name="VALUES")
-open class StoredValue(): Aggregate<Hash>() {
+open class StoredValue(): AbstractEntity<Hash>() {
 
     @Column(name = "CREATED_AT", nullable = false)
     @Temporal(TemporalType.TIMESTAMP)
@@ -66,12 +67,23 @@ open class StoredValue(): Aggregate<Hash>() {
 
 class DefaultValue : Value
 
-class Hash(value: String = ""): AggregateId(value) {
+class Hash(value: String = ""): Serializable {
 
     @Column(name="HASH", length = 40, nullable = false)
-    override var value = value
+    var value = value
 
     constructor(value: Value): this(hash(value.toJson()))
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is Hash) return false
+        if (value != other.value) return false
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return value.hashCode()
+    }
 
 }
 

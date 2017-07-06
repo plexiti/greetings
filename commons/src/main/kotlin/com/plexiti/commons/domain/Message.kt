@@ -25,7 +25,7 @@ abstract class StoredMessage<ID: MessageId, S: MessageStatus>: Aggregate<ID>(), 
     override var name = Name(name = this::class.simpleName!!)
         protected set
 
-    override val version: Int? = null
+    override val version = -1
         @JsonIgnore get
 
     @Temporal(TemporalType.TIMESTAMP)

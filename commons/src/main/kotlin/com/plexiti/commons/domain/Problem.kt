@@ -22,11 +22,11 @@ import javax.persistence.TemporalType
 @JsonIgnoreProperties(ignoreUnknown = true)
 open class Problem(): RuntimeException() {
 
-    @Column(name = "PROBLEM_CODE", nullable = true)
+    @Column(name = "PROBLEM_CODE", nullable = true, length = 128)
     var code = this::class.simpleName!!
         protected set
 
-    @Column(name = "PROBLEM_MESSAGE", nullable = true)
+    @Column(name = "PROBLEM_MESSAGE", nullable = true, length = 1024)
     override var message: String? = null
         protected set
 

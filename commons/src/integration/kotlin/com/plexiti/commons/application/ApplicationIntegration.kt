@@ -198,7 +198,7 @@ open class ApplicationIntegration : DataJpaIntegration() {
         assertThat(command.internals().status).isEqualTo(CommandStatus.processed)
         assertThat(command.internals().execution.finishedAt).isNotNull()
         assertThat(command.internals().problem?.code).isNull()
-        assertThat(command.internals().finishedBy).isNull()
+        assertThat(command.internals().finishedWith).isNull()
 
     }
 

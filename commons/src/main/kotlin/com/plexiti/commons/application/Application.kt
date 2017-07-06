@@ -51,12 +51,12 @@ class Application {
         when (message.type) {
             MessageType.Event -> {
                 val event = Event.raise(message.event!!)
-                event.internals().flowId = message.flowId
+                event.internals().raisedByFlow = message.flowId
             }
             MessageType.Command -> {
                 val command = Command.issue(message.command!!)
-                command.internals().flowId = message.flowId
-                command.internals().tokenId = message.tokenId
+                command.internals().issuedByFlow = message.flowId
+                command.internals().correlatedTo = message.tokenId
             }
         }
         Event.executingCommand.set(null)
@@ -97,7 +97,7 @@ class Application {
                 command.internals().finish(result)
                 return result
             }
-            return eventStore.findOne(command.internals().finishedBy)
+            return eventStore.findOne(command.internals().finishedWith)
         } catch (e: CamelExecutionException) {
             throw e.exchange.exception
         }
@@ -119,10 +119,10 @@ class Application {
              val instance = it.java.newInstance()
              val correlation = instance.correlation(event)
              if (correlation != null) {
-                 val command = commandStore.findByCorrelationAndExecutionFinishedAtIsNull(correlation)
+                 val command = commandStore.findByCorrelatedBy_AndExecutionFinishedAt_IsNull(correlation)
                  if (command != null) {
                      command.internals().finish(event)
-                     event.internals().flowId = if (command is Flow) command.id else command.internals().flowId
+                     event.internals().raisedByFlow = if (command is Flow) command.id else command.internals().issuedByFlow
                  }
              }
          }
