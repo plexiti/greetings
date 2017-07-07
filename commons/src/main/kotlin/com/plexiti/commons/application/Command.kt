@@ -7,9 +7,11 @@ import com.fasterxml.jackson.annotation.JsonValue
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.plexiti.commons.adapters.db.CommandStore
+import com.plexiti.commons.adapters.db.EventIdListConverter
 import com.plexiti.commons.application.CommandStatus.*
 import com.plexiti.commons.domain.*
 import org.apache.camel.component.jpa.Consumed
+import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.CrudRepository
 import org.springframework.data.repository.NoRepositoryBean
 import java.io.Serializable
@@ -69,16 +71,16 @@ open class Command(): Message {
     open fun construct() {}
 
     open fun <C: Command> command(type: KClass<out C>): C? {
-        if (internals().issuedByFlow != null) {
-            return Command.store.findFirstByName_AndIssuedByFlow_OrderByIssuedAtDesc(Command.store.names[type]!!, internals().issuedByFlow!!) as C?
+        if (internals().issuedBy != null) {
+            return Command.store.findFirstByName_AndIssuedBy_OrderByIssuedAtDesc(Command.store.names[type]!!, internals().issuedBy!!) as C?
         } else {
             throw IllegalStateException()
         }
     }
 
     open fun <E: Event> event(type: KClass<out E>): E? {
-        if (internals().issuedByFlow != null) {
-            return Event.store.findFirstByName_AndRaisedByFlow_OrderByRaisedAtDesc(Event.store.names[type]!!, internals().issuedByFlow!!) as E?
+        if (internals().issuedBy != null) {
+            return Event.store.findFirstByName_AndRaisedBy_OrderByRaisedAtDesc(Event.store.names[type]!!, internals().issuedBy!!) as E?
         } else {
             throw IllegalStateException()
         }
@@ -89,7 +91,7 @@ open class Command(): Message {
     }
 
     open fun correlation(event: Event): Correlation? {
-        return Correlation.create(event.internals().raisedByCommand?.value)
+        return Correlation.create(event.internals().raisedBy?.value)
     }
 
     open fun trigger(event: Event): Command? {
@@ -152,27 +154,28 @@ open class StoredCommand(): StoredMessage<CommandId, CommandStatus>() {
     var processedAt: Date? = null
         internal set
 
-    @Embedded @AttributeOverride(name = "key", column = Column(name = "CORRELATED_BY_KEY", length = 128, nullable = false))
-    lateinit var correlatedBy: Correlation
-        internal set
-
     @Embedded @AttributeOverride(name = "value", column = Column(name = "TRIGGERED_BY_EVENT", nullable = true, length=36))
     var triggeredBy: EventId? = null
         internal set
 
-    @Embedded @AttributeOverride(name="value", column = Column(name="FINISHED_WITH_EVENT", nullable = true, length = 36))
-    var finishedWith: EventId? = null
+    @Embedded @AttributeOverride(name = "value", column = Column(name = "ISSUED_BY_COMMAND", nullable = true, length=36))
+    open var issuedBy: CommandId? = null
         internal set
 
-    @Embedded @AttributeOverride(name = "value", column = Column(name = "ISSUED_BY_FLOW", nullable = true, length=36))
-    open var issuedByFlow: CommandId? = null
+    @Embedded @AttributeOverride(name = "key", column = Column(name = "CORRELATED_BY_KEY", length = 128, nullable = false))
+    lateinit var correlatedBy: Correlation
+        internal set
+
+    @Column(name="CORRELATED_TO_EVENTS", nullable = true, length=4096)
+    @Convert(converter = EventIdListConverter::class)
+    var correlatedToEvents: List<EventId>? = null
         internal set
 
     @Embedded @AttributeOverride(name="value", column = Column(name="CORRELATED_TO_TOKEN", nullable = true))
-    var correlatedTo: TokenId? = null
+    var correlatedToToken: TokenId? = null
         internal set
 
-    @Embedded @AttributeOverride(name="value", column = Column(name="RESULTING_IN_VALUE", nullable = true, length = 40))
+    @Embedded @AttributeOverride(name="value", column = Column(name="RESULTING_IN", nullable = true, length = 40))
     var resultingIn: Hash? = null
         internal set
 
@@ -204,16 +207,16 @@ open class StoredCommand(): StoredMessage<CommandId, CommandStatus>() {
         if (result is Event) {
             val event = result
             execution.finishedAt = event.raisedAt
-            finishedWith = event.id
+            correlatedToEvents = correlatedToEvents?.plus(result.id) ?: listOf(result.id)
         } else if (result is Problem) {
             problem = result
             execution.finishedAt = result.occuredAt
-            finishedWith = null
+            // TODO remove events from correlatedToEvents which were raised in this transation
         } else if (result is Value) {
             execution.finishedAt = Date()
             resultingIn = Hash(result)
         }
-        if (issuedByFlow != null) {
+        if (issuedBy != null) {
             status = finished
         } else {
             status = processed
@@ -294,7 +297,10 @@ interface CommandStore<C>: CrudRepository<C, CommandId> {
 
     fun findByCorrelatedBy_AndExecutionFinishedAt_IsNull(correlation: Correlation): C?
 
-    fun findFirstByName_AndIssuedByFlow_OrderByIssuedAtDesc(name: Name, flowId: CommandId): C?
+    fun findFirstByName_AndIssuedBy_OrderByIssuedAtDesc(name: Name, issuedBy: CommandId): C?
+
+    @Query("select c from StoredCommand c where c.correlatedToEvents like %:eventId%")
+    fun findByCorrelatedToEvents_Containing(eventId: String): List<C>
 
 }
 

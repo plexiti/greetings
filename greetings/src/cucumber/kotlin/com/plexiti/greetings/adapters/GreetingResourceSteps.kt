@@ -1,6 +1,8 @@
 package com.plexiti.greetings.adapters
 
 import com.plexiti.commons.adapters.db.CommandStore
+import com.plexiti.commons.adapters.db.EventStore
+import com.plexiti.commons.domain.Event
 import com.plexiti.greetings.application.GreetingApplication
 import com.plexiti.greetings.domain.Greeting
 import com.plexiti.greetings.domain.GreetingRepository
@@ -16,6 +18,9 @@ import org.springframework.boot.test.web.client.TestRestTemplate
 import org.springframework.http.ResponseEntity
 import org.springframework.test.context.ContextConfiguration
 import java.io.File
+import org.springframework.core.ParameterizedTypeReference
+
+
 
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
@@ -34,10 +39,13 @@ class GreetingResourceSteps {
     lateinit var commandStore: CommandStore
 
     @Autowired
+    lateinit var eventStore: EventStore
+
+    @Autowired
     lateinit var restTemplate: TestRestTemplate
 
     var caller: String? = null
-    var response: ResponseEntity<Greeting.CallAnsweredAutomatically>? = null
+    var response: ResponseEntity<Array<Event>>? = null
 
     @Given("I use the caller (.*)")
     fun useCaller(caller: String) {
@@ -46,7 +54,7 @@ class GreetingResourceSteps {
 
     @When("I request a greeting")
     fun requestGreeting() {
-        this.response = restTemplate.getForEntity("/greetings/{caller}", Greeting.CallAnsweredAutomatically::class.java, caller)
+        this.response = restTemplate.getForEntity("/greetings/{caller}", Array<Event>::class.java, caller)
     }
 
     @Then("I should get a response with HTTP status code (.*)")
@@ -56,7 +64,8 @@ class GreetingResourceSteps {
 
     @And("The response should contain the message (.*)")
     fun theResponseShouldContainTheMessage(message: String) {
-        assertThat(response!!.body.greeting).isEqualTo(message)
+        val event = eventStore.findOne(response!!.body[0].toJson()) as Greeting.CallAnsweredAutomatically
+        assertThat(event.greeting).isEqualTo(message)
     }
 
     @When("I place a greeting in the hot folder")

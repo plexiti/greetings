@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.plexiti.commons.application.*
 import com.plexiti.commons.application.CommandStore
+import com.plexiti.commons.domain.EventId
 import com.plexiti.commons.domain.Name
 import com.plexiti.utils.scanPackageForClassNames
 import com.plexiti.utils.scanPackageForNamedClasses
@@ -13,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
+import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.NoRepositoryBean
 import org.springframework.stereotype.Component
 import org.springframework.stereotype.Repository
@@ -100,8 +102,12 @@ class CommandStore : CommandStore<Command>, ApplicationContextAware, RouteBuilde
         return toCommand(delegate.findByCorrelatedBy_AndExecutionFinishedAt_IsNull(correlation))
     }
 
-    override fun findFirstByName_AndIssuedByFlow_OrderByIssuedAtDesc(name: Name, flowId: CommandId): Command?{
-        return toCommand(delegate.findFirstByName_AndIssuedByFlow_OrderByIssuedAtDesc(name, flowId))
+    override fun findFirstByName_AndIssuedBy_OrderByIssuedAtDesc(name: Name, issuedBy: CommandId): Command?{
+        return toCommand(delegate.findFirstByName_AndIssuedBy_OrderByIssuedAtDesc(name, issuedBy))
+    }
+
+    override fun findByCorrelatedToEvents_Containing(eventId:String): List<Command> {
+        return delegate.findByCorrelatedToEvents_Containing(eventId).mapTo (ArrayList(), { toCommand(it)!! })
     }
 
     override fun findAll(): MutableIterable<Command> {
@@ -153,8 +159,12 @@ class InMemoryStoredCommandStore : InMemoryEntityCrudRepository<StoredCommand, C
         return findAll().find { correlation == it.correlatedBy && it.execution.finishedAt == null }
     }
 
-    override fun findFirstByName_AndIssuedByFlow_OrderByIssuedAtDesc(name: Name, flowId: CommandId): StoredCommand? {
-        return findAll().sortedByDescending { it.issuedAt }.first { it.name == name && it.issuedByFlow == flowId }
+    override fun findFirstByName_AndIssuedBy_OrderByIssuedAtDesc(name: Name, issuedBy: CommandId): StoredCommand? {
+        return findAll().sortedByDescending { it.issuedAt }.first { it.name == name && it.issuedBy == issuedBy }
+    }
+
+    override fun findByCorrelatedToEvents_Containing(eventId: String): List<StoredCommand> {
+        return findAll().filter { it.correlatedToEvents?.contains(EventId(eventId)) ?: false }
     }
 
 }

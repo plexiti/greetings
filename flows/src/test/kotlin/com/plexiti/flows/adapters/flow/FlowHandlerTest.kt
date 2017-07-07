@@ -58,7 +58,7 @@ class FlowHandlerTest {
         val event = Event(Name("Flow_Start"))
         val flow = Flow(Name("Flow_FlowHandlerTest"))
         val message = FlowIO(flow, CommandId(UUID.randomUUID().toString()))
-        message.events = listOf(event)
+        message.event = event
 
         handler.handle(message.toJson())
 

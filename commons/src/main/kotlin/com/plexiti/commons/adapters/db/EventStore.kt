@@ -91,12 +91,16 @@ class EventStore : EventStore<Event>, ApplicationContextAware {
         return delegate.findByAggregateId(id).map { toEvent(it)!! }
     }
 
-    override fun findFirstByName_AndRaisedByFlow_OrderByRaisedAtDesc(name: Name, flowId: CommandId): Event? {
-        return toEvent(delegate.findFirstByName_AndRaisedByFlow_OrderByRaisedAtDesc(name, flowId))
+    override fun findFirstByName_AndRaisedBy_OrderByRaisedAtDesc(name: Name, raisedBy: CommandId): Event? {
+        return toEvent(delegate.findFirstByName_AndRaisedBy_OrderByRaisedAtDesc(name, raisedBy))
     }
 
-    override fun findByRaisedByCommand_OrderByRaisedAtDesc(raisedDuring: CommandId): List<Event> {
-        return delegate.findByRaisedByCommand_OrderByRaisedAtDesc(raisedDuring).map { toEvent(it)!! }
+    override fun findByRaisedBy_OrderByRaisedAtDesc(raisedBy: CommandId): List<Event> {
+        return delegate.findByRaisedBy_OrderByRaisedAtDesc(raisedBy).map { toEvent(it)!! }
+    }
+
+    override fun findAll_OrderByRaisedAtDesc(ids: MutableIterable<EventId>): List<Event> {
+        return delegate.findAll_OrderByRaisedAtDesc(ids).map { toEvent(it)!! }
     }
 
     override fun <S : Event?> save(event: S): S {
@@ -140,12 +144,16 @@ class InMemoryStoredEventStore : InMemoryEntityCrudRepository<StoredEvent, Event
         return findAll().filter { id == it.aggregate.id }
     }
 
-    override fun findFirstByName_AndRaisedByFlow_OrderByRaisedAtDesc(name: Name, flowId: CommandId): StoredEvent? {
-        return findAll().sortedByDescending { it.raisedAt }.first { it.name == name && it.raisedByFlow == flowId }
+    override fun findFirstByName_AndRaisedBy_OrderByRaisedAtDesc(name: Name, raisedBy: CommandId): StoredEvent? {
+        return findAll().sortedByDescending { it.raisedAt }.first { it.name == name && it.raisedBy == raisedBy }
     }
 
-    override fun findByRaisedByCommand_OrderByRaisedAtDesc(raisedDuring: CommandId): List<StoredEvent> {
-        return findAll().sortedByDescending { it.raisedAt }.filter { it.raisedByCommand == raisedDuring }
+    override fun findByRaisedBy_OrderByRaisedAtDesc(raisedBy: CommandId): List<StoredEvent> {
+        return findAll().filter { it.raisedBy == raisedBy }.sortedByDescending { it.raisedAt }
+    }
+
+    override fun findAll_OrderByRaisedAtDesc(ids: MutableIterable<EventId>): List<StoredEvent> {
+        return findAll().filter { ids.contains(it.id) }.sortedByDescending { it.raisedAt }
     }
 
 }

@@ -55,7 +55,7 @@ class FlowForwarder : RouteBuilder() {
         val message = FlowIO(commands.findOne(flow.id)!!, flow.id)
         val event = if (flow.triggeredBy != null) events.findOne(flow.triggeredBy) else null
         if (event != null)
-            message.events = listOf(event)
+            message.event = event
         rabbitTemplate.convertAndSend(queue, message.toJson());
         logger.info("Forwarded ${message.toJson()}")
     }

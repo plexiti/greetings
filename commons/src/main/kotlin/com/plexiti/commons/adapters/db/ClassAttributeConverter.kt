@@ -1,5 +1,6 @@
 package com.plexiti.commons.adapters.db
 
+import javax.persistence.AttributeConverter
 import javax.persistence.Converter
 import kotlin.reflect.KClass
 
@@ -8,7 +9,7 @@ import kotlin.reflect.KClass
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
 @Converter
-class ClassAttributeConverter: javax.persistence.AttributeConverter<Class<*>, String> {
+class ClassAttributeConverter: AttributeConverter<Class<*>, String> {
 
     override fun convertToDatabaseColumn(cls: Class<*>): String {
         return cls.name
@@ -21,7 +22,7 @@ class ClassAttributeConverter: javax.persistence.AttributeConverter<Class<*>, St
 }
 
 @Converter
-class KClassAttributeConverter: javax.persistence.AttributeConverter<KClass<*>, String> {
+class KClassAttributeConverter: AttributeConverter<KClass<*>, String> {
 
     override fun convertToDatabaseColumn(cls: KClass<*>): String {
         return cls.java.name

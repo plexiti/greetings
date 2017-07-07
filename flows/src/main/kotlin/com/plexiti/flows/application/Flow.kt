@@ -21,12 +21,12 @@ class FlowApplication {
     @Transactional
     fun start(io: FlowIO, json: SpinJsonNode) {
         val command = io.command!!
-        val trigger = if (!io.events.isEmpty()) io.events.first() else null
+        val trigger = io.event
         if (trigger != null) {
             runtimeService.startProcessInstanceByMessage(trigger.name.qualified,
                 command.id.value,
                 Variables.createVariables()
-                    .putValue(trigger.name.qualified, json.prop("events").elements()[0])
+                    .putValue(trigger.name.qualified, json.prop("event"))
                     .putValue(command.name.name, json.prop("command"))
             )
         } else {

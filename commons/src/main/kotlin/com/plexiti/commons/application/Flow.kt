@@ -50,8 +50,6 @@ class FlowIO() {
     lateinit var flowId: CommandId
     var tokenId: TokenId? = null
 
-    var events: List<Event> = emptyList()
-
     constructor(event: Event, flowId: CommandId): this() {
         this.type = event.type
         this.event = event

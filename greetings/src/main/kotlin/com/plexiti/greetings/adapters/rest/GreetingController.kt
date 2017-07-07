@@ -28,7 +28,8 @@ class GreetingController {
             return ResponseEntity<Any>(HttpStatus.I_AM_A_TEAPOT)
         }
         val result = application.process(AnswerCaller(caller))
-        return ResponseEntity(result, if (result is Event) HttpStatus.OK else HttpStatus.UNPROCESSABLE_ENTITY)
+        val entity = ResponseEntity(result, if (result is List<*>) HttpStatus.OK else HttpStatus.UNPROCESSABLE_ENTITY)
+        return entity
     }
 
 }

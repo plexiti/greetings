@@ -53,7 +53,7 @@ class FlowResultForwarder : RouteBuilder() {
 
     @Handler
     fun forward(storedCommand: StoredCommand) {
-        val message = FlowIO(Document(commands.findOne(storedCommand.id)!!), storedCommand.issuedByFlow!!, storedCommand.correlatedTo!!)
+        val message = FlowIO(Document(commands.findOne(storedCommand.id)!!), storedCommand.issuedBy!!, storedCommand.correlatedToToken!!)
         rabbitTemplate.convertAndSend(queue, message.toJson());
         logger.info("Forwarded ${message.toJson()}")
     }

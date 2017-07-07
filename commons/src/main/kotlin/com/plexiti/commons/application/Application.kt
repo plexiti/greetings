@@ -53,12 +53,12 @@ class Application {
         when (message.type) {
             MessageType.Event -> {
                 val event = Event.raise(message.event!!)
-                event.internals().raisedByFlow = message.flowId
+                event.internals().raisedBy = message.flowId
             }
             MessageType.Command -> {
                 val command = Command.issue(message.command!!)
-                command.internals().issuedByFlow = message.flowId
-                command.internals().correlatedTo = message.tokenId
+                command.internals().issuedBy = message.flowId
+                command.internals().correlatedToToken = message.tokenId
             }
         }
         Event.executingCommand.set(null)
@@ -99,7 +99,7 @@ class Application {
                 command.internals().correlate(result)
                 return result
             }
-            return eventStore.findOne(command.internals().finishedWith)
+            return eventStore.findAll_OrderByRaisedAtDesc(command.internals().correlatedToEvents!!.toMutableList())
         } catch (e: CamelExecutionException) {
             throw e.exchange.exception
         }

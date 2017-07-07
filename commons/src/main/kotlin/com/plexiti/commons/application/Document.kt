@@ -29,7 +29,7 @@ class Document(): Message {
         this.name = command.name
         this.id = command.id
         this.command = command
-        this.events = Event.store.findByRaisedByCommand_OrderByRaisedAtDesc(command.id)
+        this.events = Event.store.findByRaisedBy_OrderByRaisedAtDesc(command.id)
         if (command.internals().resultingIn != null) {
             this.value = Value.store.findOne(command.internals().resultingIn)
         }

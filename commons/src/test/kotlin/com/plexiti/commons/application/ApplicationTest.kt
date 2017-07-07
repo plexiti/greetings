@@ -43,7 +43,7 @@ class ApplicationTest {
 
         val event = Event.store.findAll().iterator().next()
 
-        assertThat(event.internals().status).isEqualTo(EventStatus.consumed)
+        assertThat(event.internals().status).isEqualTo(EventStatus.processed)
         assertThat(event.internals().raisedAt).isNotNull()
         assertThat(event.internals().forwardedAt).isNull()
         assertThat(event.internals().consumedAt).isNotNull()
@@ -64,7 +64,7 @@ class ApplicationTest {
         event.internals().forward()
 
         application.consume(event.toJson())
-        assertThat(event.internals().status).isEqualTo(EventStatus.consumed)
+        assertThat(event.internals().status).isEqualTo(EventStatus.processed)
         assertThat(event.internals().raisedAt).isNotNull()
         assertThat(event.internals().forwardedAt).isNotNull()
         assertThat(event.internals().consumedAt).isNotNull()

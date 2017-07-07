@@ -1,5 +1,6 @@
 package com.plexiti.commons.adapters.mq
 
+import com.plexiti.commons.adapters.db.CommandStore
 import com.plexiti.commons.adapters.db.EventStore
 import com.plexiti.commons.application.FlowIO
 import com.plexiti.commons.domain.StoredEvent
@@ -34,7 +35,10 @@ class FlowEventForwarder : RouteBuilder() {
     private lateinit var queue: String
 
     @Autowired
-    private lateinit var repository: EventStore
+    private lateinit var commandStore: CommandStore
+
+    @Autowired
+    private lateinit var eventStore: EventStore
 
     @Autowired
     private lateinit var rabbitTemplate: RabbitTemplate
@@ -48,9 +52,13 @@ class FlowEventForwarder : RouteBuilder() {
 
     @Handler
     fun forward(event: StoredEvent) {
-        val message = FlowIO(repository.findOne(event.id)!!, event.raisedByFlow!!)
-        rabbitTemplate.convertAndSend(queue, message.toJson());
-        logger.info("Forwarded ${message.toJson()}")
+        val commands = commandStore.findByCorrelatedToEvents_Containing(event.id.value)
+        commands.forEach {
+            // TODO Consider that this could partially fail and result in duplicate messages
+            val message = FlowIO(eventStore.findOne(event.id)!!, it.id)
+            rabbitTemplate.convertAndSend(queue, message.toJson());
+            logger.info("Forwarded ${message.toJson()}")
+        }
     }
 
 }
