@@ -28,10 +28,13 @@ class Flow(): Command() {
         query = "select f from StoredFlow f where f.forwardedAt is null"
     )
 )
-class StoredFlow(): StoredCommand() {
+class StoredFlow: StoredCommand {
 
     @Transient
     override val type = MessageType.Flow
+
+    constructor() : super()
+    constructor(flow: Flow) : super(flow)
 
 }
 

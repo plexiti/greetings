@@ -49,6 +49,16 @@ open class Command(): Message {
             return store.save(command)
         }
 
+        fun issue(message: FlowIO): Command {
+            val command = issue(Command.fromJson(message.command!!.toJson()))
+            val entity = command.internals()
+            entity.issuedBy = message.flowId
+            entity.correlatedToToken = message.tokenId
+            command.construct()
+            entity.json = command.toJson()
+            return command
+        }
+
         fun fromJson(json: String): Command {
             val node = ObjectMapper().readValue(json, ObjectNode::class.java)
             val name = node.get("name").textValue()
@@ -57,9 +67,7 @@ open class Command(): Message {
         }
 
         fun <C: Command> fromJson(json: String, type: KClass<C>): C {
-            val command =  ObjectMapper().readValue(json, type.java)
-            command.construct()
-            return command
+            return ObjectMapper().readValue(json, type.java)
         }
 
     }
@@ -73,17 +81,21 @@ open class Command(): Message {
     open fun <C: Command> command(type: KClass<out C>): C? {
         if (internals().issuedBy != null) {
             return Command.store.findFirstByName_AndIssuedBy_OrderByIssuedAtDesc(Command.store.names[type]!!, internals().issuedBy!!) as C?
-        } else {
-            throw IllegalStateException()
         }
+        return null
     }
 
     open fun <E: Event> event(type: KClass<out E>): E? {
         if (internals().issuedBy != null) {
-            return Event.store.findFirstByName_AndRaisedBy_OrderByRaisedAtDesc(Event.store.names[type]!!, internals().issuedBy!!) as E?
-        } else {
-            throw IllegalStateException()
+            val flow = Command.store.findOne(internals().issuedBy) as Flow
+            val correlatedToEvents = flow.internals().correlatedToEvents ?: listOf()
+            val triggeredBy = flow.internals().triggeredBy
+            val allEvents = if (triggeredBy != null) correlatedToEvents + triggeredBy else correlatedToEvents
+            if (!allEvents.isEmpty()) {
+                return Event.store.findFirstByName_OrderByRaisedAtDesc(Event.store.names[type]!!, allEvents.toMutableList()) as E?
+            }
         }
+        return null
     }
 
     open fun correlation(): Correlation {

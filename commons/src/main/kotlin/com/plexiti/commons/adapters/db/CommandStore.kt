@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode
 import com.plexiti.commons.application.*
 import com.plexiti.commons.application.CommandStore
 import com.plexiti.commons.domain.EventId
+import com.plexiti.commons.domain.MessageType
 import com.plexiti.commons.domain.Name
 import com.plexiti.utils.scanPackageForClassNames
 import com.plexiti.utils.scanPackageForNamedClasses
@@ -31,6 +32,8 @@ class CommandStore : CommandStore<Command>, ApplicationContextAware, RouteBuilde
     private fun init() {
         types = scanPackageForNamedClasses("com.plexiti", Command::class)
         names = scanPackageForClassNames("com.plexiti", Command::class)
+        types = types.plus(Name("Greetings_DealWithCaller") to Flow::class)
+        names = names.plus(Flow::class to Name("Greetings_DealWithCaller"))
     }
 
     @Value("\${com.plexiti.app.context}")
@@ -41,6 +44,7 @@ class CommandStore : CommandStore<Command>, ApplicationContextAware, RouteBuilde
 
     lateinit internal var types: Map<Name, KClass<out Command>>
     lateinit internal var names: Map<KClass<out Command>, Name>
+    internal var flows: Map<Name, Name> = mapOf(Name("Greetings_CallAnsweredAutomatically") to Name("Greetings_DealWithCaller"))
 
     internal fun type(qName: Name): KClass<out Command> {
         return types.get(qName) ?: throw IllegalArgumentException("Command type '${qName.qualified}' is not mapped to a local object type!")
@@ -51,7 +55,8 @@ class CommandStore : CommandStore<Command>, ApplicationContextAware, RouteBuilde
     }
 
     internal fun toEntity(command: Command?): StoredCommand? {
-        return if (command != null) (delegate.findOne(command.id) ?: StoredCommand(command)) else null
+        return if (command != null) delegate.findOne(command.id)
+            ?: if (command is Flow) StoredFlow(command) else StoredCommand(command) else null
     }
 
     override fun setApplicationContext(applicationContext: ApplicationContext?) {

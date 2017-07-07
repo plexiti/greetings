@@ -6,8 +6,10 @@ import com.fasterxml.jackson.databind.node.ObjectNode
 import com.plexiti.commons.adapters.db.EventStore
 import com.plexiti.commons.application.Command
 import com.plexiti.commons.application.CommandId
-import com.plexiti.commons.domain.StoredEvent.EventAggregate
+import com.plexiti.commons.application.Flow
+import com.plexiti.commons.application.FlowIO
 import com.plexiti.commons.domain.EventStatus.*
+import com.plexiti.commons.domain.StoredEvent.*
 import org.apache.camel.component.jpa.Consumed
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.CrudRepository
@@ -69,6 +71,15 @@ open class Event() : Message {
             return event
         }
 
+        fun raise(message: FlowIO): Event {
+            val event = raise(Event.fromJson(message.event!!.toJson()))
+            val entity = event.internals()
+            entity.raisedBy = message.flowId
+            event.construct()
+            entity.json = event.toJson()
+            return event
+        }
+
         fun fromJson(json: String): Event {
             val node = ObjectMapper().readValue(json, ObjectNode::class.java)
             val name = node.get("name").textValue()
@@ -77,9 +88,7 @@ open class Event() : Message {
         }
 
         fun <E: Event> fromJson(json: String, type: KClass<E>): E {
-            val event =  ObjectMapper().readValue(json, type.java)
-            event.construct()
-            return event
+            return ObjectMapper().readValue(json, type.java)
         }
 
     }
@@ -93,17 +102,21 @@ open class Event() : Message {
     open fun <C: Command> command(type: KClass<out C>): C? {
         if (internals().raisedBy != null) {
             return Command.store.findFirstByName_AndIssuedBy_OrderByIssuedAtDesc(Command.store.names[type]!!, internals().raisedBy!!) as C?
-        } else {
-            throw IllegalStateException()
         }
+        return null
     }
 
     open fun <E: Event> event(type: KClass<out E>): E? {
         if (internals().raisedBy != null) {
-            return Event.store.findFirstByName_AndRaisedBy_OrderByRaisedAtDesc(Event.store.names[type]!!, internals().raisedBy!!) as E?
-        } else {
-            throw IllegalStateException()
+            val flow = Command.store.findOne(internals().raisedBy) as Flow
+            var correlatedToEvents = flow.internals().correlatedToEvents ?: listOf()
+            val triggeredBy = flow.internals().triggeredBy
+            val allEvents = if (triggeredBy != null) correlatedToEvents + triggeredBy else correlatedToEvents
+            if (allEvents != null && !allEvents.isEmpty()) {
+                return Event.store.findFirstByName_OrderByRaisedAtDesc(Event.store.names[type]!!, allEvents.toMutableList()) as E?
+            }
         }
+        return null
     }
 
 
@@ -229,7 +242,8 @@ interface EventStore<E>: CrudRepository<E, EventId> {
 
     fun findByAggregateId(id: String): List<E>
 
-    fun findFirstByName_AndRaisedBy_OrderByRaisedAtDesc(name: Name, raisedBy: CommandId): E?
+    @Query( "select e from StoredEvent e where e.name = :name and (e.id in :ids) order by e.raisedAt desc")
+    fun findFirstByName_OrderByRaisedAtDesc(@Param("name") name: Name, @Param("ids") ids: MutableIterable<EventId>): E?
 
     fun findByRaisedBy_OrderByRaisedAtDesc(raisedBy: CommandId): List<E>
 

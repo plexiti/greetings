@@ -38,7 +38,7 @@ class GreetingApplication {
         lateinit var greeting: String
 
         override fun construct() {
-            greeting = event(CallAnsweredAutomatically::class)!!.greeting!!
+            greeting = event(CallAnsweredAutomatically::class)!!.greeting
         }
 
         constructor(greeting: String): this() {

@@ -3,10 +3,7 @@ package com.plexiti.commons.application
 import com.plexiti.commons.adapters.db.CommandStore
 import com.plexiti.commons.adapters.db.ValueStore
 import com.plexiti.commons.adapters.db.EventStore
-import com.plexiti.commons.domain.Value
-import com.plexiti.commons.domain.Event
-import com.plexiti.commons.domain.MessageType
-import com.plexiti.commons.domain.Problem
+import com.plexiti.commons.domain.*
 import org.apache.camel.CamelExecutionException
 import org.apache.camel.ProducerTemplate
 import org.springframework.beans.factory.annotation.Autowired
@@ -39,6 +36,7 @@ class Application {
         if (eventId != null) {
             val event = eventStore.findOne(eventId) ?: eventStore.save(Event.fromJson(json))
             triggerBy(event)
+            triggerFlowBy(event)
             val correlatesToFlow = correlate(event)
             event.internals().consume()
             if (!correlatesToFlow)
@@ -51,15 +49,8 @@ class Application {
         val message = FlowIO.fromJson(json)
         Event.executingCommand.set(commandStore.findOne(message.flowId))
         when (message.type) {
-            MessageType.Event -> {
-                val event = Event.raise(message.event!!)
-                event.internals().raisedBy = message.flowId
-            }
-            MessageType.Command -> {
-                val command = Command.issue(message.command!!)
-                command.internals().issuedBy = message.flowId
-                command.internals().correlatedToToken = message.tokenId
-            }
+            MessageType.Event -> Event.raise(message)
+            MessageType.Command -> Command.issue(message)
         }
         Event.executingCommand.set(null)
     }
@@ -112,6 +103,15 @@ class Application {
             if (command != null) {
                 command = Command.issue(command)
                 command.internals().triggeredBy = event.id
+            }
+        }
+    }
+
+    private fun triggerFlowBy(event: Event) {
+        Command.store.flows.forEach { eventName, commandName ->
+            if (event.name == eventName) {
+                val flow = Command.issue(Flow(commandName))
+                flow.internals().triggeredBy = event.id
             }
         }
     }

@@ -91,8 +91,8 @@ class EventStore : EventStore<Event>, ApplicationContextAware {
         return delegate.findByAggregateId(id).map { toEvent(it)!! }
     }
 
-    override fun findFirstByName_AndRaisedBy_OrderByRaisedAtDesc(name: Name, raisedBy: CommandId): Event? {
-        return toEvent(delegate.findFirstByName_AndRaisedBy_OrderByRaisedAtDesc(name, raisedBy))
+    override fun findFirstByName_OrderByRaisedAtDesc(name: Name, ids: MutableIterable<EventId>): Event? {
+        return toEvent(delegate.findFirstByName_OrderByRaisedAtDesc(name, ids))
     }
 
     override fun findByRaisedBy_OrderByRaisedAtDesc(raisedBy: CommandId): List<Event> {
@@ -144,8 +144,8 @@ class InMemoryStoredEventStore : InMemoryEntityCrudRepository<StoredEvent, Event
         return findAll().filter { id == it.aggregate.id }
     }
 
-    override fun findFirstByName_AndRaisedBy_OrderByRaisedAtDesc(name: Name, raisedBy: CommandId): StoredEvent? {
-        return findAll().sortedByDescending { it.raisedAt }.first { it.name == name && it.raisedBy == raisedBy }
+    override fun findFirstByName_OrderByRaisedAtDesc(name: Name, ids: MutableIterable<EventId>): StoredEvent? {
+        return findAll().sortedByDescending { it.raisedAt }.first { it.name == name && ids.contains(it.id) }
     }
 
     override fun findByRaisedBy_OrderByRaisedAtDesc(raisedBy: CommandId): List<StoredEvent> {

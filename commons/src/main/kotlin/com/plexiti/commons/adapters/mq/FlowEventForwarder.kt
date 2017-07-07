@@ -55,6 +55,7 @@ class FlowEventForwarder : RouteBuilder() {
         val commands = commandStore.findByCorrelatedToEvents_Containing(event.id.value)
         commands.forEach {
             // TODO Consider that this could partially fail and result in duplicate messages
+
             val message = FlowIO(eventStore.findOne(event.id)!!, it.id)
             rabbitTemplate.convertAndSend(queue, message.toJson());
             logger.info("Forwarded ${message.toJson()}")

@@ -36,7 +36,7 @@ abstract class StoredMessage<ID: MessageId, S: MessageStatus>: Aggregate<ID>(), 
     @Lob
     @Column(name="JSON", columnDefinition = "text", nullable = false)
     lateinit var json: String
-        protected set
+        internal set
 
     @Enumerated(EnumType.STRING) @JsonIgnore
     @Column(name="STATUS", length = 16, nullable = false)
