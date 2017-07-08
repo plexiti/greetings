@@ -40,7 +40,7 @@ class EventStore : EventStore<Event>, ApplicationContextAware {
     private var delegate: StoredEventStore = InMemoryStoredEventStore()
 
     lateinit internal var types: Map<Name, KClass<out Event>>
-    lateinit internal var names: Map<KClass<out Event>, Name>
+    lateinit var names: Map<KClass<out Event>, Name>
 
     internal fun type(qName: Name): KClass<out Event> {
         return types.get(qName) ?: throw IllegalArgumentException("Event type '$qName' is not mapped to a local object type!")
@@ -93,8 +93,8 @@ class EventStore : EventStore<Event>, ApplicationContextAware {
         return delegate.findByAggregateId(id).map { toEvent(it)!! }
     }
 
-    override fun findFirstByName_OrderByRaisedAtDesc(name: Name, ids: MutableIterable<EventId>): Event? {
-        return toEvent(delegate.findFirstByName_OrderByRaisedAtDesc(name, ids))
+    override fun findFirstByName_OrderByRaisedAtDesc(name: Name, ids: MutableIterable<EventId>): List<Event> {
+        return delegate.findFirstByName_OrderByRaisedAtDesc(name, ids).map { toEvent(it)!! }
     }
 
     override fun findByRaisedBy_OrderByRaisedAtDesc(raisedBy: CommandId): List<Event> {
@@ -106,17 +106,22 @@ class EventStore : EventStore<Event>, ApplicationContextAware {
     }
 
     override fun <S : Event?> save(event: S): S {
-        @Suppress("unchecked_cast")
-        return toEvent(delegate.save(toEntity(event))) as S
+        val entity = toEntity(event)!!
+        entity.raisedBy = Event.executingCommand.get()?.id
+        delegate.save(entity)
+        val e = toEvent(entity)!!
+        Event.executingCommand.get()?.internals()?.correlate(e)
+        return event
     }
 
     fun save(message: FlowIO): Event {
         val entity = toEntity(message.event)!!
         entity.raisedBy = message.flowId
+        delegate.save(entity)
         val event = toEvent(entity)!!
+        Event.executingCommand.get()?.internals()?.correlate(event)
         event.construct()
         entity.json = event.toJson()
-        delegate.save(entity)
         return event
     }
 
@@ -147,7 +152,7 @@ class EventStore : EventStore<Event>, ApplicationContextAware {
 }
 
 @Repository
-internal interface StoredEventStore : EventStore<StoredEvent>
+interface StoredEventStore : EventStore<StoredEvent>
 
 @NoRepositoryBean
 class InMemoryStoredEventStore : InMemoryEntityCrudRepository<StoredEvent, EventId>(), StoredEventStore {
@@ -156,8 +161,8 @@ class InMemoryStoredEventStore : InMemoryEntityCrudRepository<StoredEvent, Event
         return findAll().filter { id == it.aggregate?.id }
     }
 
-    override fun findFirstByName_OrderByRaisedAtDesc(name: Name, ids: MutableIterable<EventId>): StoredEvent? {
-        return findAll().sortedByDescending { it.raisedAt }.first { it.name == name && ids.contains(it.id) }
+    override fun findFirstByName_OrderByRaisedAtDesc(name: Name, ids: MutableIterable<EventId>): List<StoredEvent> {
+        return findAll().filter { it.name == name && ids.contains(it.id) }.sortedByDescending { it.raisedAt }
     }
 
     override fun findByRaisedBy_OrderByRaisedAtDesc(raisedBy: CommandId): List<StoredEvent> {

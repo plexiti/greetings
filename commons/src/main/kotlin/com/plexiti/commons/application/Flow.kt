@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.plexiti.commons.domain.*
 import javax.persistence.*
+import kotlin.reflect.KClass
 
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
@@ -15,7 +16,26 @@ class Flow(): Command() {
     override val type = MessageType.Flow
 
     constructor(name: Name): this() {
+
         this.name = name
+
+    }
+
+    override fun trigger(event: Event): Command? {
+
+        var flow: Flow? = null
+        triggers.forEach { eventName, flowName ->
+            if (event.name == eventName )
+                flow = Flow(flowName)
+        }
+        return flow
+
+    }
+
+    companion object {
+
+        var triggers: Map<Name, Name> = emptyMap()
+
     }
 
 }

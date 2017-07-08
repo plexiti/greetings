@@ -6,6 +6,7 @@ import com.plexiti.commons.adapters.db.EventStore
 import com.plexiti.commons.domain.*
 import org.apache.camel.CamelExecutionException
 import org.apache.camel.ProducerTemplate
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Propagation
@@ -36,7 +37,6 @@ class Application {
         if (eventId != null) {
             val event = eventStore.findOne(eventId) ?: eventStore.save(Event.fromJson(json))
             triggerBy(event)
-            triggerFlowBy(event)
             val correlatesToFlow = correlate(event)
             event.internals().consume()
             if (!correlatesToFlow)
@@ -103,15 +103,6 @@ class Application {
             if (command != null) {
                 command = Command.issue(command)
                 command.internals().triggeredBy = event.id
-            }
-        }
-    }
-
-    private fun triggerFlowBy(event: Event) {
-        Command.store.flows.forEach { eventName, commandName ->
-            if (event.name == eventName) {
-                val flow = Command.issue(Flow(commandName))
-                flow.internals().triggeredBy = event.id
             }
         }
     }

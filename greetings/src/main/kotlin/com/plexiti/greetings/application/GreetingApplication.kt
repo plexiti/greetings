@@ -35,10 +35,10 @@ class GreetingApplication {
 
     class IdentifyCaller(): Command() {
 
-        lateinit var greeting: String
+        var greeting = "Hello World, Peter"
 
         override fun construct() {
-            greeting = event(CallAnsweredAutomatically::class)!!.greeting
+            // greeting = event(CallAnsweredAutomatically::class)!!.greeting
         }
 
         constructor(greeting: String): this() {

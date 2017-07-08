@@ -29,11 +29,12 @@ class CommandStore : CommandStore<Command>, ApplicationContextAware, RouteBuilde
 
     init { init() }
 
-    private fun init() {
+    fun init(flows: Set<Name> = emptySet()) {
         types = scanPackageForNamedClasses("com.plexiti", Command::class)
         names = scanPackageForClassNames("com.plexiti", Command::class)
-        types = types.plus(Name("Greetings_DealWithCaller") to Flow::class)
-        names = names.plus(Flow::class to Name("Greetings_DealWithCaller"))
+        flows.forEach { flowName ->
+            types = types.plus(flowName to Flow::class)
+        }
     }
 
     @Value("\${com.plexiti.app.context}")
@@ -44,7 +45,6 @@ class CommandStore : CommandStore<Command>, ApplicationContextAware, RouteBuilde
 
     lateinit internal var types: Map<Name, KClass<out Command>>
     lateinit internal var names: Map<KClass<out Command>, Name>
-    internal var flows: Map<Name, Name> = mapOf(Name("Greetings_CallAnsweredAutomatically") to Name("Greetings_DealWithCaller"))
 
     internal fun type(qName: Name): KClass<out Command> {
         return types.get(qName) ?: throw IllegalArgumentException("Command type '${qName.qualified}' is not mapped to a local object type!")
@@ -132,10 +132,10 @@ class CommandStore : CommandStore<Command>, ApplicationContextAware, RouteBuilde
         val entity = toEntity(message.command)!!
         entity.issuedBy = message.flowId
         entity.correlatedToToken = message.tokenId
+        delegate.save(entity)
         val command = toCommand(entity)!!
         command.construct()
         entity.json = command.toJson()
-        delegate.save(entity)
         return command
     }
 
@@ -166,7 +166,7 @@ class CommandStore : CommandStore<Command>, ApplicationContextAware, RouteBuilde
 }
 
 @Repository
-internal interface StoredCommandStore : CommandStore<StoredCommand>
+interface StoredCommandStore : CommandStore<StoredCommand>
 
 @NoRepositoryBean
 class InMemoryStoredCommandStore : InMemoryEntityCrudRepository<StoredCommand, CommandId>(), StoredCommandStore {

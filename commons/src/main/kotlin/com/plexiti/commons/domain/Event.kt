@@ -11,6 +11,7 @@ import com.plexiti.commons.application.FlowIO
 import com.plexiti.commons.domain.EventStatus.*
 import com.plexiti.commons.domain.StoredEvent.*
 import org.apache.camel.component.jpa.Consumed
+import org.slf4j.LoggerFactory
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.CrudRepository
 import org.springframework.data.repository.NoRepositoryBean
@@ -60,21 +61,23 @@ open class Event() : Message {
 
     companion object {
 
+        internal val logger = LoggerFactory.getLogger(Event::class.java)
+
         var store = EventStore()
 
         internal val executingCommand = ThreadLocal<Command?>()
 
         fun <E: Event> raise(event: E): E {
             val e = store.save(event)
-            e.internals().raisedBy = executingCommand.get()?.id
-            executingCommand.get()?.internals()?.correlate(e)
-            return event
+            logger.info("${e.toJson()} raised by ${executingCommand.get()?.toJson()})")
+            return e;
         }
 
-        fun raise(message: FlowIO): Event {
-            return store.save(message)
+        fun raise(event: FlowIO): Event {
+            val e = store.save(event)
+            logger.info("${e.toJson()} raised by ${executingCommand.get()?.toJson()})")
+            return e;
         }
-
 
         fun fromJson(json: String): Event {
             val node = ObjectMapper().readValue(json, ObjectNode::class.java)
@@ -96,8 +99,10 @@ open class Event() : Message {
     open fun construct() {}
 
     open fun <C: Command> command(type: KClass<out C>): C? {
-        if (internals().raisedBy != null) {
-            return Command.store.findFirstByName_AndIssuedBy_OrderByIssuedAtDesc(Command.store.names[type]!!, internals().raisedBy!!) as C?
+        val raisedBy = internals().raisedBy
+        if (raisedBy != null) {
+            val name = Command.store.names[type]!!
+            return Command.store.findFirstByName_AndIssuedBy_OrderByIssuedAtDesc(name, raisedBy) as C?
         }
         return null
     }
@@ -153,22 +158,18 @@ class StoredEvent(): StoredMessage<EventId, EventStatus>() {
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "RAISED_AT", nullable = false)
     lateinit var raisedAt: Date
-        internal set
 
     @Embedded
     @AttributeOverride(name="value", column = Column(name="RAISED_BY_COMMAND", nullable = true, length = 36))
     var raisedBy: CommandId? = null
-        internal set
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "CONSUMED_AT", nullable = true)
     var consumedAt: Date? = null
-        internal set
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "PROCESSED_AT", nullable = true)
     var processedAt: Date? = null
-        internal set
 
     @Embedded
     var aggregate: EventAggregate? = null
@@ -239,11 +240,11 @@ interface EventStore<E>: CrudRepository<E, EventId> {
     fun findByAggregateId(id: String): List<E>
 
     @Query( "select e from StoredEvent e where e.name = :name and (e.id in :ids) order by e.raisedAt desc")
-    fun findFirstByName_OrderByRaisedAtDesc(@Param("name") name: Name, @Param("ids") ids: MutableIterable<EventId>): E?
+    fun findFirstByName_OrderByRaisedAtDesc(@Param("name") name: Name, @Param("ids") ids: MutableIterable<EventId>): List<E>
 
     fun findByRaisedBy_OrderByRaisedAtDesc(raisedBy: CommandId): List<E>
 
-    @Query( "select e from StoredEvent e where e.id in :ids order by e.raisedAt desc" )
+    @Query("select e from StoredEvent e where e.id in :ids order by e.raisedAt desc")
     fun findAll_OrderByRaisedAtDesc(@Param("ids") ids: MutableIterable<EventId>): List<E>
 
 }

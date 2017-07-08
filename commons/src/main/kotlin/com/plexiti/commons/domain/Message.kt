@@ -23,7 +23,6 @@ abstract class StoredMessage<ID: MessageId, S: MessageStatus>: Aggregate<ID>(), 
 
     @Embedded
     override var name = Name(name = this::class.simpleName!!)
-        protected set
 
     override val version = -1
         @JsonIgnore get
@@ -31,12 +30,10 @@ abstract class StoredMessage<ID: MessageId, S: MessageStatus>: Aggregate<ID>(), 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "FORWARDED_AT", nullable = true)
     var forwardedAt: Date? = null
-        protected set
 
     @Lob
     @Column(name="JSON", columnDefinition = "text", nullable = false)
     lateinit var json: String
-        internal set
 
     @Enumerated(EnumType.STRING) @JsonIgnore
     @Column(name="STATUS", length = 16, nullable = false)

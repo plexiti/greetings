@@ -41,17 +41,35 @@ open class ApplicationIntegration : DataJpaIntegration() {
     }
 
     class FlowITCommand(): Command() {
-        lateinit var someProperty: String
-        override fun construct() {
-            someProperty = "someValue"
+
+        var someCommandProperty: String? = null
+        var someEventProperty: String? = null
+
+        constructor(someCommandProperty: String): this() {
+            this.someCommandProperty = someCommandProperty
         }
+
+        override fun construct() {
+            someCommandProperty = "someCommandValue"
+            someEventProperty = event(FlowITEvent::class)?.someEventProperty
+        }
+
     }
 
     class FlowITEvent(): Event() {
-        lateinit var someProperty: String
-        override fun construct() {
-            someProperty = "someValue"
+
+        var someEventProperty: String? = null
+        var someCommandProperty: String? = null
+
+        constructor(someEventProperty: String): this() {
+            this.someEventProperty = someEventProperty
         }
+
+        override fun construct() {
+            someEventProperty = "someEventValue"
+            someCommandProperty = command(FlowITCommand::class)?.someEventProperty
+        }
+
     }
 
     class ProblemITCommand: Command()
@@ -219,16 +237,24 @@ open class ApplicationIntegration : DataJpaIntegration() {
     @Test
     fun handleFlowIOCommand() {
 
+        Command.store.init(setOf(Name(name = "aFlow")))
+        val flow = Command.issue(Flow(Name(name = "aFlow")))
+        val event = FlowIO(FlowITEvent("someEventValue"), flow.id)
+        
+        application.handle(event.toJson())
+
         val flowCommand = Command(Name(name = "FlowITCommand"))
-        val message = FlowIO(flowCommand, CommandId("aFlowId"), TokenId("aTokenId"))
+        val message = FlowIO(flowCommand, flow.id, TokenId("aTokenId"))
+
         application.handle(message.toJson())
 
         val command = commandRepository.findOne(flowCommand.id) as FlowITCommand
 
-        assertThat(command.someProperty).isEqualTo("someValue")
+        assertThat(command.someCommandProperty).isEqualTo("someCommandValue")
+        assertThat(command.someEventProperty).isEqualTo("someEventValue")
 
         assertThat(command.internals().status).isEqualTo(CommandStatus.issued)
-        assertThat(command.internals().issuedBy).isEqualTo(CommandId("aFlowId"))
+        assertThat(command.internals().issuedBy).isEqualTo(flow.id)
         assertThat(command.internals().correlatedToToken).isEqualTo(TokenId("aTokenId"))
         assertThat(command.internals().correlatedToEvents).isNull()
 
@@ -237,16 +263,24 @@ open class ApplicationIntegration : DataJpaIntegration() {
     @Test
     fun handleFlowIOEvent() {
 
+        Command.store.init(setOf(Name(name = "aFlow")))
+        val flow = Command.issue(Flow(Name(name = "aFlow")))
+
+        val command = FlowIO(FlowITCommand("someCommandValue"), flow.id, TokenId("aTokenId"))
+
+        application.handle(command.toJson())
+
         val flowEvent = Event(Name(name = "FlowITEvent"))
-        val message = FlowIO(flowEvent, CommandId("aFlowId"))
+        val message = FlowIO(flowEvent, flow.id)
         application.handle(message.toJson())
 
         val event = eventRepository.findOne(flowEvent.id) as FlowITEvent
 
-        assertThat(event.someProperty).isEqualTo("someValue")
+        assertThat(event.someEventProperty).isEqualTo("someEventValue")
+        assertThat(event.someCommandProperty).isEqualTo("someCommandValue")
 
         assertThat(event.internals().status).isEqualTo(EventStatus.raised)
-        assertThat(event.internals().raisedBy).isEqualTo(CommandId("aFlowId"))
+        assertThat(event.internals().raisedBy).isEqualTo(flow.id)
 
     }
 

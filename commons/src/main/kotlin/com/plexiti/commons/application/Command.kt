@@ -11,6 +11,7 @@ import com.plexiti.commons.adapters.db.EventIdListConverter
 import com.plexiti.commons.application.CommandStatus.*
 import com.plexiti.commons.domain.*
 import org.apache.camel.component.jpa.Consumed
+import org.slf4j.LoggerFactory
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.CrudRepository
 import org.springframework.data.repository.NoRepositoryBean
@@ -43,14 +44,21 @@ open class Command(): Message {
 
     companion object {
 
+        internal val logger = LoggerFactory.getLogger(Command::class.java)
+
         var store = CommandStore()
 
         fun <C: Command> issue(command: C): C {
-            return store.save(command)
+            val c = store.save(command)
+            val trigger = if (c.internals().triggeredBy != null) Event.store.findOne(c.internals().triggeredBy) else null
+            logger.info("${c.toJson()}" + (if (trigger != null) " triggered by ${Event.store.findOne(c.internals().triggeredBy)!!.toJson()}" else " issued without known trigger."))
+            return c
         }
 
-        fun issue(message: FlowIO): Command {
-            return store.save(message)
+        fun issue(command: FlowIO): Command {
+            val c = store.save(command)
+            logger.info("${c.toJson()} issued by ${Event.executingCommand.get()!!.toJson()})")
+            return c
         }
 
         fun fromJson(json: String): Command {
@@ -86,7 +94,8 @@ open class Command(): Message {
             val triggeredBy = flow.internals().triggeredBy
             val allEvents = if (triggeredBy != null) correlatedToEvents + triggeredBy else correlatedToEvents
             if (!allEvents.isEmpty()) {
-                return Event.store.findFirstByName_OrderByRaisedAtDesc(Event.store.names[type]!!, allEvents.toMutableList()) as E?
+                val events = Event.store.findFirstByName_OrderByRaisedAtDesc(Event.store.names[type]!!, allEvents.toMutableList())
+                return if (!events.isEmpty()) events.first() as E else null
             }
         }
         return null
@@ -153,45 +162,35 @@ open class StoredCommand(): StoredMessage<CommandId, CommandStatus>() {
     @Column(name = "ISSUED_AT", nullable = false)
     @Temporal(TemporalType.TIMESTAMP)
     var issuedAt = Date()
-        internal set
 
     @Column(name = "PROCESSED_AT", nullable = true)
     @Temporal(TemporalType.TIMESTAMP)
     var processedAt: Date? = null
-        internal set
 
     @Embedded @AttributeOverride(name = "value", column = Column(name = "TRIGGERED_BY_EVENT", nullable = true, length=36))
     var triggeredBy: EventId? = null
-        internal set
 
     @Embedded @AttributeOverride(name = "value", column = Column(name = "ISSUED_BY_COMMAND", nullable = true, length=36))
     open var issuedBy: CommandId? = null
-        internal set
 
     @Embedded @AttributeOverride(name = "key", column = Column(name = "CORRELATED_BY_KEY", length = 128, nullable = false))
     lateinit var correlatedBy: Correlation
-        internal set
 
     @Column(name="CORRELATED_TO_EVENTS", nullable = true, length=4096)
     @Convert(converter = EventIdListConverter::class)
     var correlatedToEvents: List<EventId>? = null
-        internal set
 
     @Embedded @AttributeOverride(name="value", column = Column(name="CORRELATED_TO_TOKEN", nullable = true))
     var correlatedToToken: TokenId? = null
-        internal set
 
     @Embedded @AttributeOverride(name="value", column = Column(name="RESULTING_IN", nullable = true, length = 40))
     var resultingIn: Hash? = null
-        internal set
 
     @Embedded
     var execution: Execution = Execution()
-        internal set
 
     @Embedded
     var problem: Problem? = null
-        internal set
 
     fun forward() {
         this.status = forwarded
@@ -212,8 +211,10 @@ open class StoredCommand(): StoredMessage<CommandId, CommandStatus>() {
     fun correlate(result: Any) {
         if (result is Event) {
             val event = result
-            execution.finishedAt = event.raisedAt
             correlatedToEvents = correlatedToEvents?.plus(result.id) ?: listOf(result.id)
+            if (this !is StoredFlow) {
+                execution.finishedAt = event.raisedAt
+            }
         } else if (result is Problem) {
             problem = result
             execution.finishedAt = result.occuredAt
@@ -222,11 +223,13 @@ open class StoredCommand(): StoredMessage<CommandId, CommandStatus>() {
             execution.finishedAt = Date()
             resultingIn = Hash(result)
         }
-        if (issuedBy != null) {
-            status = finished
-        } else {
-            status = processed
-            processedAt = execution.finishedAt
+        if (this !is StoredFlow) {
+            if (issuedBy != null) {
+                status = finished
+            } else {
+                status = processed
+                processedAt = execution.finishedAt
+            }
         }
     }
 
