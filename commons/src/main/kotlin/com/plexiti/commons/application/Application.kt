@@ -65,8 +65,10 @@ class Application {
     }
 
     @Transactional
-    fun process(command: Command): Any? {
-        return execute(Command.issue(command))
+    fun synchronous(command: Command): Any? {
+        val c = Command.issue(command)
+        c.internals().forward()
+        return execute(c)
     }
 
     @Transactional
@@ -83,7 +85,7 @@ class Application {
         }
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional // (propagation = Propagation.REQUIRES_NEW)
     private fun run(command: Command): Any? {
         try {
             val result = route.requestBody("direct:${command.name.name}", command)

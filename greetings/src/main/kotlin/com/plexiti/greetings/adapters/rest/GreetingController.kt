@@ -1,9 +1,7 @@
 package com.plexiti.greetings.adapters.rest
 
 import com.plexiti.commons.application.Application
-import com.plexiti.commons.domain.Event
 import com.plexiti.greetings.application.GreetingApplication.AnswerCaller
-import com.plexiti.greetings.domain.Greeting
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -27,7 +25,7 @@ class GreetingController {
         if ("0xCAFEBABE".equals(caller, ignoreCase = true)) {
             return ResponseEntity<Any>(HttpStatus.I_AM_A_TEAPOT)
         }
-        val document = application.process(AnswerCaller(caller)) // process command synchronously here
+        val document = application.synchronous(AnswerCaller(caller)) // process command synchronously
         return ResponseEntity(document, if (document is List<*>) HttpStatus.OK else HttpStatus.UNPROCESSABLE_ENTITY)
     }
 
