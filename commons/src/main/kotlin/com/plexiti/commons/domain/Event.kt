@@ -72,13 +72,9 @@ open class Event() : Message {
         }
 
         fun raise(message: FlowIO): Event {
-            val event = raise(Event.fromJson(message.event!!.toJson()))
-            val entity = event.internals()
-            entity.raisedBy = message.flowId
-            event.construct()
-            entity.json = event.toJson()
-            return event
+            return store.save(message)
         }
+
 
         fun fromJson(json: String): Event {
             val node = ObjectMapper().readValue(json, ObjectNode::class.java)
@@ -175,13 +171,13 @@ class StoredEvent(): StoredMessage<EventId, EventStatus>() {
         internal set
 
     @Embedded
-    lateinit var aggregate: EventAggregate
+    var aggregate: EventAggregate? = null
 
     constructor(event: Event): this() {
         this.name = event.name
         this.id = event.id
         this.raisedAt = event.raisedAt
-        this.aggregate = event.aggregate!!
+        this.aggregate = event.aggregate
         this.json = ObjectMapper().writeValueAsString(event)
         this.status = if (this.name.context == Name.context) raised else forwarded
     }
@@ -204,15 +200,15 @@ class StoredEvent(): StoredMessage<EventId, EventStatus>() {
     @Embeddable
     class EventAggregate() {
 
-        @Column(name = "AGGREGATE_ID", length = 36, nullable = false)
+        @Column(name = "AGGREGATE_ID", length = 36, nullable = true)
         lateinit var id: String
             protected set
 
-        @Column(name = "AGGREGATE_NAME", length = 128, nullable = false)
+        @Column(name = "AGGREGATE_NAME", length = 128, nullable = true)
         lateinit var name: String
             protected set
 
-        @Column(name = "AGGREGATE_VERSION", nullable = false)
+        @Column(name = "AGGREGATE_VERSION", nullable = true)
         var version: Int = 0
             protected set
 

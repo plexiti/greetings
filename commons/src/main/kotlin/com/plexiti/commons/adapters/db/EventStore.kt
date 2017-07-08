@@ -3,7 +3,9 @@ package com.plexiti.commons.adapters.db
 import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
+import com.plexiti.commons.application.Command
 import com.plexiti.commons.application.CommandId
+import com.plexiti.commons.application.FlowIO
 import com.plexiti.commons.domain.Name
 import com.plexiti.commons.domain.*
 import com.plexiti.commons.domain.EventStore
@@ -108,6 +110,16 @@ class EventStore : EventStore<Event>, ApplicationContextAware {
         return toEvent(delegate.save(toEntity(event))) as S
     }
 
+    fun save(message: FlowIO): Event {
+        val entity = toEntity(message.event)!!
+        entity.raisedBy = message.flowId
+        val event = toEvent(entity)!!
+        event.construct()
+        entity.json = event.toJson()
+        delegate.save(entity)
+        return event
+    }
+
     override fun <S : Event?> save(events: MutableIterable<S>?): MutableIterable<S> {
         return events?.mapTo(ArrayList(), { save(it) })!!
     }
@@ -141,7 +153,7 @@ internal interface StoredEventStore : EventStore<StoredEvent>
 class InMemoryStoredEventStore : InMemoryEntityCrudRepository<StoredEvent, EventId>(), StoredEventStore {
 
     override fun findByAggregateId(id: String): List<StoredEvent> {
-        return findAll().filter { id == it.aggregate.id }
+        return findAll().filter { id == it.aggregate?.id }
     }
 
     override fun findFirstByName_OrderByRaisedAtDesc(name: Name, ids: MutableIterable<EventId>): StoredEvent? {

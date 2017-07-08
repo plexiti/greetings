@@ -40,6 +40,20 @@ open class ApplicationIntegration : DataJpaIntegration() {
         }
     }
 
+    class FlowITCommand(): Command() {
+        lateinit var someProperty: String
+        override fun construct() {
+            someProperty = "someValue"
+        }
+    }
+
+    class FlowITEvent(): Event() {
+        lateinit var someProperty: String
+        override fun construct() {
+            someProperty = "someValue"
+        }
+    }
+
     class ProblemITCommand: Command()
 
     class ExceptionITCommand: Command()
@@ -199,6 +213,40 @@ open class ApplicationIntegration : DataJpaIntegration() {
         assertThat(command.internals().execution.finishedAt).isNotNull()
         assertThat(command.internals().problem?.code).isNull()
         assertThat(command.internals().correlatedToEvents).isNull()
+
+    }
+
+    @Test
+    fun handleFlowIOCommand() {
+
+        val flowCommand = Command(Name(name = "FlowITCommand"))
+        val message = FlowIO(flowCommand, CommandId("aFlowId"), TokenId("aTokenId"))
+        application.handle(message.toJson())
+
+        val command = commandRepository.findOne(flowCommand.id) as FlowITCommand
+
+        assertThat(command.someProperty).isEqualTo("someValue")
+
+        assertThat(command.internals().status).isEqualTo(CommandStatus.issued)
+        assertThat(command.internals().issuedBy).isEqualTo(CommandId("aFlowId"))
+        assertThat(command.internals().correlatedToToken).isEqualTo(TokenId("aTokenId"))
+        assertThat(command.internals().correlatedToEvents).isNull()
+
+    }
+
+    @Test
+    fun handleFlowIOEvent() {
+
+        val flowEvent = Event(Name(name = "FlowITEvent"))
+        val message = FlowIO(flowEvent, CommandId("aFlowId"))
+        application.handle(message.toJson())
+
+        val event = eventRepository.findOne(flowEvent.id) as FlowITEvent
+
+        assertThat(event.someProperty).isEqualTo("someValue")
+
+        assertThat(event.internals().status).isEqualTo(EventStatus.raised)
+        assertThat(event.internals().raisedBy).isEqualTo(CommandId("aFlowId"))
 
     }
 

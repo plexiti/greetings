@@ -50,13 +50,7 @@ open class Command(): Message {
         }
 
         fun issue(message: FlowIO): Command {
-            val command = issue(Command.fromJson(message.command!!.toJson()))
-            val entity = command.internals()
-            entity.issuedBy = message.flowId
-            entity.correlatedToToken = message.tokenId
-            command.construct()
-            entity.json = command.toJson()
-            return command
+            return store.save(message)
         }
 
         fun fromJson(json: String): Command {
