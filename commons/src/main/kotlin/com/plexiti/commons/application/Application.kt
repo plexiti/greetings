@@ -39,13 +39,14 @@ class Application {
             triggerBy(event)
             val correlatesToFlow = correlate(event)
             event.internals().consume()
-            if (!correlatesToFlow)
+            // if (!correlatesToFlow) Todo Events raised by the process are processed, events to be correlated to the
+            // process are just consumed
                 event.internals().process()
         }
     }
 
     @Transactional
-    fun handle(json: String) {
+    fun handle(json: String): FlowIO {
         val message = FlowIO.fromJson(json)
         Event.executingCommand.set(commandStore.findOne(message.flowId))
         when (message.type) {
@@ -53,6 +54,7 @@ class Application {
             MessageType.Command -> Command.issue(message)
         }
         Event.executingCommand.set(null)
+        return message
     }
 
     @Transactional
@@ -97,8 +99,9 @@ class Application {
     }
 
     private fun triggerBy(event: Event) {
-        Command.store.types.values.forEach {
-            val instance = it.java.newInstance()
+        Command.store.types.forEach { name, type ->
+            val instance = type.java.newInstance()
+            instance.name = name // necessary for flows
             var command = instance.trigger(event)
             if (command != null) {
                 command = Command.issue(command)

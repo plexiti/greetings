@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
 import org.springframework.messaging.handler.annotation.Payload
+import org.springframework.orm.ObjectOptimisticLockingFailureException
 import org.springframework.stereotype.Component
 
 
@@ -21,7 +22,7 @@ import org.springframework.stereotype.Component
 @Profile("prod")
 class CommandExecutor {
 
-    private val logger = LoggerFactory.getLogger(this::class.java)
+    private val logger = LoggerFactory.getLogger("com.plexiti.application")
 
     @Value("\${com.plexiti.app.context}")
     private lateinit var context: String;
@@ -31,8 +32,15 @@ class CommandExecutor {
 
     @RabbitListener(queues = arrayOf("\${com.plexiti.app.context}-commands-queue"))
     fun execute(@Payload json: String) {
-        application.execute(json)
-        logger.info("Executed ${json}")
+        try {
+            application.execute(json)
+            logger.info("Executed ${json}")
+        } catch (e: ObjectOptimisticLockingFailureException) {
+            // TODO make a proper difference between ignoring known duplicates
+            // (known) temporary failures, and permanent technical failures (bugs)
+            logger.info("Deferred ${json}")
+            throw e
+        }
     }
 
     @Bean

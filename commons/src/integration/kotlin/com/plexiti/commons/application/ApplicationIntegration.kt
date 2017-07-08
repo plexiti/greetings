@@ -52,7 +52,7 @@ open class ApplicationIntegration : DataJpaIntegration() {
 
         override fun construct() {
             someCommandProperty = "someCommandValue"
-            someEventProperty = event(FlowITEvent::class)?.someEventProperty
+            // someEventProperty = event(FlowITEvent::class)?.someEventProperty
         }
 
     }
@@ -68,7 +68,7 @@ open class ApplicationIntegration : DataJpaIntegration() {
 
         override fun construct() {
             someEventProperty = "someEventValue"
-            someCommandProperty = command(FlowITCommand::class)?.someEventProperty
+            // someCommandProperty = command(FlowITCommand::class)?.someEventProperty
         }
 
     }

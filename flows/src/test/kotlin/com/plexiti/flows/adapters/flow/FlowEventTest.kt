@@ -22,7 +22,7 @@ import org.mockito.ArgumentCaptor
 class FlowEventTest {
 
     var rule = ProcessEngineRule() @Rule get
-    val raiser = FlowEventRaiser()
+    val raiser = FlowEventQueuer()
     val json = ArgumentCaptor.forClass(String::class.java)
 
     @Before

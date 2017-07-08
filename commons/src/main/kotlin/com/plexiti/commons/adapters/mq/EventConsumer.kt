@@ -13,6 +13,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
 import org.springframework.messaging.handler.annotation.Payload
+import org.springframework.orm.ObjectOptimisticLockingFailureException
 import org.springframework.stereotype.Component
 
 
@@ -34,8 +35,15 @@ class EventConsumer {
 
     @RabbitListener(queues = arrayOf("\${com.plexiti.app.context}-events-queue"))
     fun consume(@Payload json: String) {
-        application.consume(json)
-        logger.info("Consumed ${json}")
+        try {
+            application.consume(json)
+            logger.info("Consumed ${json}")
+        } catch (e: ObjectOptimisticLockingFailureException) {
+            // TODO make a proper difference between ignoring known duplicates
+            // (known) temporary failures, and permanent technical failures (bugs)
+            logger.info("Deferred ${json}")
+            throw e
+        }
     }
 
     @Bean

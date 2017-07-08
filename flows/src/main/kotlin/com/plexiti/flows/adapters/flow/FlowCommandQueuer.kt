@@ -20,9 +20,9 @@ import org.springframework.stereotype.Component
 @Component("command")
 @Configuration
 @Profile("prod")
-class FlowCommandIssuer : AbstractBpmnActivityBehavior() {
+class FlowCommandQueuer : AbstractBpmnActivityBehavior() {
 
-    private val logger = LoggerFactory.getLogger(this::class.java)
+    private val logger = LoggerFactory.getLogger("com.plexiti.flows")
 
     internal var context: String? = null
         @Value("\${com.plexiti.app.context}")
@@ -43,7 +43,7 @@ class FlowCommandIssuer : AbstractBpmnActivityBehavior() {
             TokenId(execution.id))
         val json = command.toJson()
         rabbit.convertAndSend(queue, json);
-        logger.info("Transfered ${json}")
+        logger.info("Queued ${json}")
     }
 
     override fun signal(execution: ActivityExecution, signalName: String?, signalData: Any?) {

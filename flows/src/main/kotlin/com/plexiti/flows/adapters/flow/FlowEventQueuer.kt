@@ -20,9 +20,9 @@ import org.springframework.stereotype.Component
 @Component("event")
 @Configuration
 @Profile("prod")
-class FlowEventRaiser: JavaDelegate {
+class FlowEventQueuer : JavaDelegate {
 
-    private val logger = LoggerFactory.getLogger(this::class.java)
+    private val logger = LoggerFactory.getLogger("com.plexiti.flows")
 
     internal var context: String? = null
         @Value("\${com.plexiti.app.context}")
@@ -41,7 +41,7 @@ class FlowEventRaiser: JavaDelegate {
             Event(Name(property("event", execution.bpmnModelElementInstance))),
             CommandId(execution.processBusinessKey))
         rabbit.convertAndSend(queue, event.toJson());
-        logger.info("Forwarded ${event.toJson()}")
+        logger.info("Queued ${event.toJson()}")
     }
 
 }

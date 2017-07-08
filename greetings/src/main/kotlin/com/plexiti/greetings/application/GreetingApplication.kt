@@ -1,9 +1,12 @@
 package com.plexiti.greetings.application;
 
+import com.plexiti.commons.adapters.db.EventStore
 import com.plexiti.commons.application.Command
+import com.plexiti.commons.domain.EventStatus
 import com.plexiti.commons.domain.Value
 import com.plexiti.greetings.domain.Greeting
 import com.plexiti.greetings.domain.Greeting.CallAnsweredAutomatically
+import com.plexiti.greetings.domain.GreetingRepository
 import com.plexiti.greetings.domain.GreetingService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -19,39 +22,37 @@ class GreetingApplication {
     @Autowired
     lateinit var greetingService: GreetingService
 
-    class AnswerCaller(): Command() {
+    @Autowired
+    lateinit var greetingRepository: GreetingRepository
 
-        lateinit var caller: String
+    // A command object
+    class AnswerCaller(var caller: String? = null): Command()
 
-        constructor(caller: String): this() {
-            this.caller = caller
-        }
-
-    }
-
+    // The execution of a command
+    // may through a (business) problem which will be dealt with in flow
     fun answerCaller(command: AnswerCaller) {
-        greetingService.answer(command.caller)
+        val caller = command.caller
+        if (caller != null) greetingService.answer(caller)
     }
 
-    class IdentifyCaller(): Command() {
+    // Another command
+    class IdentifyCaller(var caller: String? = null): Command() {
 
-        var greeting = "Hello World, Peter"
-
+        // callback to construct object out of flow data
+        // works conceptually, but I need a few helper methods
         override fun construct() {
-
-            // greeting = event(CallAnsweredAutomatically::class)!!.greeting
-        }
-
-        constructor(greeting: String): this() {
-            this.greeting = greeting
+            caller = "Bernd" // at the moment, we just know Bernd :-) as soon as he called once
         }
 
     }
 
-    data class CallerIdentified(val known: Boolean? = null): Value
-
-    fun identifyCaller(command: IdentifyCaller): CallerIdentified {
-        return CallerIdentified(greetingService.greetingRepository.findByGreeting(command.greeting)!!.isKnown())
+    // Again, the execution of a command
+    fun identifyCaller(command: IdentifyCaller): CallerStatus {
+        return CallerStatus(greetingRepository.findByCaller(command.caller)?.isKnown())
     }
+
+    // A projection or "document". May be returned by a command
+    // and will be passed on the flow.
+    data class CallerStatus(val known: Boolean? = false): Value
 
 }

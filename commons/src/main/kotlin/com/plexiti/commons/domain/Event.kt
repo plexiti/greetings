@@ -6,12 +6,10 @@ import com.fasterxml.jackson.databind.node.ObjectNode
 import com.plexiti.commons.adapters.db.EventStore
 import com.plexiti.commons.application.Command
 import com.plexiti.commons.application.CommandId
-import com.plexiti.commons.application.Flow
 import com.plexiti.commons.application.FlowIO
 import com.plexiti.commons.domain.EventStatus.*
 import com.plexiti.commons.domain.StoredEvent.*
 import org.apache.camel.component.jpa.Consumed
-import org.slf4j.LoggerFactory
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.CrudRepository
 import org.springframework.data.repository.NoRepositoryBean
@@ -26,9 +24,7 @@ import kotlin.reflect.KClass
 open class Event() : Message {
 
     constructor(aggregate: Aggregate<*>? = null): this() {
-        if (aggregate != null) {
-            init(aggregate)
-        }
+        if (aggregate != null) this.aggregate = EventAggregate(aggregate)
     }
 
     constructor(name: Name): this() {
@@ -36,7 +32,6 @@ open class Event() : Message {
     }
 
     protected fun init(aggregate: Aggregate<*>) {
-        this.aggregate = EventAggregate(aggregate)
     }
 
     override val type = MessageType.Event
@@ -49,7 +44,7 @@ open class Event() : Message {
         protected set
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSZ", timezone = "CET")
-    lateinit var raisedAt: Date
+    var raisedAt: Date
         protected set
 
     var aggregate: EventAggregate? = null
@@ -61,22 +56,16 @@ open class Event() : Message {
 
     companion object {
 
-        internal val logger = LoggerFactory.getLogger(Event::class.java)
-
         var store = EventStore()
 
         internal val executingCommand = ThreadLocal<Command?>()
 
         fun <E: Event> raise(event: E): E {
-            val e = store.save(event)
-            logger.info("${e.toJson()} raised by ${executingCommand.get()?.toJson()})")
-            return e;
+            return store.save(event);
         }
 
         fun raise(event: FlowIO): Event {
-            val e = store.save(event)
-            logger.info("${e.toJson()} raised by ${executingCommand.get()?.toJson()})")
-            return e;
+            return store.save(event);
         }
 
         fun fromJson(json: String): Event {
@@ -97,29 +86,6 @@ open class Event() : Message {
     }
 
     open fun construct() {}
-
-    open fun <C: Command> command(type: KClass<out C>): C? {
-        val raisedBy = internals().raisedBy
-        if (raisedBy != null) {
-            val name = Command.store.names[type]!!
-            return Command.store.findFirstByName_AndIssuedBy_OrderByIssuedAtDesc(name, raisedBy) as C?
-        }
-        return null
-    }
-
-    open fun <E: Event> event(type: KClass<out E>): E? {
-        if (internals().raisedBy != null) {
-            val flow = Command.store.findOne(internals().raisedBy) as Flow
-            var correlatedToEvents = flow.internals().correlatedToEvents ?: listOf()
-            val triggeredBy = flow.internals().triggeredBy
-            val allEvents = if (triggeredBy != null) correlatedToEvents + triggeredBy else correlatedToEvents
-            if (allEvents != null && !allEvents.isEmpty()) {
-                return Event.store.findFirstByName_OrderByRaisedAtDesc(Event.store.names[type]!!, allEvents.toMutableList()) as E?
-            }
-        }
-        return null
-    }
-
 
     override fun hashCode(): Int {
         return id.hashCode()
@@ -142,11 +108,11 @@ open class Event() : Message {
 @Table(name="EVENTS")
 @NamedQueries(
     NamedQuery(
-        name = "EventForwarder",
+        name = "EventPublisher",
         query = "select e from StoredEvent e where e.forwardedAt is null"
     ),
     NamedQuery(
-        name = "FlowEventForwarder",
+        name = "FlowEventQueuer",
         query = "select e from StoredEvent e where e.consumedAt is not null and e.processedAt is null"
     )
 )

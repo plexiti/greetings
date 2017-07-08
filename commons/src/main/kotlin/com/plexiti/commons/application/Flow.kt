@@ -25,7 +25,7 @@ class Flow(): Command() {
 
         var flow: Flow? = null
         triggers.forEach { eventName, flowName ->
-            if (event.name == eventName )
+            if (this.name == flowName && event.name == eventName)
                 flow = Flow(flowName)
         }
         return flow
@@ -44,7 +44,7 @@ class Flow(): Command() {
 @DiscriminatorValue(MessageType.Discriminator.flow)
 @NamedQueries(
     NamedQuery(
-        name = "FlowForwarder",
+        name = "FlowQueuer",
         query = "select f from StoredFlow f where f.forwardedAt is null"
     )
 )

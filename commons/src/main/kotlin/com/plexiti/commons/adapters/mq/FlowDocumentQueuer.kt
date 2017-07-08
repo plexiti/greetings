@@ -2,8 +2,9 @@ package com.plexiti.commons.adapters.mq
 
 import com.plexiti.commons.adapters.db.CommandStore
 import com.plexiti.commons.adapters.db.EventStore
+import com.plexiti.commons.application.StoredCommand
 import com.plexiti.commons.application.FlowIO
-import com.plexiti.commons.domain.StoredEvent
+import com.plexiti.commons.application.Document
 import org.apache.camel.Handler
 import org.apache.camel.builder.RouteBuilder
 import org.slf4j.LoggerFactory
@@ -21,9 +22,9 @@ import org.springframework.stereotype.Component
 @Component
 @Configuration
 @Profile("prod")
-class FlowEventForwarder : RouteBuilder() {
+class FlowDocumentQueuer : RouteBuilder() {
 
-    private val logger = LoggerFactory.getLogger(this::class.java)
+    private val logger = LoggerFactory.getLogger("com.plexiti.application")
 
     private var context: String? = null
         @Value("\${com.plexiti.app.context}")
@@ -35,31 +36,26 @@ class FlowEventForwarder : RouteBuilder() {
     private lateinit var queue: String
 
     @Autowired
-    private lateinit var commandStore: CommandStore
+    private lateinit var commands: CommandStore
 
     @Autowired
-    private lateinit var eventStore: EventStore
+    private lateinit var events: EventStore
 
     @Autowired
     private lateinit var rabbitTemplate: RabbitTemplate
 
-    val options = "consumer.namedQuery=${FlowEventForwarder::class.simpleName}&consumeDelete=false"
+    val options = "consumer.namedQuery=${FlowDocumentQueuer::class.simpleName}&consumeDelete=false"
 
     override fun configure() {
-        from("jpa:${StoredEvent::class.qualifiedName}?${options}")
+        from("jpa:${StoredCommand::class.qualifiedName}?${options}")
             .bean(this)
     }
 
     @Handler
-    fun forward(event: StoredEvent) {
-        val commands = commandStore.findByCorrelatedToEvents_Containing(event.id.value)
-        commands.forEach {
-            // TODO Consider that this could partially fail and result in duplicate messages
-
-            val message = FlowIO(eventStore.findOne(event.id)!!, it.id)
-            rabbitTemplate.convertAndSend(queue, message.toJson());
-            logger.info("Forwarded ${message.toJson()}")
-        }
+    fun queue(storedCommand: StoredCommand) {
+        val message = FlowIO(Document(commands.findOne(storedCommand.id)!!), storedCommand.issuedBy!!, storedCommand.correlatedToToken!!)
+        rabbitTemplate.convertAndSend(queue, message.toJson());
+        logger.info("Queued ${message.toJson()}")
     }
 
 }

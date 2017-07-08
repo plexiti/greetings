@@ -11,10 +11,10 @@ import com.plexiti.commons.adapters.db.EventIdListConverter
 import com.plexiti.commons.application.CommandStatus.*
 import com.plexiti.commons.domain.*
 import org.apache.camel.component.jpa.Consumed
-import org.slf4j.LoggerFactory
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.CrudRepository
 import org.springframework.data.repository.NoRepositoryBean
+import org.springframework.data.repository.query.Param
 import java.io.Serializable
 import java.util.*
 import javax.persistence.*
@@ -44,21 +44,14 @@ open class Command(): Message {
 
     companion object {
 
-        internal val logger = LoggerFactory.getLogger(Command::class.java)
-
         var store = CommandStore()
 
         fun <C: Command> issue(command: C): C {
-            val c = store.save(command)
-            val trigger = if (c.internals().triggeredBy != null) Event.store.findOne(c.internals().triggeredBy) else null
-            logger.info("${c.toJson()}" + (if (trigger != null) " triggered by ${Event.store.findOne(c.internals().triggeredBy)!!.toJson()}" else " issued without known trigger."))
-            return c
+            return store.save(command)
         }
 
         fun issue(command: FlowIO): Command {
-            val c = store.save(command)
-            logger.info("${c.toJson()} issued by ${Event.executingCommand.get()!!.toJson()})")
-            return c
+            return store.save(command)
         }
 
         fun fromJson(json: String): Command {
@@ -79,27 +72,6 @@ open class Command(): Message {
     }
 
     open fun construct() {}
-
-    open fun <C: Command> command(type: KClass<out C>): C? {
-        if (internals().issuedBy != null) {
-            return Command.store.findFirstByName_AndIssuedBy_OrderByIssuedAtDesc(Command.store.names[type]!!, internals().issuedBy!!) as C?
-        }
-        return null
-    }
-
-    open fun <E: Event> event(type: KClass<out E>): E? {
-        if (internals().issuedBy != null) {
-            val flow = Command.store.findOne(internals().issuedBy) as Flow
-            val correlatedToEvents = flow.internals().correlatedToEvents ?: listOf()
-            val triggeredBy = flow.internals().triggeredBy
-            val allEvents = if (triggeredBy != null) correlatedToEvents + triggeredBy else correlatedToEvents
-            if (!allEvents.isEmpty()) {
-                val events = Event.store.findFirstByName_OrderByRaisedAtDesc(Event.store.names[type]!!, allEvents.toMutableList())
-                return if (!events.isEmpty()) events.first() as E else null
-            }
-        }
-        return null
-    }
 
     open fun correlation(): Correlation {
         return Correlation.create(id.value)!!
@@ -137,11 +109,11 @@ open class Command(): Message {
 @DiscriminatorValue(MessageType.Discriminator.command)
 @NamedQueries(
     NamedQuery(
-        name = "CommandForwarder",
+        name = "CommandQueuer",
         query = "select c from StoredCommand c where c.forwardedAt is null and type(c) = StoredCommand"
     ),
     NamedQuery(
-        name = "FlowResultForwarder",
+        name = "FlowDocumentQueuer",
         query = "select c from StoredCommand c where c.execution.finishedAt is not null and c.processedAt is null"
     )
 )
@@ -218,7 +190,6 @@ open class StoredCommand(): StoredMessage<CommandId, CommandStatus>() {
         } else if (result is Problem) {
             problem = result
             execution.finishedAt = result.occuredAt
-            // TODO remove events from correlatedToEvents which were raised in this transation
         } else if (result is Value) {
             execution.finishedAt = Date()
             resultingIn = Hash(result)
@@ -309,7 +280,7 @@ interface CommandStore<C>: CrudRepository<C, CommandId> {
     fun findFirstByName_AndIssuedBy_OrderByIssuedAtDesc(name: Name, issuedBy: CommandId): C?
 
     @Query("select c from StoredCommand c where c.correlatedToEvents like %:eventId%")
-    fun findByCorrelatedToEvents_Containing(eventId: String): List<C>
+    fun findByCorrelatedToEvents_Containing(@Param("eventId") eventId: String): List<C>
 
 }
 

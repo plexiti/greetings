@@ -10,10 +10,10 @@
       <bpmn:outgoing>SequenceFlow_1u7bc6h</bpmn:outgoing>
     </bpmn:exclusiveGateway>
     <bpmn:sequenceFlow id="SequenceFlow_0t2sazc" name="No" sourceRef="ExclusiveGateway_1287gp6" targetRef="Task_1ns2cbp">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[${not Greetings_CallerIdentified.prop("known").boolValue()}]]></bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[${not Greetings_CallerStatus.prop("known").boolValue()}]]></bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="SequenceFlow_1u7bc6h" name="Yes" sourceRef="ExclusiveGateway_1287gp6" targetRef="EndEvent_08nldf6">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[${Greetings_CallerIdentified.prop("known").boolValue()}]]></bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[${Greetings_CallerStatus.prop("known").boolValue()}]]></bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:startEvent id="StartEvent_1" name="Call answered automatically">
       <bpmn:outgoing>SequenceFlow_0b1r62p</bpmn:outgoing>

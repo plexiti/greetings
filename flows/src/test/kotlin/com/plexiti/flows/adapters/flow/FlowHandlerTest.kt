@@ -21,7 +21,7 @@ import java.util.*
 class FlowHandlerTest {
 
     var rule = ProcessEngineRule() @Rule get
-    val handler = FlowToHandler()
+    val handler = FlowMessageCorrelator()
     val application = FlowApplication()
 
     @Before

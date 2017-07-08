@@ -7,9 +7,9 @@ Feature: Store greeting in hot folder
 
     Given I use the caller <caller>
     When I place a greeting in the hot folder
-    Then A command with the caller <caller> should be stored
+    Then A command with the caller <caller> should be issued
 
     Examples:
       | caller   |
-      | Martin   |
-      | Peter    |
+      | Kathi    |
+      | Bernd    |

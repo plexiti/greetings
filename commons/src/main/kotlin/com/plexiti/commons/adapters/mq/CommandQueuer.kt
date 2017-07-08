@@ -17,14 +17,14 @@ import org.springframework.stereotype.Component
 @Component
 @Configuration
 @Profile("prod")
-class CommandForwarder : RouteBuilder() {
+class CommandQueuer : RouteBuilder() {
 
-    private val logger = LoggerFactory.getLogger(this::class.java)
+    private val logger = LoggerFactory.getLogger("com.plexiti.application")
 
     @Autowired
     private lateinit var rabbitTemplate: RabbitTemplate
 
-    val options = "consumer.namedQuery=${CommandForwarder::class.simpleName}&consumeDelete=false"
+    val options = "consumer.namedQuery=${CommandQueuer::class.simpleName}&consumeDelete=false"
 
     override fun configure() {
         from("jpa:${StoredCommand::class.qualifiedName}?${options}")
@@ -32,9 +32,9 @@ class CommandForwarder : RouteBuilder() {
     }
 
     @Handler
-    fun send(storedCommand: StoredCommand) {
+    fun queue(storedCommand: StoredCommand) {
         rabbitTemplate.convertAndSend("${storedCommand.name.context}-commands-queue", storedCommand.json);
-        logger.info("Forwarded ${storedCommand.json}")
+        logger.info("Queued ${storedCommand.json}")
     }
 
 }

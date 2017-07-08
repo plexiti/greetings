@@ -27,9 +27,8 @@ class GreetingController {
         if ("0xCAFEBABE".equals(caller, ignoreCase = true)) {
             return ResponseEntity<Any>(HttpStatus.I_AM_A_TEAPOT)
         }
-        val result = application.process(AnswerCaller(caller))
-        val entity = ResponseEntity(result, if (result is List<*>) HttpStatus.OK else HttpStatus.UNPROCESSABLE_ENTITY)
-        return entity
+        val document = application.process(AnswerCaller(caller)) // process command synchronously here
+        return ResponseEntity(document, if (document is List<*>) HttpStatus.OK else HttpStatus.UNPROCESSABLE_ENTITY)
     }
 
 }

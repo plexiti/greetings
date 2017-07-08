@@ -1,6 +1,8 @@
 package com.plexiti.commons.adapters.mq
 
+import com.plexiti.commons.adapters.db.CommandStore
 import com.plexiti.commons.application.Application
+import com.plexiti.commons.domain.MessageType
 import org.slf4j.LoggerFactory
 import org.springframework.amqp.core.Queue
 import org.springframework.amqp.rabbit.annotation.RabbitListener
@@ -10,6 +12,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
 import org.springframework.messaging.handler.annotation.Payload
+import org.springframework.orm.ObjectOptimisticLockingFailureException
 import org.springframework.stereotype.Component
 import javax.transaction.Transactional
 
@@ -20,9 +23,9 @@ import javax.transaction.Transactional
 @Component
 @Configuration
 @Profile("prod")
-class FlowFromHandler {
+class FlowMessageHandler {
 
-    private val logger = LoggerFactory.getLogger(this::class.java)
+    private val logger = LoggerFactory.getLogger("com.plexiti.application")
 
     @Value("\${com.plexiti.app.context}")
     private lateinit var context: String;
@@ -32,8 +35,15 @@ class FlowFromHandler {
 
     @RabbitListener(queues = arrayOf("\${com.plexiti.app.context}-flows-from-queue"))
     fun handle(@Payload json: String) {
-        application.handle(json)
-        logger.info("Handled ${json}")
+        try {
+            val message = application.handle(json)
+            logger.info("${if (message.type == MessageType.Command) "Issued" else "Raised"} ${json}")
+        } catch (e: ObjectOptimisticLockingFailureException) {
+            // TODO make a proper difference between ignoring known duplicates
+            // (known) temporary failures, and permanent technical failures (bugs)
+            logger.info("Deferred ${json}")
+            throw e
+        }
     }
 
     @Bean

@@ -4,6 +4,7 @@ import com.plexiti.commons.application.*
 import com.plexiti.commons.domain.MessageType
 import com.plexiti.flows.application.FlowApplication
 import org.camunda.spin.json.SpinJsonNode.JSON
+import org.slf4j.LoggerFactory
 import org.springframework.amqp.core.Queue
 import org.springframework.amqp.rabbit.annotation.RabbitListener
 import org.springframework.beans.factory.annotation.Autowired
@@ -20,7 +21,9 @@ import org.springframework.stereotype.Component
 @Component
 @Configuration
 @Profile("prod")
-class FlowToHandler {
+class FlowMessageCorrelator {
+
+    private val logger = LoggerFactory.getLogger("com.plexiti.flows")
 
     @Value("\${com.plexiti.app.context}")
     private lateinit var context: String;
@@ -32,9 +35,18 @@ class FlowToHandler {
     fun handle(json: String) {
         val message = FlowIO.fromJson(json)
         when(message.type) {
-            MessageType.Flow -> flow.start(message, JSON(json))
-            MessageType.Event -> flow.correlate(message, JSON(json))
-            MessageType.Document -> flow.complete(message, JSON(json))
+            MessageType.Flow -> {
+                flow.start(message, JSON(json))
+                logger.info("Started ${json}")
+            }
+            MessageType.Event -> {
+                flow.correlate(message, JSON(json))
+                logger.info("Correlated ${json}")
+            }
+            MessageType.Document ->  {
+                flow.complete(message, JSON(json))
+                logger.info("Completed ${json}")
+            }
         }
     }
 

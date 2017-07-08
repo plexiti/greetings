@@ -80,7 +80,7 @@ class GreetingResourceSteps {
         Thread.sleep(1000)
     }
 
-    @Then("A command with the caller (.*) should be stored")
+    @Then("A command with the caller (.*) should be issued")
     fun theCommandShouldBeStoredInTheDatabase(caller: String) {
         val all = commandStore.findAll()
         val actual = all.filter { it is GreetingApplication.AnswerCaller && it.caller == caller }

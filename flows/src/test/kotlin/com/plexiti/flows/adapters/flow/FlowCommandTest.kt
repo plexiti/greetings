@@ -29,8 +29,8 @@ import org.mockito.ArgumentCaptor
 class FlowCommandTest {
 
     var rule = ProcessEngineRule() @Rule get
-    val issuer = FlowCommandIssuer()
-    val handler = FlowToHandler()
+    val issuer = FlowCommandQueuer()
+    val handler = FlowMessageCorrelator()
     val application = FlowApplication()
     val json = ArgumentCaptor.forClass(String::class.java)
 

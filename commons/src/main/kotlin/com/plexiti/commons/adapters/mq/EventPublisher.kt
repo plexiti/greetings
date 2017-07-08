@@ -20,9 +20,9 @@ import org.springframework.context.annotation.Profile
 @Component
 @Configuration
 @Profile("prod")
-class EventForwarder : RouteBuilder() {
+class EventPublisher : RouteBuilder() {
 
-    private val logger = LoggerFactory.getLogger(this::class.java)
+    private val logger = LoggerFactory.getLogger("com.plexiti.application")
 
     private var context: String? = null
         @Value("\${com.plexiti.app.context}")
@@ -36,7 +36,7 @@ class EventForwarder : RouteBuilder() {
     @Autowired
     private lateinit var rabbitTemplate: RabbitTemplate
 
-    val options = "consumer.namedQuery=${EventForwarder::class.simpleName}&consumeDelete=false"
+    val options = "consumer.namedQuery=${EventPublisher::class.simpleName}&consumeDelete=false"
 
     override fun configure() {
         from("jpa:${StoredEvent::class.qualifiedName}?${options}")

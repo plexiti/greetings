@@ -2,9 +2,8 @@ package com.plexiti.commons.adapters.mq
 
 import com.plexiti.commons.adapters.db.CommandStore
 import com.plexiti.commons.adapters.db.EventStore
-import com.plexiti.commons.application.StoredCommand
+import com.plexiti.commons.application.StoredFlow
 import com.plexiti.commons.application.FlowIO
-import com.plexiti.commons.application.Document
 import org.apache.camel.Handler
 import org.apache.camel.builder.RouteBuilder
 import org.slf4j.LoggerFactory
@@ -22,9 +21,9 @@ import org.springframework.stereotype.Component
 @Component
 @Configuration
 @Profile("prod")
-class FlowResultForwarder : RouteBuilder() {
+class FlowQueuer : RouteBuilder() {
 
-    private val logger = LoggerFactory.getLogger(this::class.java)
+    private val logger = LoggerFactory.getLogger("com.plexiti.application")
 
     private var context: String? = null
         @Value("\${com.plexiti.app.context}")
@@ -44,18 +43,21 @@ class FlowResultForwarder : RouteBuilder() {
     @Autowired
     private lateinit var rabbitTemplate: RabbitTemplate
 
-    val options = "consumer.namedQuery=${FlowResultForwarder::class.simpleName}&consumeDelete=false"
+    val options = "consumer.namedQuery=${FlowQueuer::class.simpleName}&consumeDelete=false"
 
     override fun configure() {
-        from("jpa:${StoredCommand::class.qualifiedName}?${options}")
+        from("jpa:${StoredFlow::class.qualifiedName}?${options}")
             .bean(this)
     }
 
     @Handler
-    fun forward(storedCommand: StoredCommand) {
-        val message = FlowIO(Document(commands.findOne(storedCommand.id)!!), storedCommand.issuedBy!!, storedCommand.correlatedToToken!!)
+    fun start(flow: StoredFlow) {
+        val message = FlowIO(commands.findOne(flow.id)!!, flow.id)
+        val event = if (flow.triggeredBy != null) events.findOne(flow.triggeredBy) else null
+        if (event != null)
+            message.event = event
         rabbitTemplate.convertAndSend(queue, message.toJson());
-        logger.info("Forwarded ${message.toJson()}")
+        logger.info("Queued ${message.toJson()}")
     }
 
 }

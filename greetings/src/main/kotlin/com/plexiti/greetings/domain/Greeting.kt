@@ -32,17 +32,24 @@ class Greeting: Aggregate<GreetingId>() {
     var contacts = 0
         private set
 
+    // A domain event (raised by the local domain when an aggregate is created
     class GreetingCreated(greeting: Greeting? = null): Event(greeting) {
+
         val caller = greeting?.caller
         val greeting = greeting?.greeting
+
     }
 
-    class CallAnsweredAutomatically(): Event() {
+    // Another domain event (also raised be the local domain because this always
+    // happens immediately, but this triggers also a flow "DealWithCaller")
+    class CallAnsweredAutomatically: Event {
 
         lateinit var caller: String
         lateinit var greeting: String
 
-        constructor(greeting: Greeting): this() {
+        constructor(): super()
+
+        constructor(greeting: Greeting): super(greeting) {
             init(greeting)
             this.caller = greeting.caller
             this.greeting = greeting.greeting
@@ -50,20 +57,23 @@ class Greeting: Aggregate<GreetingId>() {
 
     }
 
-    class CallerContactedPersonally: Event() {
+    // Again, a domain event (but this one happends to be raised be the flow)
+    class CallerContactedPersonally: Event()
 
-        lateinit var caller: String
+    // When a caller calls several times, we know that
+    fun contact() {
+        contacts++
+    }
 
-        override fun construct() {
-            val event = event(Greeting.CallAnsweredAutomatically::class)!!
-            caller = event.caller!!
-        }
-
+    // We consider people calling more often than once well known pals
+    fun isKnown(): Boolean {
+        return contacts > 1
     }
 
     companion object {
 
-        fun create(caller: String, greeting: String = String.format("Hello World, %s", caller)): Greeting {
+        // A Greetings Factory :-)
+        fun create(caller: String, greeting: String = String.format("Hello World, %s!", caller)): Greeting {
             val new = Greeting()
             new.id = GreetingId(UUID.randomUUID().toString())
             new.greeting = greeting
@@ -74,20 +84,12 @@ class Greeting: Aggregate<GreetingId>() {
 
     }
 
-    fun contact() {
-        contacts++
-    }
-
-    fun isKnown(): Boolean {
-        return contacts > 1
-    }
-
 }
 
 @Repository
 interface GreetingRepository : CrudRepository<Greeting, GreetingId> {
 
-    fun findByGreeting(greeting: String): Greeting?
+    fun findByCaller(caller: String?): Greeting?
 
 }
 
@@ -99,9 +101,10 @@ class GreetingService {
     @Autowired
     lateinit var greetingRepository: GreetingRepository
 
+    // A small service to answer a caller automatically, it returns a greeting
     fun answer(caller: String): Greeting {
-        val answer = String.format("Hello World, %s", caller)
-        val greeting = greetingRepository.findByGreeting(answer) ?: Greeting.create(caller, answer)
+        val greeting = greetingRepository.findByCaller(caller)
+            ?: Greeting.create(caller)
         greeting.contact()
         greetingRepository.save(greeting)
         raise(CallAnsweredAutomatically(greeting))
