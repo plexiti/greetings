@@ -38,6 +38,7 @@ class GreetingApplication {
         var greeting = "Hello World, Peter"
 
         override fun construct() {
+
             // greeting = event(CallAnsweredAutomatically::class)!!.greeting
         }
 
