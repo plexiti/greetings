@@ -124,7 +124,7 @@ open class ApplicationIntegration : DataJpaIntegration() {
         assertThat(command.internals().status).isEqualTo(CommandStatus.issued)
         assertThat(command.internals().issuedAt).isNotNull()
         assertThat(command.internals().forwardedAt).isNull()
-        assertThat(command.internals().triggeredBy).isEqualTo(event.id)
+        assertThat(command.internals().getTriggeredBy()).isEqualTo(event.id)
 
     }
 
@@ -164,7 +164,7 @@ open class ApplicationIntegration : DataJpaIntegration() {
         assertThat(command.internals().status).isEqualTo(CommandStatus.issued)
         assertThat(command.internals().issuedAt).isNotNull()
         assertThat(command.internals().forwardedAt).isNull()
-        assertThat(command.internals().triggeredBy).isEqualTo(event.id)
+        assertThat(command.internals().getTriggeredBy()).isEqualTo(event.id)
 
         command.internals().forward()
         application.execute(command.toJson())

@@ -53,9 +53,8 @@ class FlowQueuer : RouteBuilder() {
     @Handler
     fun start(flow: StoredFlow) {
         val message = FlowIO(commands.findOne(flow.id)!!, flow.id)
-        val event = if (flow.triggeredBy != null) events.findOne(flow.triggeredBy) else null
-        if (event != null)
-            message.event = event
+        val trigger = flow.getTriggeredBy()
+        message.event = if (trigger != null) events.findOne(trigger) else null
         rabbitTemplate.convertAndSend(queue, message.toJson());
         logger.info("Queued ${message.toJson()}")
     }

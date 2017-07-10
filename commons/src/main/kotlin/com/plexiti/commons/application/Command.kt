@@ -7,7 +7,7 @@ import com.fasterxml.jackson.annotation.JsonValue
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.plexiti.commons.adapters.db.CommandStore
-import com.plexiti.commons.adapters.db.EventIdListConverter
+import com.plexiti.commons.adapters.db.EventsMapConverter
 import com.plexiti.commons.application.CommandStatus.*
 import com.plexiti.commons.domain.*
 import org.apache.camel.component.jpa.Consumed
@@ -139,8 +139,10 @@ open class StoredCommand(): StoredMessage<CommandId, CommandStatus>() {
     @Temporal(TemporalType.TIMESTAMP)
     var processedAt: Date? = null
 
-    @Embedded @AttributeOverride(name = "value", column = Column(name = "TRIGGERED_BY_EVENT", nullable = true, length=36))
-    var triggeredBy: EventId? = null
+    fun getTriggeredBy(): EventId? {
+        val trigger = correlatedToEvents?.filter{ it.value == issued }?.keys
+        return if (trigger != null && !trigger.isEmpty()) trigger.first() else null
+    }
 
     @Embedded @AttributeOverride(name = "value", column = Column(name = "ISSUED_BY_COMMAND", nullable = true, length=36))
     open var issuedBy: CommandId? = null
@@ -149,8 +151,8 @@ open class StoredCommand(): StoredMessage<CommandId, CommandStatus>() {
     lateinit var correlatedBy: Correlation
 
     @Column(name="CORRELATED_TO_EVENTS", nullable = true, length=4096)
-    @Convert(converter = EventIdListConverter::class)
-    var correlatedToEvents: List<EventId>? = null
+    @Convert(converter = EventsMapConverter::class)
+    var correlatedToEvents: Map<EventId, CommandStatus>? = null
 
     @Embedded @AttributeOverride(name="value", column = Column(name="CORRELATED_TO_TOKEN", nullable = true))
     var correlatedToToken: TokenId? = null
@@ -175,6 +177,12 @@ open class StoredCommand(): StoredMessage<CommandId, CommandStatus>() {
         this.execution.startedAt = Date()
     }
 
+    fun finish() {
+        this.status = finished
+        this.execution.finishedAt = Date()
+        if (issuedBy == null) process()
+    }
+
     fun process() {
         this.status = processed
         this.processedAt = Date()
@@ -182,25 +190,11 @@ open class StoredCommand(): StoredMessage<CommandId, CommandStatus>() {
 
     fun correlate(result: Any) {
         if (result is Event) {
-            val event = result
-            correlatedToEvents = correlatedToEvents?.plus(result.id) ?: listOf(result.id)
-            if (this !is StoredFlow) {
-                execution.finishedAt = event.raisedAt
-            }
+            correlatedToEvents = correlatedToEvents?.plus(result.id to this.status) ?: mapOf(result.id to this.status)
         } else if (result is Problem) {
             problem = result
-            execution.finishedAt = result.occuredAt
         } else if (result is Value) {
-            execution.finishedAt = Date()
             resultingIn = Hash(result)
-        }
-        if (this !is StoredFlow) {
-            if (issuedBy != null) {
-                status = finished
-            } else {
-                status = processed
-                processedAt = execution.finishedAt
-            }
         }
     }
 

@@ -52,7 +52,7 @@ class ApplicationTest {
         assertThat(command.internals().status).isEqualTo(CommandStatus.issued)
         assertThat(command.internals().issuedAt).isNotNull()
         assertThat(command.internals().forwardedAt).isNull()
-        assertThat(command.internals().triggeredBy).isEqualTo(event.id)
+        assertThat(command.internals().getTriggeredBy()).isEqualTo(event.id)
 
     }
 

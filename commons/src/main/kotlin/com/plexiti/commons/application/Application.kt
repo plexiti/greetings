@@ -37,11 +37,10 @@ class Application {
         if (eventId != null) {
             val event = eventStore.findOne(eventId) ?: eventStore.save(Event.fromJson(json))
             triggerBy(event)
-            val correlatesToFlow = correlate(event)
+            correlate(event)
             event.internals().consume()
-            // if (!correlatesToFlow) Todo Events raised by the process are processed, events to be correlated to the
-            // process are just consumed
-                event.internals().process()
+            // TODO Events not raised by a flow, but correlated to it are just consumed
+            event.internals().process()
         }
     }
 
@@ -81,6 +80,7 @@ class Application {
             command.internals().correlate(problem)
             return problem
         } finally {
+            command.internals().finish()
             Event.executingCommand.set(null)
         }
     }
@@ -94,7 +94,7 @@ class Application {
                 command.internals().correlate(result)
                 return result
             }
-            return eventStore.findAll_OrderByRaisedAtDesc(command.internals().correlatedToEvents!!.toMutableList())
+            return eventStore.findAll_OrderByRaisedAtDesc(command.internals().correlatedToEvents!!.keys.toMutableList())
         } catch (e: CamelExecutionException) {
             throw e.exchange.exception
         }
@@ -107,13 +107,12 @@ class Application {
             var command = instance.trigger(event)
             if (command != null) {
                 command = Command.issue(command)
-                command.internals().triggeredBy = event.id
+                command.internals().correlate(event)
             }
         }
     }
 
-    private fun correlate(event: Event): Boolean {
-        var correlatesToFlow = false
+    private fun correlate(event: Event) {
         Command.store.types.values.forEach {
              val instance = it.java.newInstance()
              val correlation = instance.correlation(event)
@@ -121,12 +120,10 @@ class Application {
                  val command = commandStore.findByCorrelatedBy_AndExecutionFinishedAt_IsNull(correlation)
                  if (command != null) {
                      command.internals().correlate(event)
-                     if (command is Flow)
-                         correlatesToFlow = true
+                     if (command !is Flow) command.internals().finish()
                  }
              }
          }
-         return correlatesToFlow
     }
 
 }
