@@ -178,8 +178,8 @@ open class ApplicationIntegration : DataJpaIntegration() {
         command = commandRepository.findAll().iterator().next()
 
         assertThat(command.internals().status).isEqualTo(CommandStatus.processed)
-        assertThat(command.internals().execution.startedAt).isNotNull()
-        assertThat(command.internals().execution.finishedAt).isNotNull()
+        assertThat(command.internals().execution?.startedAt).isNotNull()
+        assertThat(command.internals().execution?.finishedAt).isNotNull()
 
     }
 
@@ -194,8 +194,8 @@ open class ApplicationIntegration : DataJpaIntegration() {
         application.consume(event.toJson())
 
         assertThat(command.internals().status).isEqualTo(CommandStatus.processed)
-        assertThat(command.internals().execution.startedAt).isNull()
-        assertThat(command.internals().execution.finishedAt).isNotNull()
+        assertThat(command.internals().execution?.startedAt).isNull()
+        assertThat(command.internals().execution?.finishedAt).isNotNull()
 
     }
 
@@ -207,7 +207,7 @@ open class ApplicationIntegration : DataJpaIntegration() {
         application.execute(command.toJson())
 
         assertThat(command.internals().status).isEqualTo(CommandStatus.processed)
-        assertThat(command.internals().execution.finishedAt).isNotNull()
+        assertThat(command.internals().execution?.finishedAt).isNotNull()
         assertThat(command.internals().problemOccured?.code).isEqualTo(Problem::class.simpleName)
 
     }
@@ -229,7 +229,7 @@ open class ApplicationIntegration : DataJpaIntegration() {
         application.execute(command.toJson())
 
         assertThat(command.internals().status).isEqualTo(CommandStatus.processed)
-        assertThat(command.internals().execution.finishedAt).isNotNull()
+        assertThat(command.internals().execution?.finishedAt).isNotNull()
         assertThat(command.internals().problemOccured?.code).isNull()
         assertThat(command.internals().eventsAssociated).isNull()
 

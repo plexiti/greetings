@@ -34,24 +34,29 @@ class Application {
         val eventId = eventStore.eventId(json)
         if (eventId != null) {
             val event = eventStore.findOne(eventId) ?: eventStore.save(Event.fromJson(json))
+            val flowId = event.internals().raisedByFlow
+            val flow = if (flowId != null) commandStore.findOne(event.internals().raisedByFlow)?.internals() as StoredFlow else null
+            flow?.resume()
             triggerBy(event)
             correlate(event)
             event.internals().consume()
             // TODO Events not raised by a flow, but correlated to it are just consumed
             event.internals().process()
+            flow?.hibernate()
         }
     }
 
     @Transactional
     fun handle(json: String): FlowIO {
         val message = FlowIO.fromJson(json)
-        Flow.setExecuting(commandStore.findOne(message.flowId) as Flow)
+        val flow = commandStore.findOne(message.flowId)?.internals() as StoredFlow
+        flow.resume()
         when (message.type) {
             MessageType.Event -> Event.raise(message)
             MessageType.Command -> Command.issue(message)
             else -> throw IllegalStateException()
         }
-        Flow.unsetExecuting()
+        flow.hibernate()
         return message
     }
 
@@ -65,7 +70,7 @@ class Application {
     @Transactional
     fun synchronous(command: Command): Any? {
         val c = Command.issue(command)
-        c.internals().forward()
+        c.internals().forward() // TODO semtantically wrong, but currently needed to silent the queuer
         return execute(c)
     }
 

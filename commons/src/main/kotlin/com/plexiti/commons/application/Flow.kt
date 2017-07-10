@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.plexiti.commons.domain.*
+import java.util.*
 import javax.persistence.*
 import kotlin.reflect.KClass
 
@@ -39,10 +40,10 @@ class Flow(): Command() {
         private val executing = ThreadLocal<StoredFlow?>()
 
         internal fun setExecuting(flow: Flow) {
-            setExecuting(flow.internals())
+            setExecuting(flow.internals() as StoredFlow)
         }
 
-        internal fun setExecuting(flow: StoredFlow) {
+        internal fun setExecuting(flow: StoredFlow?) {
             executing.set(flow)
         }
 
@@ -73,6 +74,19 @@ class StoredFlow: StoredCommand {
 
     constructor() : super()
     constructor(flow: Flow) : super(flow)
+
+    fun resume() {
+        if (this.execution == null) {
+            this.status = CommandStatus.started
+            this.execution = Execution()
+            this.execution?.startedAt = Date()
+        }
+        Flow.setExecuting(this)
+    }
+
+    fun hibernate() {
+        Command.unsetExecuting()
+    }
 
 }
 

@@ -154,14 +154,14 @@ open class StoredCommand(): StoredMessage<CommandId, CommandStatus>() {
     var processedAt: Date? = null
 
     @Embedded
-    var execution: Execution = Execution()
+    var execution: Execution? = null
 
     fun getTriggeredBy(): EventId? {
         val trigger = eventsAssociated?.filter{ it.value == issued }?.keys
         return if (trigger != null && !trigger.isEmpty()) trigger.first() else null
     }
 
-    @Embedded @AttributeOverride(name = "value", column = Column(name = "ISSUED_BY_COMMAND", nullable = true, length=36))
+    @Embedded @AttributeOverride(name = "value", column = Column(name = "ISSUED_BY_FLOW", nullable = true, length=36))
     open var issuedBy: CommandId? = null
 
     @Embedded @AttributeOverride(name="value", column = Column(name="EXECUTED_BY_TOKEN", nullable = true))
@@ -185,18 +185,25 @@ open class StoredCommand(): StoredMessage<CommandId, CommandStatus>() {
         this.forwardedAt = Date()
     }
 
-    fun start() {
-        this.status = started
-        this.execution = Execution()
-        this.execution.startedAt = Date()
+    open fun start() {
+        if (this.execution?.startedAt == null) {
+            this.status = started
+            this.execution = Execution()
+            this.execution?.startedAt = Date()
+        }
         Command.setExecuting(this)
+        val flow = if (issuedBy != null) Command.store.findOne(issuedBy)?.internals() as StoredFlow else null
+        flow?.resume()
     }
 
-    fun finish() {
+    open fun finish() {
         this.status = finished
-        this.execution.finishedAt = Date()
+        this.execution = execution ?: Execution()
+        this.execution?.finishedAt = Date()
         if (issuedBy == null) process()
         Command.unsetExecuting()
+        val flow = if (issuedBy != null) Command.store.findOne(issuedBy)?.internals() as StoredFlow else null
+        flow?.hibernate()
     }
 
     fun process() {
@@ -206,7 +213,9 @@ open class StoredCommand(): StoredMessage<CommandId, CommandStatus>() {
 
     fun correlate(result: Any) {
         if (result is Event) {
-            eventsAssociated = eventsAssociated?.plus(result.id to this.status) ?: mapOf(result.id to this.status)
+            val pair = result.id to this.status
+            eventsAssociated = eventsAssociated?.plus(pair) ?: mapOf(pair)
+            Flow.getExecuting()?.eventsAssociated = Flow.getExecuting()?.eventsAssociated?.plus(pair) ?: mapOf(pair)
         } else if (result is Value) {
             valueReturned = Hash(result)
         } else if (result is Problem) {

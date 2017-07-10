@@ -170,7 +170,7 @@ interface StoredCommandStore : CommandStore<StoredCommand>
 class InMemoryStoredCommandStore : InMemoryEntityCrudRepository<StoredCommand, CommandId>(), StoredCommandStore {
 
     override fun findByCorrelatedBy_AndExecutionFinishedAt_IsNull(correlation: Correlation): StoredCommand? {
-        return findAll().find { correlation == it.correlatedBy && it.execution.finishedAt == null }
+        return findAll().find { correlation == it.correlatedBy && it.execution?.finishedAt == null }
     }
 
     override fun findFirstByName_AndIssuedBy_OrderByIssuedAtDesc(name: Name, issuedBy: CommandId): StoredCommand? {
