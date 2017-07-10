@@ -53,7 +53,7 @@ class FlowDocumentQueuer : RouteBuilder() {
 
     @Handler
     fun queue(storedCommand: StoredCommand) {
-        val message = FlowIO(Document(commands.findOne(storedCommand.id)!!), storedCommand.issuedBy!!, storedCommand.correlatedToToken!!)
+        val message = FlowIO(Document(commands.findOne(storedCommand.id)!!), storedCommand.issuedBy!!, storedCommand.executedBy!!)
         rabbitTemplate.convertAndSend(queue, message.toJson());
         logger.info("Queued ${message.toJson()}")
     }

@@ -208,7 +208,7 @@ open class ApplicationIntegration : DataJpaIntegration() {
 
         assertThat(command.internals().status).isEqualTo(CommandStatus.processed)
         assertThat(command.internals().execution.finishedAt).isNotNull()
-        assertThat(command.internals().problem?.code).isEqualTo(Problem::class.simpleName)
+        assertThat(command.internals().problemOccured?.code).isEqualTo(Problem::class.simpleName)
 
     }
 
@@ -230,8 +230,8 @@ open class ApplicationIntegration : DataJpaIntegration() {
 
         assertThat(command.internals().status).isEqualTo(CommandStatus.processed)
         assertThat(command.internals().execution.finishedAt).isNotNull()
-        assertThat(command.internals().problem?.code).isNull()
-        assertThat(command.internals().correlatedToEvents).isNull()
+        assertThat(command.internals().problemOccured?.code).isNull()
+        assertThat(command.internals().eventsAssociated).isNull()
 
     }
 
@@ -257,8 +257,8 @@ open class ApplicationIntegration : DataJpaIntegration() {
 
         assertThat(command.internals().status).isEqualTo(CommandStatus.issued)
         assertThat(command.internals().issuedBy).isEqualTo(flow.id)
-        assertThat(command.internals().correlatedToToken).isEqualTo(TokenId("aTokenId"))
-        assertThat(command.internals().correlatedToEvents).isNull()
+        assertThat(command.internals().executedBy).isEqualTo(TokenId("aTokenId"))
+        assertThat(command.internals().eventsAssociated).isNull()
 
     }
 
@@ -283,7 +283,7 @@ open class ApplicationIntegration : DataJpaIntegration() {
         assertThat(event.someCommandProperty).isEqualTo("someCommandValue")
 
         assertThat(event.internals().status).isEqualTo(EventStatus.raised)
-        assertThat(event.internals().raisedBy).isEqualTo(flow.id)
+        assertThat(event.internals().raisedByCommand).isEqualTo(flow.id)
 
     }
 

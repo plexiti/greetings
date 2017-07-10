@@ -21,19 +21,19 @@ class Document(): Message {
     var events: List<Event>? = null
 
     @JsonDeserialize(`as` = DefaultValue::class)
-    var value: Value? = null
+    var valueReturned: Value? = null
 
-    var problem: Problem? = null
+    var problemOccured: Problem? = null
 
     constructor(command: Command): this() {
         this.name = command.name
         this.id = command.id
         this.command = command
-        this.events = Event.store.findByRaisedBy_OrderByRaisedAtDesc(command.id)
-        if (command.internals().resultingIn != null) {
-            this.value = Value.store.findOne(command.internals().resultingIn)
+        this.events = Event.store.findByRaisedByCommand_OrderByRaisedAtDesc(command.id)
+        if (command.internals().valueReturned != null) {
+            this.valueReturned = Value.store.findOne(command.internals().valueReturned)
         }
-        this.problem = command.internals().problem
+        this.problemOccured = command.internals().problemOccured
     }
 
     fun toJson(): String {

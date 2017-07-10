@@ -52,7 +52,7 @@ class FlowEventQueuer : RouteBuilder() {
 
     @Handler
     fun queue(event: StoredEvent) {
-        val commands = commandStore.findByCorrelatedToEvents_Containing(event.id.value)
+        val commands = commandStore.findByEventsAssociated_Containing(event.id.value)
         commands.forEach {
             // TODO Consider that this could partially fail and result in duplicate messages
 

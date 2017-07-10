@@ -90,7 +90,7 @@ class FlowCommandTest {
         val request = ObjectMapper().readValue(json.value, FlowIO::class.java)
         val command = request.command!!
         val result = Document(command)
-        result.problem = Problem("SomeError", "someMessage")
+        result.problemOccured = Problem("SomeError", "someMessage")
         val response = FlowIO(result, request.flowId, request.tokenId)
 
         val pi = rule.processEngine.runtimeService.createProcessInstanceQuery().singleResult()
@@ -114,7 +114,7 @@ class FlowCommandTest {
         val request = ObjectMapper().readValue(json.value, FlowIO::class.java)
         val command = request.command!!
         val result = Document(command)
-        result.value = object: Value {
+        result.valueReturned = object: Value {
             override val name: Name
                 get() = Name("Flow_Document")
             val someProperty =  "someValue"

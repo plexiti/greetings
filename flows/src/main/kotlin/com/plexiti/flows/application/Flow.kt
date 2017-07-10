@@ -42,12 +42,12 @@ class FlowApplication {
         val result = io.document
         val command = result!!.command
         val variables = Variables.createVariables().putValue(command.name.qualified, json.prop("document"))
-        if (result.problem != null) {
-            variables.putValue(result.problem!!.code, json.prop("document").prop("problem"))
-            runtimeService.signal(io.tokenId!!.value, result.problem!!.code, result.problem!!.message, variables)
+        if (result.problemOccured != null) {
+            variables.putValue(result.problemOccured!!.code, json.prop("document").prop("problemOccured"))
+            runtimeService.signal(io.tokenId!!.value, result.problemOccured!!.code, result.problemOccured!!.message, variables)
         } else {
-            if (result.value != null) {
-                val document = json.prop("document").prop("value")
+            if (result.valueReturned != null) {
+                val document = json.prop("document").prop("valueReturned")
                 variables.put(document.prop("name").stringValue(), document)
             }
             var idx = 0

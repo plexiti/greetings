@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode
 import com.plexiti.commons.adapters.db.EventStore
 import com.plexiti.commons.application.Command
 import com.plexiti.commons.application.CommandId
+import com.plexiti.commons.application.Flow
 import com.plexiti.commons.application.FlowIO
 import com.plexiti.commons.domain.EventStatus.*
 import com.plexiti.commons.domain.StoredEvent.*
@@ -57,8 +58,6 @@ open class Event() : Message {
     companion object {
 
         var store = EventStore()
-
-        internal val executingCommand = ThreadLocal<Command?>()
 
         fun <E: Event> raise(event: E): E {
             return store.save(event);
@@ -127,7 +126,11 @@ class StoredEvent(): StoredMessage<EventId, EventStatus>() {
 
     @Embedded
     @AttributeOverride(name="value", column = Column(name="RAISED_BY_COMMAND", nullable = true, length = 36))
-    var raisedBy: CommandId? = null
+    var raisedByCommand: CommandId? = null
+
+    @Embedded
+    @AttributeOverride(name="value", column = Column(name="RAISED_BY_FLOW", nullable = true, length = 36))
+    var raisedByFlow: CommandId? = null
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "CONSUMED_AT", nullable = true)
@@ -208,7 +211,9 @@ interface EventStore<E>: CrudRepository<E, EventId> {
     @Query( "select e from StoredEvent e where e.name = :name and (e.id in :ids) order by e.raisedAt desc")
     fun findFirstByName_OrderByRaisedAtDesc(@Param("name") name: Name, @Param("ids") ids: MutableIterable<EventId>): List<E>
 
-    fun findByRaisedBy_OrderByRaisedAtDesc(raisedBy: CommandId): List<E>
+    fun findByRaisedByCommand_OrderByRaisedAtDesc(raisedBy: CommandId): List<E>
+
+    fun findByRaisedByFlow_OrderByRaisedAtDesc(raisedBy: CommandId): List<E>
 
     @Query("select e from StoredEvent e where e.id in :ids order by e.raisedAt desc")
     fun findAll_OrderByRaisedAtDesc(@Param("ids") ids: MutableIterable<EventId>): List<E>

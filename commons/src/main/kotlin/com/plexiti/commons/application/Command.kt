@@ -44,6 +44,8 @@ open class Command(): Message {
 
     companion object {
 
+        private val executing = ThreadLocal<StoredCommand?>()
+
         var store = CommandStore()
 
         fun <C: Command> issue(command: C): C {
@@ -52,6 +54,18 @@ open class Command(): Message {
 
         fun issue(command: FlowIO): Command {
             return store.save(command)
+        }
+
+        internal fun setExecuting(command: StoredCommand) {
+            executing.set(command)
+        }
+
+        internal fun getExecuting(): StoredCommand? {
+            return executing.get()
+        }
+
+        internal fun unsetExecuting() {
+            executing.set(null)
         }
 
         fun fromJson(json: String): Command {
@@ -78,7 +92,7 @@ open class Command(): Message {
     }
 
     open fun correlation(event: Event): Correlation? {
-        return Correlation.create(event.internals().raisedBy?.value)
+        return Correlation.create(event.internals().raisedByCommand?.value)
     }
 
     open fun trigger(event: Event): Command? {
@@ -139,32 +153,32 @@ open class StoredCommand(): StoredMessage<CommandId, CommandStatus>() {
     @Temporal(TemporalType.TIMESTAMP)
     var processedAt: Date? = null
 
+    @Embedded
+    var execution: Execution = Execution()
+
     fun getTriggeredBy(): EventId? {
-        val trigger = correlatedToEvents?.filter{ it.value == issued }?.keys
+        val trigger = eventsAssociated?.filter{ it.value == issued }?.keys
         return if (trigger != null && !trigger.isEmpty()) trigger.first() else null
     }
 
     @Embedded @AttributeOverride(name = "value", column = Column(name = "ISSUED_BY_COMMAND", nullable = true, length=36))
     open var issuedBy: CommandId? = null
 
+    @Embedded @AttributeOverride(name="value", column = Column(name="EXECUTED_BY_TOKEN", nullable = true))
+    var executedBy: TokenId? = null
+
     @Embedded @AttributeOverride(name = "key", column = Column(name = "CORRELATED_BY_KEY", length = 128, nullable = false))
     lateinit var correlatedBy: Correlation
 
-    @Column(name="CORRELATED_TO_EVENTS", nullable = true, length=4096)
+    @Column(name="EVENTS_ASSOCIATED", nullable = true, length=4096)
     @Convert(converter = EventsMapConverter::class)
-    var correlatedToEvents: Map<EventId, CommandStatus>? = null
+    var eventsAssociated: Map<EventId, CommandStatus>? = null
 
-    @Embedded @AttributeOverride(name="value", column = Column(name="CORRELATED_TO_TOKEN", nullable = true))
-    var correlatedToToken: TokenId? = null
-
-    @Embedded @AttributeOverride(name="value", column = Column(name="RESULTING_IN", nullable = true, length = 40))
-    var resultingIn: Hash? = null
+    @Embedded @AttributeOverride(name="value", column = Column(name="VALUE_RETURNED", nullable = true, length = 40))
+    var valueReturned: Hash? = null
 
     @Embedded
-    var execution: Execution = Execution()
-
-    @Embedded
-    var problem: Problem? = null
+    var problemOccured: Problem? = null
 
     fun forward() {
         this.status = forwarded
@@ -175,12 +189,14 @@ open class StoredCommand(): StoredMessage<CommandId, CommandStatus>() {
         this.status = started
         this.execution = Execution()
         this.execution.startedAt = Date()
+        Command.setExecuting(this)
     }
 
     fun finish() {
         this.status = finished
         this.execution.finishedAt = Date()
         if (issuedBy == null) process()
+        Command.unsetExecuting()
     }
 
     fun process() {
@@ -190,11 +206,11 @@ open class StoredCommand(): StoredMessage<CommandId, CommandStatus>() {
 
     fun correlate(result: Any) {
         if (result is Event) {
-            correlatedToEvents = correlatedToEvents?.plus(result.id to this.status) ?: mapOf(result.id to this.status)
-        } else if (result is Problem) {
-            problem = result
+            eventsAssociated = eventsAssociated?.plus(result.id to this.status) ?: mapOf(result.id to this.status)
         } else if (result is Value) {
-            resultingIn = Hash(result)
+            valueReturned = Hash(result)
+        } else if (result is Problem) {
+            problemOccured = result
         }
     }
 
@@ -273,8 +289,8 @@ interface CommandStore<C>: CrudRepository<C, CommandId> {
 
     fun findFirstByName_AndIssuedBy_OrderByIssuedAtDesc(name: Name, issuedBy: CommandId): C?
 
-    @Query("select c from StoredCommand c where c.correlatedToEvents like %:eventId%")
-    fun findByCorrelatedToEvents_Containing(@Param("eventId") eventId: String): List<C>
+    @Query("select c from StoredCommand c where c.eventsAssociated like %:eventId%")
+    fun findByEventsAssociated_Containing(@Param("eventId") eventId: String): List<C>
 
 }
 

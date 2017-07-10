@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.plexiti.commons.application.Command
 import com.plexiti.commons.application.CommandId
+import com.plexiti.commons.application.Flow
 import com.plexiti.commons.application.FlowIO
 import com.plexiti.commons.domain.Name
 import com.plexiti.commons.domain.*
@@ -97,8 +98,12 @@ class EventStore : EventStore<Event>, ApplicationContextAware {
         return delegate.findFirstByName_OrderByRaisedAtDesc(name, ids).map { toEvent(it)!! }
     }
 
-    override fun findByRaisedBy_OrderByRaisedAtDesc(raisedBy: CommandId): List<Event> {
-        return delegate.findByRaisedBy_OrderByRaisedAtDesc(raisedBy).map { toEvent(it)!! }
+    override fun findByRaisedByFlow_OrderByRaisedAtDesc(raisedBy: CommandId): List<Event> {
+        return delegate.findByRaisedByFlow_OrderByRaisedAtDesc(raisedBy).map { toEvent(it)!! }
+    }
+
+    override fun findByRaisedByCommand_OrderByRaisedAtDesc(raisedBy: CommandId): List<Event> {
+        return delegate.findByRaisedByCommand_OrderByRaisedAtDesc(raisedBy).map { toEvent(it)!! }
     }
 
     override fun findAll_OrderByRaisedAtDesc(ids: MutableIterable<EventId>): List<Event> {
@@ -107,21 +112,19 @@ class EventStore : EventStore<Event>, ApplicationContextAware {
 
     override fun <S : Event?> save(event: S): S {
         val entity = toEntity(event)!!
-        entity.raisedBy = Event.executingCommand.get()?.id
+        entity.raisedByFlow = Flow.getExecuting()?.id
+        entity.raisedByCommand = Command.getExecuting()?.id
         delegate.save(entity)
         val e = toEvent(entity)!!
-        Event.executingCommand.get()?.internals()?.correlate(e)
+        Flow.getExecuting()?.correlate(e)
+        Command.getExecuting()?.correlate(e)
         return event
     }
 
     fun save(message: FlowIO): Event {
-        val entity = toEntity(message.event)!!
-        entity.raisedBy = message.flowId
-        delegate.save(entity)
-        val event = toEvent(entity)!!
-        Event.executingCommand.get()?.internals()?.correlate(event)
+        val event = save(message.event)!!
         event.construct()
-        entity.json = event.toJson()
+        event.internals().json = event.toJson()
         return event
     }
 
@@ -165,8 +168,12 @@ class InMemoryStoredEventStore : InMemoryEntityCrudRepository<StoredEvent, Event
         return findAll().filter { it.name == name && ids.contains(it.id) }.sortedByDescending { it.raisedAt }
     }
 
-    override fun findByRaisedBy_OrderByRaisedAtDesc(raisedBy: CommandId): List<StoredEvent> {
-        return findAll().filter { it.raisedBy == raisedBy }.sortedByDescending { it.raisedAt }
+    override fun findByRaisedByCommand_OrderByRaisedAtDesc(raisedBy: CommandId): List<StoredEvent> {
+        return findAll().filter { it.raisedByCommand == raisedBy }.sortedByDescending { it.raisedAt }
+    }
+
+    override fun findByRaisedByFlow_OrderByRaisedAtDesc(raisedBy: CommandId): List<StoredEvent> {
+        return findAll().filter { it.raisedByFlow == raisedBy }.sortedByDescending { it.raisedAt }
     }
 
     override fun findAll_OrderByRaisedAtDesc(ids: MutableIterable<EventId>): List<StoredEvent> {

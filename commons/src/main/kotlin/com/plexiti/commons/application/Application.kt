@@ -6,10 +6,8 @@ import com.plexiti.commons.adapters.db.EventStore
 import com.plexiti.commons.domain.*
 import org.apache.camel.CamelExecutionException
 import org.apache.camel.ProducerTemplate
-import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 
 
@@ -47,12 +45,13 @@ class Application {
     @Transactional
     fun handle(json: String): FlowIO {
         val message = FlowIO.fromJson(json)
-        Event.executingCommand.set(commandStore.findOne(message.flowId))
+        Flow.setExecuting(commandStore.findOne(message.flowId) as Flow)
         when (message.type) {
             MessageType.Event -> Event.raise(message)
             MessageType.Command -> Command.issue(message)
+            else -> throw IllegalStateException()
         }
-        Event.executingCommand.set(null)
+        Flow.unsetExecuting()
         return message
     }
 
@@ -72,7 +71,6 @@ class Application {
 
     @Transactional
     fun execute(command: Command): Any? {
-        Event.executingCommand.set(command)
         command.internals().start()
         try {
             return run(command)
@@ -81,7 +79,6 @@ class Application {
             return problem
         } finally {
             command.internals().finish()
-            Event.executingCommand.set(null)
         }
     }
 
@@ -94,7 +91,7 @@ class Application {
                 command.internals().correlate(result)
                 return result
             }
-            return eventStore.findAll_OrderByRaisedAtDesc(command.internals().correlatedToEvents!!.keys.toMutableList())
+            return eventStore.findAll_OrderByRaisedAtDesc(command.internals().eventsAssociated!!.keys.toMutableList())
         } catch (e: CamelExecutionException) {
             throw e.exchange.exception
         }

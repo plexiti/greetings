@@ -36,6 +36,24 @@ class Flow(): Command() {
 
         var triggers: Map<Name, Name> = emptyMap()
 
+        private val executing = ThreadLocal<StoredFlow?>()
+
+        internal fun setExecuting(flow: Flow) {
+            setExecuting(flow.internals())
+        }
+
+        internal fun setExecuting(flow: StoredFlow) {
+            executing.set(flow)
+        }
+
+        internal fun getExecuting(): StoredFlow? {
+            return executing.get()
+        }
+
+        internal fun unsetExecuting() {
+            executing.set(null)
+        }
+
     }
 
 }
