@@ -12,12 +12,12 @@ Feature: Get greeting
     And A greeting with the <message> should be stored
 
     Examples:
-      | caller | status | message           |
-      | Duke   | 200    | Hello World, Duke |
-      | Tux    | 200    | Hello World, Tux  |
+      | caller | status | message            |
+      | Duke   | 200    | Hello World, Duke! |
+      | Tux    | 200    | Hello World, Tux!  |
 
-  Scenario: Get greeting using caller 0xcafebabe
+  Scenario: Get greeting using caller 0xCOFFEEPOT
 
-    Given I use the caller 0xCAFEBABE
+    Given I use the caller 0xCOFFEEPOT
     When I request a greeting
     Then I should get a response with HTTP status code 418

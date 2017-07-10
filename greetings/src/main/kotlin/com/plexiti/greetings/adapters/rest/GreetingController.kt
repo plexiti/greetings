@@ -22,7 +22,7 @@ class GreetingController {
     @RequestMapping("/greetings/{caller}")
     @ResponseBody
     fun getGreeting(@PathVariable caller: String): ResponseEntity<*> {
-        if ("0xCAFEBABE".equals(caller, ignoreCase = true)) {
+        if ("0xCOFFEEPOT".equals(caller, ignoreCase = true)) {
             return ResponseEntity<Any>(HttpStatus.I_AM_A_TEAPOT)
         }
         val document = application.synchronous(AnswerCaller(caller)) // process command synchronously
