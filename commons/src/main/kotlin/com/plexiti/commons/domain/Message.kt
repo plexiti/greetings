@@ -2,8 +2,12 @@ package com.plexiti.commons.domain
 
 import com.fasterxml.jackson.annotation.*
 import com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY
+import com.plexiti.commons.application.Command
+import com.plexiti.commons.application.Flow
 import java.util.*
 import javax.persistence.*
+import kotlin.reflect.KClass
+import kotlin.reflect.full.isSubclassOf
 
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
@@ -15,6 +19,30 @@ interface Message: Named {
     val id: MessageId
     override val name: Name
     val type: MessageType
+
+    @Suppress("UNCHECKED_CAST")
+    companion object {
+
+        fun <T: Message> fromFlow(type: KClass<out T>): T? {
+            val flowId = Flow.getExecuting()?.id
+            if (flowId != null) {
+                if (type.isSubclassOf(Command::class)) {
+                    val name = Command.store.names.get(type as KClass<out Command>)!!
+                    val command = Command.store.findFirstByName_AndIssuedBy_OrderByIssuedAtDesc(name, flowId)
+                    return command as T?
+                } else if (type.isSubclassOf(Event::class)) {
+                    val name = Event.store.names.get(type as KClass<out Event>)!!
+                    val eventIds = Command.store.findOne(flowId)?.internals()?.eventsAssociated?.keys?.toMutableList() ?: mutableListOf()
+                    val events = if (!eventIds.isEmpty()) Event.store.findFirstByName_OrderByRaisedAtDesc(name, eventIds) else listOf()
+                    return (if (!events.isEmpty()) events.first() else null) as T?
+                }
+            }
+            return null
+        }
+
+    }
+
+    fun <T: Message> fromFlow(type: KClass<out T>): T?
 
 }
 

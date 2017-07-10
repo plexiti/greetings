@@ -16,10 +16,13 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
+import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Pageable
 import org.springframework.data.repository.NoRepositoryBean
 import org.springframework.stereotype.Component
 import org.springframework.stereotype.Repository
 import kotlin.reflect.KClass
+import kotlin.reflect.full.createInstance
 
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
@@ -122,10 +125,9 @@ class EventStore : EventStore<Event>, ApplicationContextAware {
     }
 
     fun save(message: FlowIO): Event {
-        val event = save(message.event)!!
+        val event = type(message.event!!.name).createInstance()
         event.construct()
-        event.internals().json = event.toJson()
-        return event
+        return save(event)
     }
 
     override fun <S : Event?> save(events: MutableIterable<S>?): MutableIterable<S> {

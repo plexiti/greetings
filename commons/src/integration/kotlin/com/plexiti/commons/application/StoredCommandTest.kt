@@ -45,7 +45,7 @@ class StoredCommandTest : DataJpaIntegration() {
         eventStore.save(event)
 
         val result = eventStore.findFirstByName_OrderByRaisedAtDesc(event.name, mutableListOf(event.id))
-        assertThat(result).isNotNull().isNotEmpty().first().hasFieldOrPropertyWithValue("id", event.id)
+        assertThat(result).isNotNull().first().hasFieldOrPropertyWithValue("id", event.id)
 
     }
 
@@ -59,7 +59,7 @@ class StoredCommandTest : DataJpaIntegration() {
         eventStore.save(event2)
 
         val result = eventStore.findFirstByName_OrderByRaisedAtDesc(SomeEvent().name, mutableListOf(event1.id, event2.id))
-        assertThat(result).isNotNull().isNotEmpty().first().hasFieldOrPropertyWithValue("id", event2.id)
+        assertThat(result).isNotNull().first().hasFieldOrPropertyWithValue("id", event2.id)
 
     }
 

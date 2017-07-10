@@ -35,7 +35,7 @@ class Application {
         if (eventId != null) {
             val event = eventStore.findOne(eventId) ?: eventStore.save(Event.fromJson(json))
             val flowId = event.internals().raisedByFlow
-            val flow = if (flowId != null) commandStore.findOne(event.internals().raisedByFlow)?.internals() as StoredFlow else null
+            val flow = if (flowId != null) commandStore.findOne(event.internals().raisedByFlow)?.internals() as StoredFlow? else null
             flow?.resume()
             triggerBy(event)
             correlate(event)
@@ -96,7 +96,8 @@ class Application {
                 command.internals().correlate(result)
                 return result
             }
-            return eventStore.findAll_OrderByRaisedAtDesc(command.internals().eventsAssociated!!.keys.toMutableList())
+            val events = command.internals().eventsAssociated?.keys?.toMutableList() ?: mutableListOf()
+            return if (!events.isEmpty()) eventStore.findAll_OrderByRaisedAtDesc(events) else null
         } catch (e: CamelExecutionException) {
             throw e.exchange.exception
         }

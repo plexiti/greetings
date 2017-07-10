@@ -3,6 +3,7 @@ package com.plexiti.commons.application
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.plexiti.commons.domain.*
+import kotlin.reflect.KClass
 
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
@@ -38,6 +39,10 @@ class Document(): Message {
 
     fun toJson(): String {
         return ObjectMapper().writeValueAsString(this)
+    }
+
+    override fun <T : Message> fromFlow(type: KClass<out T>): T? {
+        return command.fromFlow(type)
     }
 
 }

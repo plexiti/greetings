@@ -9,6 +9,8 @@ import org.junit.Before
 import org.junit.Ignore
 import org.junit.Test
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.transaction.annotation.Propagation
+import org.springframework.transaction.annotation.Transactional
 import java.util.*
 
 /**
@@ -46,13 +48,9 @@ open class ApplicationIntegration : DataJpaIntegration() {
         var someCommandProperty: String? = null
         var someEventProperty: String? = null
 
-        constructor(someCommandProperty: String): this() {
-            this.someCommandProperty = someCommandProperty
-        }
-
         override fun construct() {
             someCommandProperty = "someCommandValue"
-            // someEventProperty = event(FlowITEvent::class)?.someEventProperty
+            someEventProperty = fromFlow(FlowITEvent::class)?.someEventProperty
         }
 
     }
@@ -62,13 +60,9 @@ open class ApplicationIntegration : DataJpaIntegration() {
         var someEventProperty: String? = null
         var someCommandProperty: String? = null
 
-        constructor(someEventProperty: String): this() {
-            this.someEventProperty = someEventProperty
-        }
-
         override fun construct() {
             someEventProperty = "someEventValue"
-            // someCommandProperty = command(FlowITCommand::class)?.someEventProperty
+            someCommandProperty = fromFlow(FlowITCommand::class)?.someCommandProperty
         }
 
     }
@@ -236,22 +230,23 @@ open class ApplicationIntegration : DataJpaIntegration() {
     }
 
     @Test
-    @Ignore // TODO
     fun handleFlowIOCommand() {
 
         Command.store.init(setOf(Name(name = "aFlow")))
         val flow = Command.issue(Flow(Name(name = "aFlow")))
-        val event = FlowIO(FlowITEvent("someEventValue"), flow.id)
-        
-        application.handle(event.toJson())
 
-        val flowCommand = Command(Name(name = "FlowITCommand"))
-        val message = FlowIO(flowCommand, flow.id, TokenId("aTokenId"))
+        val eventMessage = FlowIO(Event(Name(name = "FlowITEvent")), flow.id)
+        application.handle(eventMessage.toJson())
 
-        application.handle(message.toJson())
+        val event = eventRepository.findAll().first() as FlowITEvent
 
-        val command = commandRepository.findOne(flowCommand.id) as FlowITCommand
+        val commandMessage = FlowIO(Command(Name(name = "FlowITCommand")), flow.id, TokenId("aTokenId"))
 
+        application.handle(commandMessage.toJson())
+
+        val command = commandRepository.findAll().first { it !is Flow }  as FlowITCommand
+
+        assertThat(event.someEventProperty).isEqualTo("someEventValue")
         assertThat(command.someCommandProperty).isEqualTo("someCommandValue")
         assertThat(command.someEventProperty).isEqualTo("someEventValue")
 
@@ -263,27 +258,26 @@ open class ApplicationIntegration : DataJpaIntegration() {
     }
 
     @Test
-    @Ignore // TODO
     fun handleFlowIOEvent() {
 
         Command.store.init(setOf(Name(name = "aFlow")))
         val flow = Command.issue(Flow(Name(name = "aFlow")))
 
-        val command = FlowIO(FlowITCommand("someCommandValue"), flow.id, TokenId("aTokenId"))
+        val commandMessage = FlowIO(Command(Name(name = "FlowITCommand")), flow.id, TokenId())
+        application.handle(commandMessage.toJson())
 
-        application.handle(command.toJson())
+        val command = commandRepository.findAll().first() as FlowITCommand
 
-        val flowEvent = Event(Name(name = "FlowITEvent"))
-        val message = FlowIO(flowEvent, flow.id)
-        application.handle(message.toJson())
+        val eventMessage = FlowIO(Event(Name(name = "FlowITEvent")), command.internals().issuedBy!!)
+        application.handle(eventMessage.toJson())
+        val event = eventRepository.findAll().first() as FlowITEvent
 
-        val event = eventRepository.findOne(flowEvent.id) as FlowITEvent
-
+        assertThat(command.someCommandProperty).isEqualTo("someCommandValue")
         assertThat(event.someEventProperty).isEqualTo("someEventValue")
         assertThat(event.someCommandProperty).isEqualTo("someCommandValue")
 
         assertThat(event.internals().status).isEqualTo(EventStatus.raised)
-        assertThat(event.internals().raisedByCommand).isEqualTo(flow.id)
+        assertThat(event.internals().raisedByFlow).isEqualTo(flow.id)
 
     }
 

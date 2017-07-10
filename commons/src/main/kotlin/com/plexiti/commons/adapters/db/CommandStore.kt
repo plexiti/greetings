@@ -18,6 +18,7 @@ import org.springframework.data.repository.NoRepositoryBean
 import org.springframework.stereotype.Component
 import org.springframework.stereotype.Repository
 import kotlin.reflect.KClass
+import kotlin.reflect.full.createInstance
 
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
@@ -127,13 +128,12 @@ class CommandStore : CommandStore<Command>, ApplicationContextAware, RouteBuilde
     }
 
     fun save(message: FlowIO): Command {
-        val entity = toEntity(message.command)!!
+        val command = type(message.command!!.name).createInstance()
+        command.construct()
+        val entity = toEntity(command)!!
         entity.issuedBy = message.flowId
         entity.executedBy = message.tokenId
         delegate.save(entity)
-        val command = toCommand(entity)!!
-        command.construct()
-        entity.json = command.toJson()
         return command
     }
 

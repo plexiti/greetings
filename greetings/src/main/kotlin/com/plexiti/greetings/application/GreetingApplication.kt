@@ -16,7 +16,6 @@ import org.springframework.transaction.annotation.Transactional
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
 @Service
-@Transactional
 class GreetingApplication {
 
     @Autowired
@@ -30,6 +29,7 @@ class GreetingApplication {
 
     // The execution of a command
     // may through a (business) problem which will be dealt with in flow
+    @Transactional
     fun answerCaller(command: AnswerCaller) {
         val caller = command.caller
         if (caller != null) greetingService.answer(caller)
@@ -39,20 +39,20 @@ class GreetingApplication {
     class IdentifyCaller(var caller: String? = null): Command() {
 
         // callback to construct object out of flow data
-        // works conceptually, but I need a few helper methods
         override fun construct() {
-            caller = "Bernd" // at the moment, we just know Bernd :-) as soon as he called once
+            caller = fromFlow(CallAnsweredAutomatically::class)?.caller
         }
 
     }
 
     // Again, the execution of a command
+    @Transactional
     fun identifyCaller(command: IdentifyCaller): CallerStatus {
         return CallerStatus(greetingRepository.findByCaller(command.caller)?.isKnown())
     }
 
     // A projection or "document". May be returned by a command
-    // and will be passed on the flow.
+    // and will be passed on to the flow.
     data class CallerStatus(val known: Boolean? = false): Value
 
 }

@@ -11,6 +11,9 @@ import com.plexiti.commons.application.FlowIO
 import com.plexiti.commons.domain.EventStatus.*
 import com.plexiti.commons.domain.StoredEvent.*
 import org.apache.camel.component.jpa.Consumed
+import org.hibernate.jpa.QueryHints
+import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.CrudRepository
 import org.springframework.data.repository.NoRepositoryBean
@@ -101,6 +104,10 @@ open class Event() : Message {
         return ObjectMapper().writeValueAsString(this)
     }
 
+    override fun <T : Message> fromFlow(type: KClass<out T>): T? {
+        return internals().fromFlow(type)
+    }
+
 }
 
 @Entity
@@ -167,6 +174,10 @@ class StoredEvent(): StoredMessage<EventId, EventStatus>() {
         this.processedAt = Date()
     }
 
+    override fun <T : Message> fromFlow(type: KClass<out T>): T? {
+        return Message.fromFlow(type)
+    }
+
     @Embeddable
     class EventAggregate() {
 
@@ -198,7 +209,7 @@ class StoredEvent(): StoredMessage<EventId, EventStatus>() {
             else -> throw IllegalStateException()
         }
     }
-    
+
 }
 
 class EventId(value: String = ""): MessageId(value)

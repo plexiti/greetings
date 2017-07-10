@@ -99,6 +99,10 @@ open class Command(): Message {
         return null
     }
 
+    override fun <T : Message> fromFlow(type: KClass<out T>): T? {
+        return internals().fromFlow(type)
+    }
+
     fun toJson(): String {
         return ObjectMapper().writeValueAsString(this)
     }
@@ -180,6 +184,10 @@ open class StoredCommand(): StoredMessage<CommandId, CommandStatus>() {
     @Embedded
     var problemOccured: Problem? = null
 
+    override fun <T : Message> fromFlow(type: KClass<out T>): T? {
+        return Message.fromFlow(type)
+    }
+
     fun forward() {
         this.status = forwarded
         this.forwardedAt = Date()
@@ -192,7 +200,7 @@ open class StoredCommand(): StoredMessage<CommandId, CommandStatus>() {
             this.execution?.startedAt = Date()
         }
         Command.setExecuting(this)
-        val flow = if (issuedBy != null) Command.store.findOne(issuedBy)?.internals() as StoredFlow else null
+        val flow = (if (issuedBy != null) Command.store.findOne(issuedBy)?.internals() else null) as StoredFlow?
         flow?.resume()
     }
 
@@ -202,7 +210,7 @@ open class StoredCommand(): StoredMessage<CommandId, CommandStatus>() {
         this.execution?.finishedAt = Date()
         if (issuedBy == null) process()
         Command.unsetExecuting()
-        val flow = if (issuedBy != null) Command.store.findOne(issuedBy)?.internals() as StoredFlow else null
+        val flow = (if (issuedBy != null) Command.store.findOne(issuedBy)?.internals() else null) as StoredFlow?
         flow?.hibernate()
     }
 
