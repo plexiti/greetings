@@ -6,11 +6,8 @@ import com.plexiti.commons.adapters.db.EventStore
 import com.plexiti.commons.domain.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
-import org.junit.Ignore
 import org.junit.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.transaction.annotation.Propagation
-import org.springframework.transaction.annotation.Transactional
 import java.util.*
 
 /**
@@ -48,9 +45,9 @@ open class ApplicationIntegration : DataJpaIntegration() {
         var someCommandProperty: String? = null
         var someEventProperty: String? = null
 
-        override fun construct() {
+        override fun init() {
             someCommandProperty = "someCommandValue"
-            someEventProperty = fromFlow(FlowITEvent::class)?.someEventProperty
+            someEventProperty = get(FlowITEvent::class)?.someEventProperty
         }
 
     }
@@ -60,9 +57,9 @@ open class ApplicationIntegration : DataJpaIntegration() {
         var someEventProperty: String? = null
         var someCommandProperty: String? = null
 
-        override fun construct() {
+        override fun init() {
             someEventProperty = "someEventValue"
-            someCommandProperty = fromFlow(FlowITCommand::class)?.someCommandProperty
+            someCommandProperty = get(FlowITCommand::class)?.someCommandProperty
         }
 
     }
@@ -266,7 +263,7 @@ open class ApplicationIntegration : DataJpaIntegration() {
         val commandMessage = FlowIO(Command(Name(name = "FlowITCommand")), flow.id, TokenId())
         application.handle(commandMessage.toJson())
 
-        val command = commandRepository.findAll().first() as FlowITCommand
+        val command = commandRepository.findAll().first { it !is Flow } as FlowITCommand
 
         val eventMessage = FlowIO(Event(Name(name = "FlowITEvent")), command.internals().issuedBy!!)
         application.handle(eventMessage.toJson())

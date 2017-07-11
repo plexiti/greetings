@@ -19,6 +19,7 @@ import java.io.Serializable
 import java.util.*
 import javax.persistence.*
 import kotlin.reflect.KClass
+import kotlin.reflect.full.createInstance
 
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
@@ -52,8 +53,13 @@ open class Command(): Message {
             return store.save(command)
         }
 
-        fun issue(command: FlowIO): Command {
-            return store.save(command)
+        fun issue(message: FlowIO): Command {
+            val command = store.type(message.command!!.name).createInstance()
+            command.init()
+            val entity = store.save(command).internals()
+            entity.issuedBy = message.flowId
+            entity.executedBy = message.tokenId
+            return command
         }
 
         internal fun setExecuting(command: StoredCommand) {
@@ -85,7 +91,7 @@ open class Command(): Message {
         return store.toEntity(this)!!
     }
 
-    open fun construct() {}
+    open fun init() {}
 
     open fun correlation(): Correlation {
         return Correlation.create(id.value)!!
@@ -99,8 +105,8 @@ open class Command(): Message {
         return null
     }
 
-    override fun <T : Message> fromFlow(type: KClass<out T>): T? {
-        return internals().fromFlow(type)
+    override fun <T : Message> get(type: KClass<out T>): T? {
+        return internals().get(type)
     }
 
     fun toJson(): String {
@@ -184,8 +190,8 @@ open class StoredCommand(): StoredMessage<CommandId, CommandStatus>() {
     @Embedded
     var problemOccured: Problem? = null
 
-    override fun <T : Message> fromFlow(type: KClass<out T>): T? {
-        return Message.fromFlow(type)
+    override fun <T : Message> get(type: KClass<out T>): T? {
+        return Message.getFromFlow(type)
     }
 
     fun forward() {

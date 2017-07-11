@@ -1,10 +1,7 @@
 package com.plexiti.greetings.application;
 
-import com.plexiti.commons.adapters.db.EventStore
 import com.plexiti.commons.application.Command
-import com.plexiti.commons.domain.EventStatus
 import com.plexiti.commons.domain.Value
-import com.plexiti.greetings.domain.Greeting
 import com.plexiti.greetings.domain.Greeting.CallAnsweredAutomatically
 import com.plexiti.greetings.domain.GreetingRepository
 import com.plexiti.greetings.domain.GreetingService
@@ -38,9 +35,9 @@ class GreetingApplication {
     // Another command
     class IdentifyCaller(var caller: String? = null): Command() {
 
-        // callback to construct object out of flow data
-        override fun construct() {
-            caller = fromFlow(CallAnsweredAutomatically::class)?.caller
+        // callback to init object out of flow data
+        override fun init() {
+            caller = get(CallAnsweredAutomatically::class)?.caller
         }
 
     }
@@ -51,8 +48,8 @@ class GreetingApplication {
         return CallerStatus(greetingRepository.findByCaller(command.caller)?.isKnown())
     }
 
-    // A projection or "document". May be returned by a command
-    // and will be passed on to the flow.
+    // A "document" about the status of the app. May be returned by a
+    // command and will be passed on to the flow.
     data class CallerStatus(val known: Boolean? = false): Value
 
 }

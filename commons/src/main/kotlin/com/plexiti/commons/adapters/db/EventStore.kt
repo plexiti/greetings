@@ -114,20 +114,8 @@ class EventStore : EventStore<Event>, ApplicationContextAware {
     }
 
     override fun <S : Event?> save(event: S): S {
-        val entity = toEntity(event)!!
-        entity.raisedByFlow = Flow.getExecuting()?.id
-        entity.raisedByCommand = Command.getExecuting()?.id
-        delegate.save(entity)
-        val e = toEvent(entity)!!
-        Flow.getExecuting()?.correlate(e)
-        Command.getExecuting()?.correlate(e)
-        return event
-    }
-
-    fun save(message: FlowIO): Event {
-        val event = type(message.event!!.name).createInstance()
-        event.construct()
-        return save(event)
+        @Suppress("UNCHECKED_CAST")
+        return toEvent(delegate.save(toEntity(event))) as S
     }
 
     override fun <S : Event?> save(events: MutableIterable<S>?): MutableIterable<S> {

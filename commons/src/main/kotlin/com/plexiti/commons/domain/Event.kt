@@ -11,9 +11,6 @@ import com.plexiti.commons.application.FlowIO
 import com.plexiti.commons.domain.EventStatus.*
 import com.plexiti.commons.domain.StoredEvent.*
 import org.apache.camel.component.jpa.Consumed
-import org.hibernate.jpa.QueryHints
-import org.springframework.data.domain.PageRequest
-import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.CrudRepository
 import org.springframework.data.repository.NoRepositoryBean
@@ -21,6 +18,7 @@ import org.springframework.data.repository.query.Param
 import java.util.*
 import javax.persistence.*
 import kotlin.reflect.KClass
+import kotlin.reflect.full.createInstance
 
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
@@ -33,9 +31,6 @@ open class Event() : Message {
 
     constructor(name: Name): this() {
         this.name = name
-    }
-
-    protected fun init(aggregate: Aggregate<*>) {
     }
 
     override val type = MessageType.Event
@@ -63,11 +58,18 @@ open class Event() : Message {
         var store = EventStore()
 
         fun <E: Event> raise(event: E): E {
-            return store.save(event);
+            val entity = store.save(event).internals()
+            entity.raisedByFlow = Flow.getExecuting()?.id
+            entity.raisedByCommand = Command.getExecuting()?.id
+            Flow.getExecuting()?.correlate(event)
+            Command.getExecuting()?.correlate(event)
+            return event
         }
 
-        fun raise(event: FlowIO): Event {
-            return store.save(event);
+        fun raise(message: FlowIO): Event {
+            val event = store.type(message.event!!.name).createInstance()
+            event.init()
+            return raise(event);
         }
 
         fun fromJson(json: String): Event {
@@ -87,7 +89,7 @@ open class Event() : Message {
         return store.toEntity(this)!!
     }
 
-    open fun construct() {}
+    open fun init() {}
 
     override fun hashCode(): Int {
         return id.hashCode()
@@ -104,8 +106,8 @@ open class Event() : Message {
         return ObjectMapper().writeValueAsString(this)
     }
 
-    override fun <T : Message> fromFlow(type: KClass<out T>): T? {
-        return internals().fromFlow(type)
+    override fun <T : Message> get(type: KClass<out T>): T? {
+        return internals().get(type)
     }
 
 }
@@ -174,8 +176,8 @@ class StoredEvent(): StoredMessage<EventId, EventStatus>() {
         this.processedAt = Date()
     }
 
-    override fun <T : Message> fromFlow(type: KClass<out T>): T? {
-        return Message.fromFlow(type)
+    override fun <T : Message> get(type: KClass<out T>): T? {
+        return Message.getFromFlow(type)
     }
 
     @Embeddable

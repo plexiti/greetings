@@ -41,8 +41,8 @@ class Document(): Message {
         return ObjectMapper().writeValueAsString(this)
     }
 
-    override fun <T : Message> fromFlow(type: KClass<out T>): T? {
-        return command.fromFlow(type)
+    override fun <T : Message> get(type: KClass<out T>): T? {
+        return command.get(type)
     }
 
 }

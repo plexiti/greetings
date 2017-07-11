@@ -40,8 +40,8 @@ class Greeting: Aggregate<GreetingId>() {
 
     }
 
-    // Another domain event (also raised be the local domain because this always
-    // happens immediately, but this triggers also a flow "DealWithCaller")
+    // Another domain event (also raised be the local domain).
+    // It also triggers a flow "DealWithCaller")
     class CallAnsweredAutomatically: Event {
 
         lateinit var caller: String
@@ -50,7 +50,6 @@ class Greeting: Aggregate<GreetingId>() {
         constructor(): super()
 
         constructor(greeting: Greeting): super(greeting) {
-            init(greeting)
             this.caller = greeting.caller
             this.greeting = greeting.greeting
         }

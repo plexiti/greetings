@@ -46,8 +46,6 @@
     </bpmn:endEvent>
   </bpmn:process>
   <bpmn:message id="Message_1fe34o5" name="Greetings_CallAnsweredAutomatically" />
-  <bpmn:message id="Message_0wvxflj" name="KnownCallerGreeted" />
-  <bpmn:message id="Message_1qm84bp" name="NewCallerGreeted" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="DealWithCaller">
       <bpmndi:BPMNEdge id="SequenceFlow_0b1r62p_di" bpmnElement="SequenceFlow_0b1r62p">

@@ -127,16 +127,6 @@ class CommandStore : CommandStore<Command>, ApplicationContextAware, RouteBuilde
         return toCommand(delegate.save(toEntity(command))) as S
     }
 
-    fun save(message: FlowIO): Command {
-        val command = type(message.command!!.name).createInstance()
-        command.construct()
-        val entity = toEntity(command)!!
-        entity.issuedBy = message.flowId
-        entity.executedBy = message.tokenId
-        delegate.save(entity)
-        return command
-    }
-
     override fun <S : Command?> save(commands: MutableIterable<S>?): MutableIterable<S> {
         return commands?.mapTo(ArrayList(), { save(it) })!!
     }

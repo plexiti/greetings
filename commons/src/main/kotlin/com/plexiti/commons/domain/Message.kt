@@ -20,10 +20,10 @@ interface Message: Named {
     override val name: Name
     val type: MessageType
 
-    @Suppress("UNCHECKED_CAST")
     companion object {
 
-        fun <T: Message> fromFlow(type: KClass<out T>): T? {
+        @Suppress("UNCHECKED_CAST")
+        fun <T: Message> getFromFlow(type: KClass<out T>): T? {
             val flowId = Flow.getExecuting()?.id
             if (flowId != null) {
                 if (type.isSubclassOf(Command::class)) {
@@ -42,7 +42,7 @@ interface Message: Named {
 
     }
 
-    fun <T: Message> fromFlow(type: KClass<out T>): T?
+    fun <T: Message> get(type: KClass<out T>): T?
 
 }
 
@@ -82,7 +82,6 @@ enum class MessageType {
 
     companion object Discriminator {
 
-        const val event = "Event"
         const val command = "Command"
         const val flow = "Flow"
 
