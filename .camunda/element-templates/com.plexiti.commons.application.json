@@ -1,0 +1,102 @@
+[
+    {
+        "name": "Issue a Command",
+        "id": "com.plexiti.commons.application.Command",
+        "appliesTo": [
+            "bpmn:ServiceTask",
+            "bpmn:SendTask"
+        ],
+        "properties": [
+            {
+                "label": "Bean Binding",
+                "type": "Hidden",
+                "value": "${command}",
+                "editable": false,
+                "binding": {
+                    "type": "property",
+                    "name": "camunda:delegateExpression"
+                }
+            },
+            {
+                "label": "Command",
+                "description": "Qualified Command Name, e.g. Greetings_IdentifyCaller",
+                "type": "String",
+                "binding": {
+                    "type": "camunda:property",
+                    "name": "command"
+                },
+                "constraints": {
+                    "notEmpty": true
+                }
+            }
+        ],
+        "entriesVisible": {
+            "_all": false,
+            "camunda:modelerTemplate": true
+        }
+    },
+    {
+        "name": "Raise an Event",
+        "id": "com.plexiti.commons.application.RaisedEvent",
+        "isDefault": false,
+        "appliesTo": [
+            "bpmn:EndEvent",
+            "bpmn:SendTask",
+            "bpmn:IntermediateThrowEvent"
+        ],
+        "properties": [
+            {
+                "label": "Bean Binding",
+                "type": "Hidden",
+                "value": "${event}",
+                "editable": false,
+                "binding": {
+                    "type": "property",
+                    "name": "camunda:delegateExpression"
+                }
+            },
+            {
+                "label": "Event",
+                "description": "Qualified Event Name, e.g. Greetings_CallerContactedPersonally",
+                "type": "String",
+                "binding": {
+                    "type": "camunda:property",
+                    "name": "event"
+                },
+                "constraints": {
+                    "notEmpty": true
+                }
+            }
+        ],
+        "entriesVisible": {
+            "_all": false
+        }
+    },
+    {
+        "name": "Listen to Event",
+        "id": "com.plexiti.commons.application.EventListener",
+        "isDefault": false,
+        "appliesTo": [
+            "bpmn:StartEvent",
+            "bpmn:ReceiveTask",
+            "bpmn:IntermediateCatchEvent"
+        ],
+        "properties": [
+            {
+                "label": "Event",
+                "description": "Qualified Event Name, e.g. Greetings_CallAnsweredAutomatically",
+                "type": "String",
+                "binding": {
+                    "type": "camunda:property",
+                    "name": "event"
+                },
+                "constraints": {
+                    "notEmpty": true
+                }
+            }
+        ],
+        "entriesVisible": {
+            "_all": true
+        }
+    }
+]

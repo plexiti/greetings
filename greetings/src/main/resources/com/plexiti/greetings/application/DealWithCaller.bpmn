@@ -19,7 +19,7 @@
       <bpmn:outgoing>SequenceFlow_0b1r62p</bpmn:outgoing>
       <bpmn:messageEventDefinition messageRef="Message_1fe34o5" />
     </bpmn:startEvent>
-    <bpmn:endEvent id="EndEvent_1gos6bm" name="Caller contacted personally">
+    <bpmn:endEvent id="EndEvent_1gos6bm" name="Caller contacted personally" camunda:modelerTemplate="com.plexiti.commons.application.RaisedEvent" camunda:delegateExpression="${event}">
       <bpmn:extensionElements>
         <camunda:properties>
           <camunda:property name="event" value="Greetings_CallerContactedPersonally" />
@@ -32,7 +32,7 @@
       <bpmn:incoming>SequenceFlow_0t2sazc</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_0i64uki</bpmn:outgoing>
     </bpmn:userTask>
-    <bpmn:serviceTask id="Task_0ax56ye" name="Determine whether we know the caller " camunda:delegateExpression="${command}">
+    <bpmn:serviceTask id="Task_0ax56ye" name="Determine whether we know the caller " camunda:modelerTemplate="com.plexiti.commons.application.Command" camunda:delegateExpression="${command}">
       <bpmn:extensionElements>
         <camunda:properties>
           <camunda:property name="command" value="Greetings_IdentifyCaller" />
