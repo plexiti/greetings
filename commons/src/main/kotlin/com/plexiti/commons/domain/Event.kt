@@ -55,7 +55,15 @@ open class Event() : Message {
 
     companion object {
 
+        lateinit internal var types: Map<Name, KClass<out Event>>
+
+        lateinit var names: Map<KClass<out Event>, Name>
+
         var store = EventStore()
+
+        internal fun type(qName: Name): KClass<out Event> {
+            return types.get(qName) ?: throw IllegalArgumentException("Event type '$qName' is not mapped to a local object type!")
+        }
 
         fun <E: Event> raise(event: E): E {
             val entity = store.save(event).internals()
@@ -67,7 +75,7 @@ open class Event() : Message {
         }
 
         fun raise(message: FlowIO): Event {
-            val event = store.type(message.event!!.name).createInstance()
+            val event = type(message.event!!.name).createInstance()
             event.init()
             return raise(event);
         }
@@ -75,7 +83,7 @@ open class Event() : Message {
         fun fromJson(json: String): Event {
             val node = ObjectMapper().readValue(json, ObjectNode::class.java)
             val name = node.get("name").textValue()
-            val type = store.type(Name(name))
+            val type = type(Name(name))
             return fromJson(json, type)
         }
 

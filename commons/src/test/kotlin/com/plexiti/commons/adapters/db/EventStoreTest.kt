@@ -1,5 +1,6 @@
 package com.plexiti.commons.adapters.db
 
+import com.plexiti.commons.application.Application
 import com.plexiti.commons.domain.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
@@ -10,6 +11,8 @@ import java.util.*
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
 class EventStoreTest {
+
+    var application = Application()
 
     class TestAggregate: Aggregate<AggregateId>()
     class TestAggregateId(value: String = ""): AggregateId(value)

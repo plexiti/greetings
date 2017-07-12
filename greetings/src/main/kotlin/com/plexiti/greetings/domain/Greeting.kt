@@ -64,8 +64,13 @@ class Greeting: Aggregate<GreetingId>() {
         contacts++
     }
 
+    class FraudDetected : Problem()
+
     // We consider people calling more often than once well known pals
     fun isKnown(): Boolean {
+        // But we don't answer to Bernie Madoff
+        if (caller == "Madoff")
+            throw FraudDetected()
         return contacts > 1
     }
 

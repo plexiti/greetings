@@ -28,39 +28,17 @@ import kotlin.reflect.full.createInstance
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
 @Component @NoRepositoryBean
-class EventStore : EventStore<Event>, ApplicationContextAware {
-
-    init { init() }
-
-    private fun init() {
-        types = scanPackageForNamedClasses("com.plexiti", Event::class)
-        names = scanPackageForClassNames("com.plexiti", Event::class)
-    }
-
-    @Value("\${com.plexiti.app.context}")
-    private var context = Name.context
+class EventStore : EventStore<Event> {
 
     @Autowired
     private var delegate: StoredEventStore = InMemoryStoredEventStore()
 
-    lateinit internal var types: Map<Name, KClass<out Event>>
-    lateinit var names: Map<KClass<out Event>, Name>
-
-    internal fun type(qName: Name): KClass<out Event> {
-        return types.get(qName) ?: throw IllegalArgumentException("Event type '$qName' is not mapped to a local object type!")
-    }
-
     internal fun toEvent(stored: StoredEvent?): Event? {
-        return if (stored != null) Event.fromJson(stored.json, type(stored.name)) else null
+        return if (stored != null) Event.fromJson(stored.json, Event.type(stored.name)) else null
     }
 
     internal fun toEntity(event: Event?): StoredEvent? {
         return if (event != null) (delegate.findOne(event.id) ?: StoredEvent(event)) else null
-    }
-
-    override fun setApplicationContext(applicationContext: ApplicationContext?) {
-        Event.store = this
-        Name.context = context; init()
     }
 
     override fun exists(id: EventId?): Boolean {

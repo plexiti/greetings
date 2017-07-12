@@ -1,5 +1,6 @@
 package com.plexiti.commons.adapters.db
 
+import com.plexiti.commons.application.Application
 import com.plexiti.commons.application.Command
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
@@ -9,6 +10,8 @@ import org.junit.Test
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
 class CommandStoreTest {
+
+    var application = Application()
 
     class TestCommand(): Command()
 

@@ -27,11 +27,11 @@ interface Message: Named {
             val flowId = Flow.getExecuting()?.id
             if (flowId != null) {
                 if (type.isSubclassOf(Command::class)) {
-                    val name = Command.store.names.get(type as KClass<out Command>)!!
+                    val name = Command.names.get(type as KClass<out Command>)!!
                     val command = Command.store.findFirstByName_AndIssuedBy_OrderByIssuedAtDesc(name, flowId)
                     return command as T?
                 } else if (type.isSubclassOf(Event::class)) {
-                    val name = Event.store.names.get(type as KClass<out Event>)!!
+                    val name = Event.names.get(type as KClass<out Event>)!!
                     val eventIds = Command.store.findOne(flowId)?.internals()?.eventsAssociated?.keys?.toMutableList() ?: mutableListOf()
                     val events = if (!eventIds.isEmpty()) Event.store.findFirstByName_OrderByRaisedAtDesc(name, eventIds) else listOf()
                     return (if (!events.isEmpty()) events.first() else null) as T?

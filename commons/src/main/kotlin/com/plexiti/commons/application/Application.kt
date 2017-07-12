@@ -4,10 +4,17 @@ import com.plexiti.commons.adapters.db.CommandStore
 import com.plexiti.commons.adapters.db.ValueStore
 import com.plexiti.commons.adapters.db.EventStore
 import com.plexiti.commons.domain.*
+import com.plexiti.utils.scanPackageForClassNames
+import com.plexiti.utils.scanPackageForNamedClasses
 import org.apache.camel.CamelExecutionException
 import org.apache.camel.ProducerTemplate
+import org.apache.camel.spring.SpringRouteBuilder
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.ApplicationContext
+import org.springframework.context.ApplicationContextAware
+import org.springframework.stereotype.Component
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 
 
@@ -15,7 +22,10 @@ import org.springframework.transaction.annotation.Transactional
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
 @Service
-class Application {
+class Application: SpringRouteBuilder(), ApplicationContextAware {
+
+    @org.springframework.beans.factory.annotation.Value("\${com.plexiti.app.context}")
+    private var context = Name.context
 
     @Autowired
     var commandStore: CommandStore = Command.store
@@ -24,10 +34,26 @@ class Application {
     var eventStore: EventStore = Event.store
 
     @Autowired
-    var valueStore: ValueStore = Value.store
+    var commandRunner: CommandRunner = CommandRunner()
 
-    @Autowired
-    private lateinit var route: ProducerTemplate
+    init { init() }
+
+    fun init(flows: Set<Name> = emptySet()) {
+        Event.types = scanPackageForNamedClasses("com.plexiti", Event::class)
+        Event.names = scanPackageForClassNames("com.plexiti", Event::class)
+        Command.types = scanPackageForNamedClasses("com.plexiti", Command::class)
+        Command.names = scanPackageForClassNames("com.plexiti", Command::class)
+        flows.forEach { flowName ->
+            Command.types = Command.types.plus(flowName to Flow::class)
+        }
+    }
+
+    override fun setApplicationContext(applicationContext: ApplicationContext?) {
+        Event.store = eventStore
+        Command.store = commandStore
+        Name.context = context
+        init()
+    }
 
     @Transactional
     fun consume(json: String) {
@@ -78,7 +104,7 @@ class Application {
     fun execute(command: Command): Any? {
         command.internals().start()
         try {
-            return run(command)
+            return commandRunner.run(command)
         } catch (problem: Problem) {
             command.internals().correlate(problem)
             return problem
@@ -87,24 +113,39 @@ class Application {
         }
     }
 
-    @Transactional // (propagation = Propagation.REQUIRES_NEW)
-    private fun run(command: Command): Any? {
-        try {
-            val result = route.requestBody("direct:${command.name.name}", command)
-            if (result is Value) {
-                valueStore.save(result)
-                command.internals().correlate(result)
-                return result
+    @Transactional @Component
+    class CommandRunner {
+
+        @Autowired
+        private lateinit var route: ProducerTemplate
+
+        @Autowired
+        var eventStore: EventStore = Event.store
+
+        @Autowired
+        var valueStore: ValueStore = Value.store
+
+        @Transactional(propagation = Propagation.REQUIRES_NEW)
+        internal fun run(command: Command): Any? {
+            try {
+                val result = route.requestBody("direct:${command.name.name}", command)
+                if (result is Value) {
+                    valueStore.save(result)
+                    command.internals().correlate(result)
+                    return result
+                }
+                val events = command.internals().eventsAssociated?.keys?.toMutableList() ?: mutableListOf()
+                return if (!events.isEmpty()) eventStore.findAll_OrderByRaisedAtDesc(events) else null
+            } catch (e: CamelExecutionException) {
+                throw e.exchange.exception
             }
-            val events = command.internals().eventsAssociated?.keys?.toMutableList() ?: mutableListOf()
-            return if (!events.isEmpty()) eventStore.findAll_OrderByRaisedAtDesc(events) else null
-        } catch (e: CamelExecutionException) {
-            throw e.exchange.exception
         }
+
     }
 
+
     private fun triggerBy(event: Event) {
-        Command.store.types.forEach { name, type ->
+        Command.types.forEach { name, type ->
             val instance = type.java.newInstance()
             instance.name = name // necessary for flows
             var command = instance.trigger(event)
@@ -116,7 +157,7 @@ class Application {
     }
 
     private fun correlate(event: Event) {
-        Command.store.types.values.forEach {
+        Command.types.values.forEach {
              val instance = it.java.newInstance()
              val correlation = instance.correlation(event)
              if (correlation != null) {
@@ -127,6 +168,28 @@ class Application {
                  }
              }
          }
+    }
+
+    override fun configure() {
+
+        init()
+
+        Command.types.entries.filter { it.key.context == Name.context } .forEach {
+
+            val commandName = it.key.name
+            val methodName = commandName.substring(0, 1).toLowerCase() + commandName.substring(1)
+            val className = it.value.qualifiedName!!
+            try {
+                val bean = Class.forName(className.substring(0, className.length - methodName.length - 1))
+                bean.getMethod(methodName, it.value.java)
+                from("direct:${commandName}").bean(bean, methodName)
+            } catch (n: NoSuchMethodException) {
+                // TODO log
+            } catch (c: ClassNotFoundException) {
+                // TODO log
+            }
+
+        }
     }
 
 }

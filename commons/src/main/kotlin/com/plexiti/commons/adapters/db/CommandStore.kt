@@ -7,77 +7,28 @@ import com.plexiti.commons.application.*
 import com.plexiti.commons.application.CommandStore
 import com.plexiti.commons.domain.EventId
 import com.plexiti.commons.domain.Name
-import com.plexiti.utils.scanPackageForClassNames
-import com.plexiti.utils.scanPackageForNamedClasses
-import org.apache.camel.builder.RouteBuilder
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Value
-import org.springframework.context.ApplicationContext
-import org.springframework.context.ApplicationContextAware
 import org.springframework.data.repository.NoRepositoryBean
 import org.springframework.stereotype.Component
 import org.springframework.stereotype.Repository
-import kotlin.reflect.KClass
-import kotlin.reflect.full.createInstance
 
 /**
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
-@Component @NoRepositoryBean
-class CommandStore : CommandStore<Command>, ApplicationContextAware, RouteBuilder() {
-
-    init { init() }
-
-    fun init(flows: Set<Name> = emptySet()) {
-        types = scanPackageForNamedClasses("com.plexiti", Command::class)
-        names = scanPackageForClassNames("com.plexiti", Command::class)
-        flows.forEach { flowName ->
-            types = types.plus(flowName to Flow::class)
-        }
-    }
-
-    @Value("\${com.plexiti.app.context}")
-    private var context = Name.context
+@Component
+@NoRepositoryBean
+class CommandStore : CommandStore<Command> {
 
     @Autowired
     private var delegate: StoredCommandStore = InMemoryStoredCommandStore()
 
-    lateinit internal var types: Map<Name, KClass<out Command>>
-    lateinit internal var names: Map<KClass<out Command>, Name>
-
-    internal fun type(qName: Name): KClass<out Command> {
-        return types.get(qName) ?: throw IllegalArgumentException("Command type '${qName.qualified}' is not mapped to a local object type!")
-    }
-
     internal fun toCommand(stored: StoredCommand?): Command? {
-        return if (stored != null) Command.fromJson(stored.json, type(stored.name)) else null
+        return if (stored != null) Command.fromJson(stored.json, Command.type(stored.name)) else null
     }
 
     internal fun toEntity(command: Command?): StoredCommand? {
         return if (command != null) delegate.findOne(command.id)
             ?: if (command is Flow) StoredFlow(command) else StoredCommand(command) else null
-    }
-
-    override fun setApplicationContext(applicationContext: ApplicationContext?) {
-        Command.store = this
-        Name.context = context; init()
-    }
-
-    override fun configure() {
-        types.entries.forEach {
-            if (it.key.context == Name.context) {
-                val commandName = it.key.name
-                val methodName = commandName.substring(0, 1).toLowerCase() + commandName.substring(1)
-                val className = it.value.qualifiedName!!
-                try {
-                    val bean = Class.forName(className.substring(0, className.length - methodName.length - 1))
-                    bean.getMethod(methodName, it.value.java)
-                    from("direct:${commandName}")
-                        .bean(bean, methodName)
-                } catch (n: NoSuchMethodException) {}
-                  catch (c: ClassNotFoundException) {}
-            }
-        }
     }
 
     override fun exists(id: CommandId?): Boolean {

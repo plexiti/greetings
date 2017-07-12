@@ -3,6 +3,7 @@ package com.plexiti.commons.application
 import com.plexiti.commons.DataJpaIntegration
 import com.plexiti.commons.adapters.db.CommandStore
 import com.plexiti.commons.adapters.db.EventStore
+import com.plexiti.commons.adapters.db.ValueStore
 import com.plexiti.commons.domain.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
@@ -19,10 +20,13 @@ open class ApplicationIntegration : DataJpaIntegration() {
     lateinit var application: Application
 
     @Autowired
-    lateinit var eventRepository: EventStore
+    lateinit var eventStore: EventStore
 
     @Autowired
-    lateinit var commandRepository: CommandStore
+    lateinit var commandStore: CommandStore
+
+    @Autowired
+    lateinit var valueStore: ValueStore
 
     lateinit var aggregate: ITAggregate
 
@@ -38,6 +42,13 @@ open class ApplicationIntegration : DataJpaIntegration() {
         override fun trigger(event: Event): Command? {
             return if (event.name.qualified.equals("External_ExternalITEvent")) TriggeredITCommand() else null
         }
+    }
+
+    @Before
+    fun init() {
+        eventStore.deleteAll()
+        commandStore.deleteAll()
+        valueStore.deleteAll()
     }
 
     class FlowITCommand(): Command() {
@@ -103,14 +114,14 @@ open class ApplicationIntegration : DataJpaIntegration() {
         val external = ExternalITEvent(aggregate)
         application.consume(external.toJson())
 
-        val event = eventRepository.findAll().iterator().next()
+        val event = eventStore.findAll().iterator().next()
 
         assertThat(event.internals().status).isEqualTo(EventStatus.processed)
         assertThat(event.internals().raisedAt).isNotNull()
         assertThat(event.internals().forwardedAt).isNull()
         assertThat(event.internals().consumedAt).isNotNull()
 
-        val command = commandRepository.findAll().iterator().next()
+        val command = commandStore.findAll().iterator().next()
 
         assertThat(command.internals().status).isEqualTo(CommandStatus.issued)
         assertThat(command.internals().issuedAt).isNotNull()
@@ -123,7 +134,7 @@ open class ApplicationIntegration : DataJpaIntegration() {
     fun consumeEvent_internal() {
 
         Event.raise(InternalITEvent(aggregate))
-        val event = eventRepository.findAll().iterator().next()
+        val event = eventStore.findAll().iterator().next()
         event.internals().forward()
 
         application.consume(event.toJson())
@@ -133,7 +144,7 @@ open class ApplicationIntegration : DataJpaIntegration() {
         assertThat(event.internals().forwardedAt).isNotNull()
         assertThat(event.internals().consumedAt).isNotNull()
 
-        assertThat(commandRepository.findAll()).isEmpty()
+        assertThat(commandStore.findAll()).isEmpty()
 
     }
 
@@ -143,14 +154,14 @@ open class ApplicationIntegration : DataJpaIntegration() {
         val external = ExternalITEvent(aggregate)
         application.consume(external.toJson())
 
-        val event = eventRepository.findAll().iterator().next()
+        val event = eventStore.findAll().iterator().next()
 
         assertThat(event.internals().status).isEqualTo(EventStatus.processed)
         assertThat(event.internals().raisedAt).isNotNull()
         assertThat(event.internals().forwardedAt).isNull()
         assertThat(event.internals().consumedAt).isNotNull()
 
-        var command = commandRepository.findAll().iterator().next()
+        var command = commandStore.findAll().iterator().next()
 
         assertThat(command.internals().status).isEqualTo(CommandStatus.issued)
         assertThat(command.internals().issuedAt).isNotNull()
@@ -160,13 +171,13 @@ open class ApplicationIntegration : DataJpaIntegration() {
         command.internals().forward()
         application.execute(command.toJson())
 
-        val events = eventRepository.findAll()
+        val events = eventStore.findAll()
 
         assertThat(events).hasSize(2)
         assertThat(events.find { it.name.name ==  "ExternalITEvent" }).isNotNull()
         assertThat(events.find { it.name.name ==  "InternalITEvent" }).isNotNull()
 
-        command = commandRepository.findAll().iterator().next()
+        command = commandStore.findAll().iterator().next()
 
         assertThat(command.internals().status).isEqualTo(CommandStatus.processed)
         assertThat(command.internals().execution?.startedAt).isNotNull()
@@ -229,19 +240,19 @@ open class ApplicationIntegration : DataJpaIntegration() {
     @Test
     fun handleFlowIOCommand() {
 
-        Command.store.init(setOf(Name(name = "aFlow")))
+        application.init(setOf(Name(name = "aFlow")))
         val flow = Command.issue(Flow(Name(name = "aFlow")))
 
         val eventMessage = FlowIO(Event(Name(name = "FlowITEvent")), flow.id)
         application.handle(eventMessage.toJson())
 
-        val event = eventRepository.findAll().first() as FlowITEvent
+        val event = eventStore.findAll().first() as FlowITEvent
 
         val commandMessage = FlowIO(Command(Name(name = "FlowITCommand")), flow.id, TokenId("aTokenId"))
 
         application.handle(commandMessage.toJson())
 
-        val command = commandRepository.findAll().first { it !is Flow }  as FlowITCommand
+        val command = commandStore.findAll().first { it !is Flow }  as FlowITCommand
 
         assertThat(event.someEventProperty).isEqualTo("someEventValue")
         assertThat(command.someCommandProperty).isEqualTo("someCommandValue")
@@ -257,17 +268,17 @@ open class ApplicationIntegration : DataJpaIntegration() {
     @Test
     fun handleFlowIOEvent() {
 
-        Command.store.init(setOf(Name(name = "aFlow")))
+        application.init(setOf(Name(name = "aFlow")))
         val flow = Command.issue(Flow(Name(name = "aFlow")))
 
         val commandMessage = FlowIO(Command(Name(name = "FlowITCommand")), flow.id, TokenId())
         application.handle(commandMessage.toJson())
 
-        val command = commandRepository.findAll().first { it !is Flow } as FlowITCommand
+        val command = commandStore.findAll().first { it !is Flow } as FlowITCommand
 
         val eventMessage = FlowIO(Event(Name(name = "FlowITEvent")), command.internals().issuedBy!!)
         application.handle(eventMessage.toJson())
-        val event = eventRepository.findAll().first() as FlowITEvent
+        val event = eventStore.findAll().first() as FlowITEvent
 
         assertThat(command.someCommandProperty).isEqualTo("someCommandValue")
         assertThat(event.someEventProperty).isEqualTo("someEventValue")

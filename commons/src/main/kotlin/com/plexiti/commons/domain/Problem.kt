@@ -23,7 +23,7 @@ import javax.persistence.TemporalType
 open class Problem(): RuntimeException() {
 
     @Column(name = "PROBLEM_OCCURED_CODE", nullable = true, length = 128)
-    var code = this::class.simpleName!!
+    var code = this::class.java.simpleName
         protected set
 
     @Column(name = "PROBLEM_OCCURED_MESSAGE", nullable = true, length = 1024)

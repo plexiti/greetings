@@ -47,6 +47,13 @@ open class Command(): Message {
 
         private val executing = ThreadLocal<StoredCommand?>()
 
+        lateinit internal var types: Map<Name, KClass<out Command>>
+        lateinit internal var names: Map<KClass<out Command>, Name>
+
+        internal fun type(qName: Name): KClass<out Command> {
+            return Command.types.get(qName) ?: throw IllegalArgumentException("Command type '${qName.qualified}' is not mapped to a local object type!")
+        }
+
         var store = CommandStore()
 
         fun <C: Command> issue(command: C): C {
@@ -54,7 +61,7 @@ open class Command(): Message {
         }
 
         fun issue(message: FlowIO): Command {
-            val command = store.type(message.command!!.name).createInstance()
+            val command = Command.type(message.command!!.name).createInstance()
             command.init()
             val entity = store.save(command).internals()
             entity.issuedBy = message.flowId
@@ -77,7 +84,7 @@ open class Command(): Message {
         fun fromJson(json: String): Command {
             val node = ObjectMapper().readValue(json, ObjectNode::class.java)
             val name = node.get("name").textValue()
-            val type = store.type(Name(name))
+            val type = type(Name(name))
             return fromJson(json, type)
         }
 
