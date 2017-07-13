@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
+import org.springframework.orm.ObjectOptimisticLockingFailureException
 import org.springframework.stereotype.Component
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Propagation
@@ -61,19 +62,22 @@ class Application: SpringRouteBuilder(), ApplicationContextAware {
         val incoming = Event.fromJson(json)
         val event = if (incoming.name.context == Name.context) eventStore.findOne(incoming.id) else commandRunner.receive(incoming)
         if (event != null) {
-            logger.debug("Consuming ${event.toJson()}")
-            val flowId = event.internals().raisedByFlow
-            val flow = if (flowId != null) commandStore.findOne(event.internals().raisedByFlow)?.internals() as StoredFlow? else null
-            flow?.resume()
-            triggerBy(event)
-            correlate(event)
-            event.internals().consume()
-            // TODO Events not raised by a flow, but correlated to it are just consumed
-            event.internals().process()
-            flow?.hibernate()
-        } else {
-            throw IllegalStateException()
+            val iEvent = event.internals()
+            if (iEvent.status == EventStatus.forwarded) {
+                logger.debug("Consuming ${json}")
+                val flowId = iEvent.raisedByFlow
+                val iFlow = if (flowId != null) commandStore.findOne(iEvent.raisedByFlow)?.internals() as StoredFlow? else null
+                iFlow?.resume()
+                triggerBy(event)
+                correlate(event)
+                iEvent.consume()
+                // TODO Events not raised by a flow, but correlated to it are just consumed
+                iEvent.process()
+                iFlow?.hibernate()
+                return
+            }
         }
+        throw ObjectOptimisticLockingFailureException(StoredEvent::class.java, event!!.id)
     }
 
     @Transactional
@@ -95,10 +99,12 @@ class Application: SpringRouteBuilder(), ApplicationContextAware {
         val incoming = Command.fromJson(json)
         val command = if (incoming.name.context == Name.context) commandStore.findOne(incoming.id) else commandRunner.receive(incoming)
         if (command != null) {
-            return run(command)
-        } else {
-            throw IllegalStateException()
+            val iCommand = command.internals()
+            if (iCommand.status == CommandStatus.forwarded) {
+                return run(command)
+            }
         }
+        throw ObjectOptimisticLockingFailureException(StoredCommand::class.java, command!!.id)
     }
 
     @Transactional
@@ -110,16 +116,16 @@ class Application: SpringRouteBuilder(), ApplicationContextAware {
     @Transactional
     fun run(command: Command): Any? {
         logger.debug("Executing ${command.toJson()}")
-        val entity = command.internals()
+        val iCommand = command.internals()
         try {
-            entity.start()
+            iCommand.start()
             return commandRunner.run(command)
         } catch (problem: Problem) {
-            entity.correlate(problem)
+            iCommand.correlate(problem)
             logger.info("Throwing ${problem.toJson()} for ${command.toJson()}")
             return problem
         } finally {
-            entity.finish()
+            iCommand.finish()
         }
     }
 

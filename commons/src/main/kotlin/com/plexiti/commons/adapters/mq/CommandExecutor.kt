@@ -32,7 +32,6 @@ class CommandExecutor {
 
     @RabbitListener(queues = arrayOf("\${com.plexiti.app.context}-commands-queue"))
     fun execute(@Payload json: String) {
-        Thread.sleep(150) // TODO Ugly temporarily hack
         try {
             application.execute(json)
             logger.info("Executed ${json}")
