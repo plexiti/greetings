@@ -23,7 +23,7 @@ import org.springframework.stereotype.Component
 @Profile("prod")
 class FlowMessageCorrelator {
 
-    private val logger = LoggerFactory.getLogger("com.plexiti.flows")
+    private val logger = LoggerFactory.getLogger("com.plexiti.flows.adapters")
 
     @Value("\${com.plexiti.app.context}")
     private lateinit var context: String;

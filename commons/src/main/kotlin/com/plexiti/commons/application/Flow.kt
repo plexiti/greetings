@@ -22,7 +22,7 @@ class Flow(): Command() {
 
     }
 
-    override fun trigger(event: Event): Command? {
+    override fun trigger(event: Event): Flow? {
 
         var flow: Flow? = null
         triggers.forEach { eventName, flowName ->
@@ -85,7 +85,7 @@ class StoredFlow: StoredCommand {
     }
 
     fun hibernate() {
-        Command.unsetExecuting()
+        Flow.unsetExecuting()
     }
 
 }

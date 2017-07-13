@@ -1,5 +1,6 @@
 package com.plexiti.greetings.domain
 
+import com.plexiti.commons.application.Application
 import com.plexiti.commons.domain.Event
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
@@ -9,6 +10,7 @@ class GreetingTest {
 
     @Before
     fun init() {
+        Application()
         Event.store.deleteAll()
     }
 

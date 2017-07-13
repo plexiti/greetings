@@ -118,7 +118,7 @@ open class ApplicationIntegration : DataJpaIntegration() {
 
         assertThat(event.internals().status).isEqualTo(EventStatus.processed)
         assertThat(event.internals().raisedAt).isNotNull()
-        assertThat(event.internals().forwardedAt).isNull()
+        assertThat(event.internals().forwardedAt).isNotNull()
         assertThat(event.internals().consumedAt).isNotNull()
 
         val command = commandStore.findAll().iterator().next()
@@ -158,7 +158,7 @@ open class ApplicationIntegration : DataJpaIntegration() {
 
         assertThat(event.internals().status).isEqualTo(EventStatus.processed)
         assertThat(event.internals().raisedAt).isNotNull()
-        assertThat(event.internals().forwardedAt).isNull()
+        assertThat(event.internals().forwardedAt).isNotNull()
         assertThat(event.internals().consumedAt).isNotNull()
 
         var command = commandStore.findAll().iterator().next()

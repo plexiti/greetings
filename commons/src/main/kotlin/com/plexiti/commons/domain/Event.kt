@@ -11,6 +11,7 @@ import com.plexiti.commons.application.FlowIO
 import com.plexiti.commons.domain.EventStatus.*
 import com.plexiti.commons.domain.StoredEvent.*
 import org.apache.camel.component.jpa.Consumed
+import org.slf4j.LoggerFactory
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.CrudRepository
 import org.springframework.data.repository.NoRepositoryBean
@@ -55,7 +56,9 @@ open class Event() : Message {
 
     companion object {
 
-        lateinit internal var types: Map<Name, KClass<out Event>>
+        private val logger = LoggerFactory.getLogger("com.plexiti.commons.application")
+
+        lateinit var types: Map<Name, KClass<out Event>>
 
         lateinit var names: Map<KClass<out Event>, Name>
 
@@ -71,12 +74,23 @@ open class Event() : Message {
             entity.raisedByCommand = Command.getExecuting()?.id
             Flow.getExecuting()?.correlate(event)
             Command.getExecuting()?.correlate(event)
+            logger.info("Raised ${event.toJson()}")
             return event
+        }
+
+        fun <E: Event> receive(event: E): E {
+            try {
+                return store.save(event)
+            } finally {
+                logger.info("Received ${event.toJson()}")
+            }
         }
 
         fun raise(message: FlowIO): Event {
             val event = type(message.event!!.name).createInstance()
+            event.id = message.event!!.id
             event.init()
+            logger.info("Raised ${event.toJson()}")
             return raise(event);
         }
 

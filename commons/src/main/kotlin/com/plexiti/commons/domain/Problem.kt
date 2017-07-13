@@ -4,7 +4,10 @@ import com.fasterxml.jackson.annotation.JsonFormat
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY
+import com.fasterxml.jackson.core.JsonGenerator
+import com.fasterxml.jackson.databind.JsonSerializer
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.introspect.AnnotatedMember
 import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector
 import java.util.*
@@ -50,6 +53,15 @@ internal class ProblemIntrospector: JacksonAnnotationIntrospector() {
 
     override fun hasIgnoreMarker(m: AnnotatedMember): Boolean {
         return m.getDeclaringClass().isAssignableFrom(RuntimeException::class.java) || super.hasIgnoreMarker(m)
+    }
+
+}
+
+
+class ProblemSerializer : JsonSerializer<Problem>() {
+
+    override fun serialize(problem: Problem, jsonGenerator: JsonGenerator, serializerProvider: SerializerProvider) {
+        jsonGenerator.writeTree(ObjectMapper().readTree(problem.toJson()))
     }
 
 }

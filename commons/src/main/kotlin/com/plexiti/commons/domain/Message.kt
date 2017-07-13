@@ -144,4 +144,8 @@ class Name() {
         var context = "Default"
     }
 
+    override fun toString(): String {
+        return qualified
+    }
+
 }

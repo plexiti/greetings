@@ -2,6 +2,7 @@ package com.plexiti.commons.application
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
+import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import com.plexiti.commons.domain.*
 import kotlin.reflect.KClass
 
@@ -24,6 +25,7 @@ class Document(): Message {
     @JsonDeserialize(`as` = DefaultValue::class)
     var valueReturned: Value? = null
 
+    @JsonSerialize(using = ProblemSerializer::class)
     var problemOccured: Problem? = null
 
     constructor(command: Command): this() {

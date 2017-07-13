@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component
 @Profile("prod")
 class FlowEventQueuer : JavaDelegate {
 
-    private val logger = LoggerFactory.getLogger("com.plexiti.flows")
+    private val logger = LoggerFactory.getLogger("com.plexiti.flows.adapters")
 
     internal var context: String? = null
         @Value("\${com.plexiti.app.context}")

@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component
 @Profile("prod")
 class FlowCommandQueuer : AbstractBpmnActivityBehavior() {
 
-    private val logger = LoggerFactory.getLogger("com.plexiti.flows")
+    private val logger = LoggerFactory.getLogger("com.plexiti.flows.adapters")
 
     internal var context: String? = null
         @Value("\${com.plexiti.app.context}")
@@ -47,7 +47,12 @@ class FlowCommandQueuer : AbstractBpmnActivityBehavior() {
     }
 
     override fun signal(execution: ActivityExecution, signalName: String?, signalData: Any?) {
-        if (signalName == null) leave(execution) else propagateBpmnError(BpmnError(signalName, signalData as String?), execution)
+        if (signalName == null) {
+            leave(execution)
+        } else {
+            val bpmnError = if (signalData !is String) BpmnError(signalName) else BpmnError(signalName, signalData)
+            propagateBpmnError(bpmnError, execution)
+        }
     }
 
 }

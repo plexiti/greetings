@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component
 @Profile("prod")
 class CommandExecutor {
 
-    private val logger = LoggerFactory.getLogger("com.plexiti.application")
+    private val logger = LoggerFactory.getLogger("com.plexiti.commons.adapters")
 
     @Value("\${com.plexiti.app.context}")
     private lateinit var context: String;
@@ -32,6 +32,7 @@ class CommandExecutor {
 
     @RabbitListener(queues = arrayOf("\${com.plexiti.app.context}-commands-queue"))
     fun execute(@Payload json: String) {
+        Thread.sleep(150) // TODO Ugly temporarily hack
         try {
             application.execute(json)
             logger.info("Executed ${json}")

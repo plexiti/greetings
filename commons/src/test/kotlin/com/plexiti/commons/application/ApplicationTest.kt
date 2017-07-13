@@ -45,7 +45,7 @@ class ApplicationTest {
 
         assertThat(event.internals().status).isEqualTo(EventStatus.processed)
         assertThat(event.internals().raisedAt).isNotNull()
-        assertThat(event.internals().forwardedAt).isNull()
+        assertThat(event.internals().forwardedAt).isNotNull()
         assertThat(event.internals().consumedAt).isNotNull()
 
         val command = Command.store.findAll().iterator().next()

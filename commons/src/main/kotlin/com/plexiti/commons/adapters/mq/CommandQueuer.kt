@@ -19,7 +19,7 @@ import org.springframework.stereotype.Component
 @Profile("prod")
 class CommandQueuer : RouteBuilder() {
 
-    private val logger = LoggerFactory.getLogger("com.plexiti.application")
+    private val logger = LoggerFactory.getLogger("com.plexiti.commons.adapters")
 
     @Autowired
     private lateinit var rabbitTemplate: RabbitTemplate

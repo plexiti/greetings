@@ -64,7 +64,7 @@ class GreetingResourceSteps {
 
     @And("The response should contain the message (.*)")
     fun theResponseShouldContainTheMessage(message: String) {
-        val event = eventStore.findOne(response!!.body[0].toJson()) as Greeting.CallAnsweredAutomatically
+        val event = eventStore.findOne(response!!.body.last().toJson()) as Greeting.CallAnsweredAutomatically
         assertThat(event.greeting).isEqualTo(message)
     }
 

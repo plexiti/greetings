@@ -11,6 +11,7 @@ import com.plexiti.commons.adapters.db.EventsMapConverter
 import com.plexiti.commons.application.CommandStatus.*
 import com.plexiti.commons.domain.*
 import org.apache.camel.component.jpa.Consumed
+import org.slf4j.LoggerFactory
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.CrudRepository
 import org.springframework.data.repository.NoRepositoryBean
@@ -18,6 +19,7 @@ import org.springframework.data.repository.query.Param
 import java.io.Serializable
 import java.util.*
 import javax.persistence.*
+import kotlin.collections.ArrayList
 import kotlin.reflect.KClass
 import kotlin.reflect.full.createInstance
 
@@ -37,7 +39,6 @@ open class Command(): Message {
     open val definition: Int = 0
 
     override var id = CommandId(UUID.randomUUID().toString())
-        protected set
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSZ", timezone = "CET")
     var issuedAt = Date()
@@ -45,10 +46,13 @@ open class Command(): Message {
 
     companion object {
 
-        private val executing = ThreadLocal<StoredCommand?>()
+        private val logger = LoggerFactory.getLogger("com.plexiti.commons.application")
 
-        lateinit internal var types: Map<Name, KClass<out Command>>
-        lateinit internal var names: Map<KClass<out Command>, Name>
+        private val executing = ThreadLocal<StoredCommand?>()
+        private val raised: ThreadLocal<MutableList<Event>> = ThreadLocal.withInitial { ArrayList<Event>() }
+
+        lateinit var types: Map<Name, KClass<out Command>>
+        lateinit var names: Map<KClass<out Command>, Name>
 
         internal fun type(qName: Name): KClass<out Command> {
             return Command.types.get(qName) ?: throw IllegalArgumentException("Command type '${qName.qualified}' is not mapped to a local object type!")
@@ -57,15 +61,29 @@ open class Command(): Message {
         var store = CommandStore()
 
         fun <C: Command> issue(command: C): C {
-            return store.save(command)
+            try {
+                return store.save(command)
+            } finally {
+                logger.info("Issued ${command.toJson()}")
+            }
+        }
+
+        fun <C: Command> receive(command: C): C {
+            try {
+                return store.save(command)
+            } finally {
+                logger.info("Received ${command.toJson()}")
+            }
         }
 
         fun issue(message: FlowIO): Command {
             val command = Command.type(message.command!!.name).createInstance()
+            command.id = message.command!!.id
             command.init()
             val entity = store.save(command).internals()
             entity.issuedBy = message.flowId
             entity.executedBy = message.tokenId
+            logger.info("Issued ${command.toJson()}")
             return command
         }
 
@@ -77,8 +95,13 @@ open class Command(): Message {
             return executing.get()
         }
 
+        internal fun getRaised(): MutableList<Event> {
+            return raised.get()
+        }
+
         internal fun unsetExecuting() {
             executing.set(null)
+            raised.set(ArrayList())
         }
 
         fun fromJson(json: String): Command {
@@ -207,11 +230,9 @@ open class StoredCommand(): StoredMessage<CommandId, CommandStatus>() {
     }
 
     open fun start() {
-        if (this.execution?.startedAt == null) {
-            this.status = started
-            this.execution = Execution()
-            this.execution?.startedAt = Date()
-        }
+        this.status = started
+        this.execution = Execution()
+        this.execution?.startedAt = Date()
         Command.setExecuting(this)
         val flow = (if (issuedBy != null) Command.store.findOne(issuedBy)?.internals() else null) as StoredFlow?
         flow?.resume()
@@ -237,6 +258,7 @@ open class StoredCommand(): StoredMessage<CommandId, CommandStatus>() {
             val pair = result.id to this.status
             eventsAssociated = eventsAssociated?.plus(pair) ?: mapOf(pair)
             Flow.getExecuting()?.eventsAssociated = Flow.getExecuting()?.eventsAssociated?.plus(pair) ?: mapOf(pair)
+            Command.getRaised().add(result)
         } else if (result is Value) {
             valueReturned = Hash(result)
         } else if (result is Problem) {

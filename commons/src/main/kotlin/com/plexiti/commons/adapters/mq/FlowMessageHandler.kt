@@ -25,7 +25,7 @@ import javax.transaction.Transactional
 @Profile("prod")
 class FlowMessageHandler {
 
-    private val logger = LoggerFactory.getLogger("com.plexiti.application")
+    private val logger = LoggerFactory.getLogger("com.plexiti.commons.adapters")
 
     @Value("\${com.plexiti.app.context}")
     private lateinit var context: String;
@@ -36,8 +36,8 @@ class FlowMessageHandler {
     @RabbitListener(queues = arrayOf("\${com.plexiti.app.context}-flows-from-queue"))
     fun handle(@Payload json: String) {
         try {
-            val message = application.handle(json)
-            logger.info("${if (message.type == MessageType.Command) "Issued" else "Raised"} ${json}")
+            application.handle(json)
+            logger.info("Handled ${json}")
         } catch (e: ObjectOptimisticLockingFailureException) {
             // TODO make a proper difference between ignoring known duplicates
             // (known) temporary failures, and permanent technical failures (bugs)

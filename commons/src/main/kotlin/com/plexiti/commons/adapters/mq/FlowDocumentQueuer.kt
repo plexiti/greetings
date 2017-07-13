@@ -24,7 +24,7 @@ import org.springframework.stereotype.Component
 @Profile("prod")
 class FlowDocumentQueuer : RouteBuilder() {
 
-    private val logger = LoggerFactory.getLogger("com.plexiti.application")
+    private val logger = LoggerFactory.getLogger("com.plexiti.commons.adapters")
 
     private var context: String? = null
         @Value("\${com.plexiti.app.context}")
