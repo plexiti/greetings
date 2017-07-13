@@ -64,6 +64,7 @@ class Greeting: Aggregate<GreetingId>() {
         contacts++
     }
 
+    // This is a business problem and gets propagated to the flow
     class FraudDetected : Problem()
 
     // We consider people calling more often than once well known pals
