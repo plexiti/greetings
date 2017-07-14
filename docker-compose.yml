@@ -8,8 +8,6 @@ services:
       - gr
     networks:
       - lb
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
   gr:
     image: plexiti/greetings
     ports:
