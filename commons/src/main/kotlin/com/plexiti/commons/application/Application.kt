@@ -109,8 +109,7 @@ class Application: SpringRouteBuilder(), ApplicationContextAware {
 
     @Transactional
     fun execute(command: Command): Any? {
-        val command = commandRunner.issue(command)
-        return run(command)
+        return run(commandRunner.issue(command))
     }
 
     @Transactional

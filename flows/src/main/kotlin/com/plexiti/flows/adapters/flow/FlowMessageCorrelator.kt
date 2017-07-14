@@ -47,6 +47,7 @@ class FlowMessageCorrelator {
                 flow.complete(message, JSON(json))
                 logger.info("Completed ${json}")
             }
+            else -> throw IllegalStateException()
         }
     }
 

@@ -31,6 +31,7 @@ fun scanPackageForAssignableClasses(packageName: String, assignableTo: KClass<*>
 }
 
 fun <N: Named> scanPackageForNamedClasses(packageName: String, assignableTo:  KClass<out N>): Map<Name, KClass<out N>> {
+    @Suppress("unchecked_cast")
     return scanPackageForAssignableClasses(packageName, assignableTo)
         .map { it.java.newInstance() as Named }
         .associate { Pair(it.name, it::class) } as Map<Name, KClass<out N>>
@@ -39,5 +40,5 @@ fun <N: Named> scanPackageForNamedClasses(packageName: String, assignableTo:  KC
 fun <N: Named> scanPackageForClassNames(packageName: String, assignableTo: KClass<out N>): Map<KClass<out N>, Name> {
     return scanPackageForNamedClasses(packageName, assignableTo)
         .map { it.value.java.newInstance() }
-        .associate { Pair( it::class, it.name) } as Map<KClass<out N>, Name>
+        .associate { Pair( it::class, it.name) }
 }

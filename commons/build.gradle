@@ -52,7 +52,7 @@ compileTestKotlin {
 // Add integration test source sets
 sourceSets {
     integration { sourceSet ->
-        ["java", "kotlin", "api"].each {
+        ["java", "kotlin"].each {
             if (!sourceSet.hasProperty(it)) return
             sourceSet."$it".srcDir file("src/integration/${it}")
         }
