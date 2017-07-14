@@ -1,22 +1,13 @@
 version: '3'
-services:
-  lb:
-    image: dockercloud/haproxy
-    ports:
-      - 80:80
-    links:
-      - gr
-    networks:
-      - lb
+services:   
   gr:
     image: plexiti/greetings
     ports:
-      - "8080"
+      - "80:8080"
     depends_on:
       - db
       - mq
     networks:
-      - lb
       - mq
       - db
     volumes:
@@ -60,8 +51,6 @@ services:
       - ./.camunda/webapps/camunda-invoice:/camunda/webapps/camunda-invoice
       - ./.camunda/conf:/camunda/conf
 networks:
-  lb:
-    driver: bridge
   mq:
     driver: bridge
   db:
