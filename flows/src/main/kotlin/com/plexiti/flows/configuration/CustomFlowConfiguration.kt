@@ -7,7 +7,6 @@ import org.camunda.bpm.engine.impl.persistence.StrongUuidGenerator
 import org.camunda.bpm.engine.impl.pvm.process.ActivityImpl
 import org.camunda.bpm.engine.impl.pvm.process.ScopeImpl
 import org.camunda.bpm.engine.impl.util.xml.Element
-import org.camunda.bpm.spring.boot.starter.configuration.Ordering
 import org.camunda.bpm.spring.boot.starter.configuration.impl.AbstractCamundaConfiguration
 import org.camunda.spin.plugin.impl.SpinProcessEnginePlugin
 import org.springframework.beans.factory.annotation.Value
@@ -18,7 +17,7 @@ import org.springframework.stereotype.Component
  * @author Martin Schimak <martin.schimak@plexiti.com>
  */
 @Component
-@Order(Ordering.DEFAULT_ORDER + 1)
+@Order(1)
 class CustomFlowConfiguration : AbstractCamundaConfiguration() {
 
     @Value("\${org.camunda.bpm.configuration.databaseSchemaUpdate}")
