@@ -1,4 +1,4 @@
-FROM frolvlad/alpine-oraclejdk8:latest
+FROM frolvlad/alpine-oraclejdk8:8.131.11-cleaned
 VOLUME /tmp
 ADD *.jar app.jar
 RUN sh -c 'touch /app.jar'

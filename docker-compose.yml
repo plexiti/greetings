@@ -1,7 +1,7 @@
 version: '3'
 services:   
   gr:
-    image: plexiti/greetings
+    image: plexiti/greetings:latest
     ports:
       - "80:8080"
     depends_on:
@@ -13,14 +13,14 @@ services:
     volumes:
       - ./greetings/.greetings/:/mnt/.greetings
   mq:
-    image: rabbitmq:management
+    image: rabbitmq:3.6.10-management-alpine
     ports:
       - "5672"
       - "15672:15672"
     networks:
       - mq
   db:
-    image: postgres
+    image: postgres:9.6.3-alpine
     ports:
       - "5432:5432"
     networks:
@@ -32,7 +32,7 @@ services:
     volumes:
       - db:/var/lib/postgresql/data
   fl:
-    image: camunda/camunda-bpm-platform:latest
+    image: camunda/camunda-bpm-platform:7.7.0
     ports:
       - "8080:8080"
     networks:
