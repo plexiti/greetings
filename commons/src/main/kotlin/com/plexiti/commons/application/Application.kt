@@ -77,7 +77,7 @@ class Application: SpringRouteBuilder(), ApplicationContextAware {
                 return
             }
         }
-        throw ObjectOptimisticLockingFailureException(StoredEvent::class.java, event!!.id)
+        throw IllegalStateException()
     }
 
     @Transactional
@@ -94,7 +94,7 @@ class Application: SpringRouteBuilder(), ApplicationContextAware {
         return message
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     fun execute(json: String): Any? {
         val incoming = Command.fromJson(json)
         val command = if (incoming.name.context == Name.context) commandStore.findOne(incoming.id) else commandRunner.receive(incoming)
@@ -104,27 +104,21 @@ class Application: SpringRouteBuilder(), ApplicationContextAware {
                 return run(command)
             }
         }
-        throw ObjectOptimisticLockingFailureException(StoredCommand::class.java, command!!.id)
+        throw IllegalStateException()
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     fun execute(command: Command): Any? {
         return run(commandRunner.issue(command))
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     fun run(command: Command): Any? {
         logger.debug("Executing ${command.toJson()}")
-        val iCommand = command.internals()
         try {
-            iCommand.start()
             return commandRunner.run(command)
         } catch (problem: Problem) {
-            iCommand.correlate(problem)
-            logger.info("Throwing ${problem.toJson()} for ${command.toJson()}")
-            return problem
-        } finally {
-            iCommand.finish()
+            return commandRunner.correlate(command, problem)
         }
     }
 
@@ -157,6 +151,15 @@ class Application: SpringRouteBuilder(), ApplicationContextAware {
         }
 
         @Transactional (propagation = Propagation.REQUIRES_NEW)
+        internal fun correlate(command: Command, problem: Problem): Problem {
+            val iCommand = command.internals()
+            iCommand.correlate(problem)
+            logger.info("Throwing ${problem.toJson()} for ${command.toJson()}")
+            iCommand.finish()
+            return problem
+        }
+
+        @Transactional (propagation = Propagation.REQUIRES_NEW)
         internal fun issue(command: Command): Command {
             val c = Command.issue(command)
             c.internals().forward() // TODO semantically wrong, but currently needed to silent the queuer
@@ -166,14 +169,19 @@ class Application: SpringRouteBuilder(), ApplicationContextAware {
         @Transactional (propagation = Propagation.REQUIRES_NEW)
         internal fun run(command: Command): Any? {
             try {
+                val iCommand = command.internals()
+                iCommand.start()
                 val result = route.requestBody("direct:${command.name.name}", command)
                 if (result is Value) {
                     valueStore.save(result)
-                    command.internals().correlate(result)
+                    iCommand.correlate(result)
                     logger.info("Returning ${result.toJson()} for ${command.toJson()}")
+                    iCommand.finish()
                     return result
                 } else {
-                    return Command.getRaised()
+                    val events = Command.getRaised()
+                    iCommand.finish()
+                    return events
                 }
             } catch (e: CamelExecutionException) {
                 throw e.exchange.exception

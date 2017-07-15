@@ -35,7 +35,7 @@ class CommandExecutor {
         try {
             application.execute(json)
             logger.info("Executed ${json}")
-        } catch (e: ObjectOptimisticLockingFailureException) {
+        } catch (e: Exception) {
             // TODO make a proper difference between ignoring known duplicates
             // (known) temporary failures, and permanent technical failures (bugs)
             logger.info("Deferred ${json}")
